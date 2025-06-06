@@ -29,3 +29,51 @@ description: these are the general rules when building this app.
   ```
 - Only push migrations to the remote (production) database when explicitly requested.
 - Migration files must be named with the current UTC timestamp: `YYYYMMDDHHMMSS_description.sql`.
+
+## Migration Workflow: Local vs Remote
+
+- **Local Development:**
+  - **Always** use the `--local` flag to ensure migrations are applied to your local Docker Supabase database:
+    ```sh
+    supabase db push --local
+    supabase db reset --local
+    ```
+  - This guarantees all schema changes and migrations affect only your local environment.
+  - **Never push migrations to the remote database during development.**
+
+- **Remote (Production) Database:**
+  - Only use `supabase db push` (without `--local`) when you are explicitly instructed to update the remote/production database. This should almost never happen and must be requested by the user.
+  - The CLI will prompt you to confirm before pushing to remote. Only answer "y" if you are ready for production changes.
+
+- **Best Practice:**
+  - Double-check CLI output to ensure you are targeting the correct database before confirming any migration or reset.
+
+---
+
+**Never run migrations on the remote database unless you are explicitly instructed to do so by the user!**
+
+## Migration filename convention (Brisbane time)
+
+YYYYMMDDHHMMSS_<kebab-case-description>.sql
+
+All six numeric fields—year → second—are taken from the current time in the
+Australia/Brisbane timezone (AEST, UTC +10, no daylight-saving).
+
+**Regex:** `/^\d{14}_[a-z0-9-]+\.sql$/`
+
+### Example
+- `20250608001530_add-content-table.sql`  (Represents 12:15:30 AM on 8 June 2025 in Brisbane—even though it's still 7 June UTC.)
+- `20251201133003_create-users.sql`
+
+### How to generate
+
+```bash
+# Option 1 – Supabase CLI (uses your system TZ)
+supabase migration new "<description>"
+
+# Option 2 – Manual (force Brisbane TZ explicitly)
+timestamp=$(TZ=Australia/Brisbane date +"%Y%m%d%H%M%S")
+touch "supabase/migrations/${timestamp}_<description>.sql"
+```
+
+⚠️ Never guess or reuse timestamps—always fetch the current Brisbane time programmatically.
