@@ -125,8 +125,8 @@ erDiagram
 * **[x] P1.1.3** Set up Supabase client with Realtime subscriptions filtered by business_id.  
 * **[x] P1.1.4** Create all database tables as per the schema.  
 * **[x] P1.1.5** Implement the Admin User Creation seed script/procedure.  
-* **[ ] P1.1.6** Create Audio, Images, Videos Storage buckets.  
-* **[ ] P1.1.7** Enable and configure all necessary RLS policies.
+* **[x] P1.1.6** Create Audio, Images, Videos Storage buckets.  
+* **[x] P1.1.7** Enable and configure all necessary RLS policies.
 
 **Authentication & Onboarding**
 
