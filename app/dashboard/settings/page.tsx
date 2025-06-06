@@ -1,6 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { SettingsForm } from '@/components/shared/settings-form';
 import { Tables } from '@/types/supabase';
@@ -9,19 +8,17 @@ export default async function SettingsPage() {
   const cookieStore = cookies();
   const supabase = await createClient();
 
+  // The user is guaranteed to be authenticated by the layout,
+  // so we can safely get the user id.
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  if (!user) {
-    return redirect('/sign-in');
-  }
 
   // Fetch the user's profile to get their business_id
   const { data: profile } = await supabase
     .from('profiles')
     .select('business_id')
-    .eq('id', user.id)
+    .eq('id', user!.id) // user is guaranteed to exist here
     .single();
 
   if (!profile || !profile.business_id) {

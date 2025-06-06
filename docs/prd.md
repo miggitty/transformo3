@@ -130,13 +130,13 @@ erDiagram
 
 **Authentication & Onboarding**
 
-* **\[ \] P1.2.1** Create the mobile-first sign-up page with input validation.  
-* **\[ \] P1.2.2** Create the mobile-first sign-in page.  
-* **\[ \] P1.2.3** Implement middleware for route protection.
+* **[x] P1.2.1** Create the mobile-first sign-up page with input validation.  
+* **[x] P1.2.2** Create the mobile-first sign-in page.  
+* **[x] P1.2.3** Implement middleware for route protection.
 
 **Business Profile Management**
 
-* **\[ \] P1.3.1** Create the responsive "Business Settings" page with input validation for all fields.
+* **[x] P1.3.1** Create the responsive "Business Settings" page with input validation for all fields.
 
 **Audio Input & Processing**
 
