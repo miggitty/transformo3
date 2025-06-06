@@ -12,8 +12,8 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    // If the user is logged in, redirect them to the settings page for now.
-    redirect('/dashboard/settings');
+    // If the user is logged in, redirect them to the new content dashboard.
+    redirect('/dashboard/content');
   } else {
     // If the user is not logged in, redirect them to the sign-in page.
     redirect('/sign-in');

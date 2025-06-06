@@ -38,7 +38,7 @@ export default function SignInPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push('/dashboard/settings'); // Redirect to settings page on successful sign-in
+      router.push('/dashboard/content'); // Redirect to content page on successful sign-in
     }
   };
 
