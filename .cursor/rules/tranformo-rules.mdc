@@ -1,5 +1,31 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: 
+globs: 
+alwaysApply: true
 ---
+---
+description: these are the general rules when building this app.
+---
+
+* **Component Structure**: All new components should be created within the `components/` directory. Reusable UI components go into `components/ui`, and more complex, feature-specific components go into `components/shared`.
+* **API Routes**: Create all backend logic within API routes located in the `app/api/` directory. Follow Next.js App Router conventions for route handlers.
+* **Database Migrations**: For any change to the database schema (e.g., creating tables, adding columns, setting up policies), you must write a SQL script. Store all SQL migration scripts in the `supabase/migrations` folder. Each new script should have a timestamp-based name to maintain order.
+* **Type Safety**: Generate TypeScript types from your Supabase schema using the Supabase CLI (`npx supabase gen types typescript`). Store these generated types in a dedicated file, like `types/supabase.ts`, and use them throughout the application for type safety.
+* **Environment Variables**: **Access all secret keys (like Supabase URL and anon/service keys for local and production) using `process.env`. Create and use `.env.local` for development secrets and manage production secrets securely.**
+* **Code Style**: Follow standard TypeScript and React best practices. Use functional components with hooks. Keep components small and focused on a single responsibility.
+
+## Development Environment & Migrations
+
+- All development should use the local Supabase instance. Store your local Supabase URL and anon key in `.env.local` at the project root:
+
+  ```env
+  NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+  ```
+
+- Run migrations locally with:
+  ```sh
+  supabase db push
+  ```
+- Only push migrations to the remote (production) database when explicitly requested.
+- Migration files must be named with the current UTC timestamp: `YYYYMMDDHHMMSS_description.sql`.

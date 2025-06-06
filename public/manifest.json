@@ -1,0 +1,21 @@
+{
+  "name": "Transformo",
+  "short_name": "Transformo",
+  "description": "Content Automation SaaS for marketing content creation and scheduling.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/file.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/file.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+} 

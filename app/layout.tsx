@@ -24,10 +24,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <head>
+        {/* Remove the <style jsx global> block entirely */}
+      </head>
+      <body className="bg-[var(--color-bg)] text-[var(--color-text)]">
+        <div className="flex min-h-screen">
+          <aside className="w-64 bg-[var(--color-sidebar-bg)] text-[var(--color-sidebar-text)] border-r border-gray-200 flex flex-col">
+            <div className="h-16 flex items-center justify-center font-bold text-xl tracking-tight border-b border-gray-200">
+              Transformo
+            </div>
+            {/* Sidebar nav goes here */}
+            <nav className="flex-1 p-4">
+              {/* Navigation items will be added here */}
+            </nav>
+          </aside>
+          <main className="flex-1 p-6 md:p-10 bg-[var(--color-bg)]">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );
