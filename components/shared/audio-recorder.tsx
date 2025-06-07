@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import {
   createContentRecord,
   finalizeContentRecord,
-} from '@/app/dashboard/new/actions';
+} from '@/app/(app)/new/actions';
 import { useSupabaseBrowser } from '../providers/supabase-provider';
 
 type RecordingStatus = 'idle' | 'recording' | 'processing' | 'uploading';
@@ -134,7 +134,7 @@ export function AudioRecorder() {
       toast.error(finalizeResult.error);
     } else {
       toast.success('Content created successfully!');
-      router.push('/dashboard/content');
+      router.push('/content');
     }
 
     setStatus('idle');

@@ -50,7 +50,7 @@ export default async function ContentPage() {
             Manage and create new content for your business.
           </CardDescription>
         </div>
-        <Link href="/dashboard/new">
+        <Link href="/new">
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
             New Content

@@ -85,7 +85,7 @@ export async function finalizeContentRecord(
     // For now, we just log the error and continue.
   }
 
-  revalidatePath('/dashboard/content');
+  revalidatePath('/content');
 
   return { data: updatedContent };
 } 

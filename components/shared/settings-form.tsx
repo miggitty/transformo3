@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CardContent } from '@/components/ui/card';
 import { Tables } from '@/types/supabase';
-import { updateBusinessSettings } from '@/app/dashboard/settings/actions';
+import { updateBusinessSettings } from '@/app/(app)/settings/actions';
 import { toast } from 'sonner';
 
 const formSchema = z.object({

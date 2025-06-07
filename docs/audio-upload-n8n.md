@@ -44,7 +44,7 @@ To create a fully automated, asynchronous pipeline that begins after a user uplo
     - [ ] Modify `lib/n8n.ts` to send a JSON payload with `audio_url`.
 
 - [ ] **4. Update Server Action to Trigger Workflow**
-    - [ ] Modify `finalizeContentRecord` in `app/dashboard/new/actions.ts`.
+    - [ ] Modify `finalizeContentRecord` in `app/(app)/new/actions.ts`.
     - [ ] Remove the file-fetching logic and pass the `audio_url` directly.
 
 - [x] **5. Create API Route for n8n Callback**

@@ -21,16 +21,9 @@ export async function updateBusinessSettings(
 
   if (error) {
     console.error('Error updating business settings:', error);
-    return {
-      error: 'Could not update business settings. Please try again.',
-    };
+    return { error: 'Could not update business settings.' };
   }
 
-  // Revalidate the path to show the updated data
-  revalidatePath('/dashboard/settings');
-
-  return {
-    data,
-    message: 'Settings updated successfully.',
-  };
+  revalidatePath('/settings');
+  return { data };
 } 

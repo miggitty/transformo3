@@ -1,39 +1,42 @@
 import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { signOut } from '@/app/(auth)/sign-out/actions';
+import { signOut } from '@/app/(auth)/actions';
 import { Settings, LogOut, PlusCircle, LayoutGrid } from 'lucide-react';
 import { Tables } from '@/types/supabase';
 
-async function Sidebar({ user }: { user: Tables<'profiles'> & { email: string } }) {
+async function Sidebar({
+  user,
+}: {
+  user: Tables<'profiles'> & { email: string };
+}) {
   return (
     <div className="hidden border-r bg-muted/40 md:block">
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Link href="/content" className="flex items-center gap-2 font-semibold">
             <span className="">Transformo</span>
           </Link>
         </div>
         <div className="flex-1">
           <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
             <Link
-              href="/dashboard/content"
+              href="/content"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <LayoutGrid className="h-4 w-4" />
               Content
             </Link>
             <Link
-              href="/dashboard/new"
+              href="/new"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <PlusCircle className="h-4 w-4" />
               New Content
             </Link>
             <Link
-              href="/dashboard/settings"
+              href="/settings"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <Settings className="h-4 w-4" />
@@ -43,7 +46,9 @@ async function Sidebar({ user }: { user: Tables<'profiles'> & { email: string } 
         </div>
         <div className="mt-auto p-4">
           <div className="mb-2 border-t pt-4">
-            <div className="text-sm text-muted-foreground truncate">{user.email}</div>
+            <div className="text-sm text-muted-foreground truncate">
+              {user.email}
+            </div>
           </div>
           <form action={signOut}>
             <Button variant="ghost" className="w-full justify-start">
@@ -57,12 +62,11 @@ async function Sidebar({ user }: { user: Tables<'profiles'> & { email: string } 
   );
 }
 
-export default async function DashboardLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies();
   const supabase = await createClient();
 
   const {
@@ -70,10 +74,9 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/sign-in');
+    return redirect('/sign-in');
   }
 
-  // Combine user auth data with profile data
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -85,12 +88,12 @@ export default async function DashboardLayout({
     email: user.email!,
   };
 
-
   return (
     <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <Sidebar user={userWithProfile as Tables<'profiles'> & { email: string }} />
+      <Sidebar
+        user={userWithProfile as Tables<'profiles'> & { email: string }}
+      />
       <div className="flex flex-col">
-        {/* We can add a header here later if needed */}
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           {children}
         </main>
