@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { Tables } from '@/types/supabase';
+import { triggerN8nWorkflow } from '@/lib/n8n';
 
 // Action 1: Create an initial content record
 export async function createContentRecord() {
@@ -54,24 +55,39 @@ export async function finalizeContentRecord(
   const cookieStore = cookies();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: updatedContent, error } = await supabase
     .from('content')
     .update({
       audio_url: audioUrl,
-      status: 'awaiting_processing',
+      status: 'processing',
     })
     .eq('id', contentId)
-    .select()
+    .select('id, business_id, audio_url')
     .single();
 
-  if (error) {
+  if (error || !updatedContent) {
     console.error('Error finalizing content record:', error);
     return { error: 'Could not update content record with audio URL.' };
   }
-  
-  // TODO: Add n8n webhook call here later
+
+  // Trigger the n8n workflow (fire-and-forget)
+  console.log('Attempting to trigger n8n workflow...');
+  console.log(`Webhook URL: ${process.env.N8N_WEBHOOK_URL ? 'Loaded' : 'NOT LOADED'}`);
+  console.log(`API Key: ${process.env.N8N_API_KEY ? 'Loaded' : 'NOT LOADED'}`);
+  try {
+    await triggerN8nWorkflow({
+      audioUrl: updatedContent.audio_url!,
+      contentId: updatedContent.id,
+      businessId: updatedContent.business_id!,
+    });
+    console.log('Successfully triggered n8n workflow.');
+  } catch (n8nError) {
+    console.error('Failed to trigger n8n workflow:', n8nError);
+    // Optional: Update status to 'failed' here
+    // For now, we just log the error and continue.
+  }
 
   revalidatePath('/dashboard/content');
 
-  return { data };
+  return { data: updatedContent };
 } 
