@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/app/(auth)/actions';
@@ -16,7 +17,13 @@ async function Sidebar({
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <Link href="/content" className="flex items-center gap-2 font-semibold">
-            <span className="">Transformo</span>
+            <Image
+              src="/transformo-logo.webp"
+              alt="Transformo Logo"
+              width={120}
+              height={30}
+              className="h-auto w-auto"
+            />
           </Link>
         </div>
         <div className="flex-1">
