@@ -72,8 +72,6 @@ export async function finalizeContentRecord(
 
   // Trigger the n8n workflow (fire-and-forget)
   console.log('Attempting to trigger n8n workflow...');
-  console.log(`Webhook URL: ${process.env.N8N_WEBHOOK_URL ? 'Loaded' : 'NOT LOADED'}`);
-  console.log(`API Key: ${process.env.N8N_API_KEY ? 'Loaded' : 'NOT LOADED'}`);
   try {
     await triggerN8nWorkflow({
       audioUrl: updatedContent.audio_url!,

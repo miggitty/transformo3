@@ -11,46 +11,40 @@ description: these are the general rules when building this app.
 * **API Routes**: Create all backend logic within API routes located in the `app/api/` directory. Follow Next.js App Router conventions for route handlers.
 * **Database Migrations**: For any change to the database schema (e.g., creating tables, adding columns, setting up policies), you must write a SQL script. Store all SQL migration scripts in the `supabase/migrations` folder. Each new script should have a timestamp-based name to maintain order.
 * **Type Safety**: Generate TypeScript types from your Supabase schema using the Supabase CLI (`npx supabase gen types typescript`). Store these generated types in a dedicated file, like `types/supabase.ts`, and use them throughout the application for type safety.
-* **Environment Variables**: **Access all secret keys (like Supabase URL and anon/service keys for local and production) using `process.env`. Create and use `.env.local` for development secrets and manage production secrets securely.**
+* **Environment Variables**: **Access all secret keys (like Supabase URL and anon/service keys) using `process.env`. Your `.env.local` file should always point to the remote production Supabase instance.**
 * **Code Style**: Follow standard TypeScript and React best practices. Use functional components with hooks. Keep components small and focused on a single responsibility.
 
 ## Development Environment & Migrations
 
-- All development should use the local Supabase instance. Store your local Supabase URL and anon key in `.env.local` at the project root:
+- All development must use the remote (production) Supabase instance. Store your remote Supabase URL and anon key in `.env.local` at the project root. You can find these in your Supabase project's API settings.
 
   ```env
-  NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+  NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-project-anon-key>
+  SUPABASE_SERVICE_ROLE_KEY=<your-project-service-role-key>
   ```
 
-- Run migrations locally with:
+- Pushing migrations now directly affects the production database. **Extreme caution is advised.**
+
+- Run migrations with:
   ```sh
   supabase db push
   ```
-- Only push migrations to the remote (production) database when explicitly requested.
 - Migration files must be named with the current UTC timestamp: `YYYYMMDDHHMMSS_description.sql`.
 
-## Migration Workflow: Local vs Remote
+## Migration Workflow: Remote-Only
 
-- **Local Development:**
-  - **Always** use the `--local` flag to ensure migrations are applied to your local Docker Supabase database:
-    ```sh
-    supabase db push --local
-    supabase db reset --local
-    ```
-  - This guarantees all schema changes and migrations affect only your local environment.
-  - **Never push migrations to the remote database during development.**
-
-- **Remote (Production) Database:**
-  - Only use `supabase db push` (without `--local`) when you are explicitly instructed to update the remote/production database. This should almost never happen and must be requested by the user.
-  - The CLI will prompt you to confirm before pushing to remote. Only answer "y" if you are ready for production changes.
+- All `supabase db push` commands will now target the remote (production) database.
+- The `--local` flag is no longer relevant and should not be used.
+- The `supabase db reset` command should be used with extreme care, as it will wipe the production database. This command should only be used if explicitly requested and understood.
 
 - **Best Practice:**
-  - Double-check CLI output to ensure you are targeting the correct database before confirming any migration or reset.
+  - Before running `supabase db push`, always review the changes in your migration files.
+  - Double-check the CLI output to ensure you are targeting the correct project before confirming any migration or reset.
 
 ---
 
-**Never run migrations on the remote database unless you are explicitly instructed to do so by the user!**
+**All migrations will be run directly on the production database. Proceed with caution.**
 
 ## Migration filename convention (Brisbane time)
 

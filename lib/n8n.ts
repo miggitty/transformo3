@@ -34,7 +34,11 @@ export async function triggerN8nWorkflow({
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to trigger n8n workflow. Status: ${response.status}`);
+    const responseBody = await response.text();
+    console.error('n8n API response:', responseBody);
+    throw new Error(
+      `Failed to trigger n8n workflow. Status: ${response.status}`
+    );
   }
 
   // We don't need to read the response body, just confirm it was accepted.
