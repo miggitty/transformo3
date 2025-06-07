@@ -24,14 +24,15 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Update the database
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('content')
     .update({
       transcript: transcript,
       content_title: content_title,
       status: 'completed', // Final status
     })
-    .eq('id', content_id);
+    .eq('id', content_id)
+    .select();
 
   if (error) {
     console.error('Error updating content from n8n callback:', error);
@@ -40,6 +41,21 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Add a new check to ensure a row was actually updated
+  if (!data || data.length === 0) {
+    console.error(
+      'N8N callback: Update succeeded but no row was found for content_id:',
+      content_id
+    );
+    return new NextResponse(
+      JSON.stringify({ error: 'No content found with the provided ID.' }),
+      {
+        status: 404, // Not Found is more appropriate
+      }
+    );
+  }
+
   // 4. Respond to n8n
+  console.log('Successfully updated content from n8n callback:', content_id);
   return new NextResponse(null, { status: 204 }); // All good
 } 
