@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/utils/supabase/client';
 import { Mic, StopCircle, UploadCloud, Hourglass } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
@@ -10,11 +9,13 @@ import {
   createContentRecord,
   finalizeContentRecord,
 } from '@/app/dashboard/new/actions';
+import { useSupabaseBrowser } from '../providers/supabase-provider';
 
 type RecordingStatus = 'idle' | 'recording' | 'processing' | 'uploading';
 
 export function AudioRecorder() {
   const router = useRouter();
+  const supabase = useSupabaseBrowser();
   const [status, setStatus] = useState<RecordingStatus>('idle');
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [permission, setPermission] = useState(false);
@@ -101,8 +102,7 @@ export function AudioRecorder() {
 
     const { id: contentId, business_id: businessId } = createResult.data;
     const fileName = `${businessId}_${contentId}.webm`;
-    const supabase = createClient();
-
+    
     toast.info('Uploading audio file...');
     const { error: uploadError } = await supabase.storage
       .from('audio')
