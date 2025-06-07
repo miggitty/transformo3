@@ -22,7 +22,7 @@ function formatStatus(status: string | null) {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
           <span className="relative inline-flex h-3 w-3 rounded-full bg-sky-500"></span>
         </span>
-        Processing
+        Still Process Content...
       </div>
     );
   }
@@ -67,7 +67,9 @@ export function ContentTable({
             content.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">
-                  {item.content_title || 'Untitled'}
+                  {item.status === 'processing'
+                    ? 'Currently Processing Audio...'
+                    : item.content_title || 'Untitled'}
                 </TableCell>
                 <TableCell>
                   <Badge
