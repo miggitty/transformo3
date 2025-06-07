@@ -86,12 +86,15 @@ export function ContentTable({
                     {formatStatus(item.status)}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {new Date(item.created_at!).toLocaleDateString('en-AU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })}
+                <TableCell className="hidden md:table-cell">
+                  {new Date(item.created_at || Date.now()).toLocaleDateString(
+                    'en-AU',
+                    {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    }
+                  )}
                 </TableCell>
               </TableRow>
             ))

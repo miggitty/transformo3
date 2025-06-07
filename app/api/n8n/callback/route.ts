@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Parse the request body
-  const { content_id, transcript, content_title } = await req.json();
+  const { content_id, transcript, content_title, research } = await req.json();
 
   if (!content_id || !transcript || !content_title) {
     return new NextResponse('Missing required fields', { status: 400 });
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     .update({
       transcript: transcript,
       content_title: content_title,
+      research: research,
       status: 'completed', // Final status
     })
     .eq('id', content_id)

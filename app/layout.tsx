@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="bg-background text-foreground">
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+      <body className="bg-background text-foreground" suppressHydrationWarning>
         <SupabaseProvider>
           <main className="min-h-screen flex flex-col items-center">
             {children}

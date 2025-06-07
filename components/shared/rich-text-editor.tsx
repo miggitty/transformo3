@@ -3,7 +3,17 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Toggle } from '@/components/ui/toggle';
-import { Bold, Italic, Strikethrough, List, ListOrdered } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  Strikethrough,
+  List,
+  ListOrdered,
+  Heading1,
+  Heading2,
+  Heading3,
+  Heading4,
+} from 'lucide-react';
 
 const TiptapToolbar = ({ editor }: { editor: any }) => {
   if (!editor) {
@@ -11,7 +21,43 @@ const TiptapToolbar = ({ editor }: { editor: any }) => {
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-md border border-input bg-transparent p-1">
+    <div className="flex flex-wrap items-center gap-1 rounded-md border border-input bg-transparent p-1">
+      <Toggle
+        size="sm"
+        pressed={editor.isActive('heading', { level: 1 })}
+        onPressedChange={() =>
+          editor.chain().focus().toggleHeading({ level: 1 }).run()
+        }
+      >
+        <Heading1 className="h-4 w-4" />
+      </Toggle>
+      <Toggle
+        size="sm"
+        pressed={editor.isActive('heading', { level: 2 })}
+        onPressedChange={() =>
+          editor.chain().focus().toggleHeading({ level: 2 }).run()
+        }
+      >
+        <Heading2 className="h-4 w-4" />
+      </Toggle>
+      <Toggle
+        size="sm"
+        pressed={editor.isActive('heading', { level: 3 })}
+        onPressedChange={() =>
+          editor.chain().focus().toggleHeading({ level: 3 }).run()
+        }
+      >
+        <Heading3 className="h-4 w-4" />
+      </Toggle>
+      <Toggle
+        size="sm"
+        pressed={editor.isActive('heading', { level: 4 })}
+        onPressedChange={() =>
+          editor.chain().focus().toggleHeading({ level: 4 }).run()
+        }
+      >
+        <Heading4 className="h-4 w-4" />
+      </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive('bold')}
@@ -59,20 +105,16 @@ export const RichTextEditor = ({
   onUpdate: (content: string) => void;
 }) => {
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        // Disable heading to keep it simple, can be enabled later
-        heading: false,
-      }),
-    ],
+    extensions: [StarterKit],
     content: initialContent,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onUpdate(editor.getHTML());
     },
     editorProps: {
       attributes: {
         class:
-          'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-5 focus:outline-none min-h-[150px] rounded-md border border-input bg-background px-3 py-2',
+          'prose dark:prose-invert max-w-none focus:outline-none min-h-[150px] rounded-md border border-input bg-background px-3 py-2',
       },
     },
   });

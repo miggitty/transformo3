@@ -1,47 +1,50 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { RichTextEditor } from './rich-text-editor';
+import { useMemo, useState, useTransition } from 'react';
+import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { updateContentField } from '@/app/(app)/content/[id]/actions';
+import { marked } from 'marked';
+import TurndownService from 'turndown';
 
-type FieldName = 'transcript' | 'research' | 'video_script';
-
-interface EditableFieldProps {
+interface ResearchEditorProps {
   contentId: string;
-  fieldName: FieldName;
-  title: string;
   initialContent: string | null;
 }
 
-export function EditableField({
+const turndownService = new TurndownService();
+
+export default function ResearchEditor({
   contentId,
-  fieldName,
-  title,
   initialContent,
-}: EditableFieldProps) {
-  const [content, setContent] = useState(initialContent || '');
+}: ResearchEditorProps) {
+  const initialHtml = useMemo(() => {
+    if (!initialContent) return '';
+    return marked.parse(initialContent) as string;
+  }, [initialContent]);
+
+  const [content, setContent] = useState(initialHtml);
   const [isPending, startTransition] = useTransition();
 
   const handleSave = () => {
     startTransition(async () => {
+      const markdown = turndownService.turndown(content);
       const { success, error } = await updateContentField({
         contentId,
-        fieldName,
-        newValue: content,
+        fieldName: 'research',
+        newValue: markdown,
       });
 
       if (success) {
-        toast.success(`${title} has been updated.`);
+        toast.success('Research has been updated.');
       } else {
         toast.error(error || 'An unknown error occurred.');
       }
@@ -51,9 +54,9 @@ export function EditableField({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle>Research</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="prose dark:prose-invert max-w-none">
         <RichTextEditor
           initialContent={content}
           onUpdate={(newContent) => setContent(newContent)}
