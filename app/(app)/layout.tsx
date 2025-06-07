@@ -100,10 +100,12 @@ export default async function AppLayout({
       <Sidebar
         user={userWithProfile as Tables<'profiles'> & { email: string }}
       />
-      <div className="flex flex-col">
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          {children}
-        </main>
+      <div className="flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          <main className="flex flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

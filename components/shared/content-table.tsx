@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tables } from '@/types/supabase';
 import { RealtimeContentUpdater } from './realtime-content-updater';
 import {
@@ -40,6 +41,7 @@ export function ContentTable({
   businessId: string;
 }) {
   const [content, setContent] = useState(serverContent);
+  const router = useRouter();
 
   // This effect ensures that if the server-provided content changes (e.g., due to navigation),
   // the client-side state is updated to match.
@@ -65,7 +67,11 @@ export function ContentTable({
         <TableBody>
           {content && content.length > 0 ? (
             content.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow
+                key={item.id}
+                onDoubleClick={() => router.push(`/content/${item.id}`)}
+                className="cursor-pointer"
+              >
                 <TableCell className="font-medium">
                   {item.status === 'processing'
                     ? 'Currently Processing Audio...'

@@ -27,8 +27,8 @@ export default function RootLayout({
           <main className="min-h-screen flex flex-col items-center">
             {children}
           </main>
+          <Toaster />
         </SupabaseProvider>
-        <Toaster />
       </body>
     </html>
   );
