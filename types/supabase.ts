@@ -13,6 +13,10 @@ export type Database = {
         Row: {
           booking_link: string | null
           business_name: string
+          color_background: string | null
+          color_highlight: string | null
+          color_primary: string | null
+          color_secondary: string | null
           contact_email: string | null
           contact_url: string | null
           created_at: string | null
@@ -33,6 +37,10 @@ export type Database = {
         Insert: {
           booking_link?: string | null
           business_name: string
+          color_background?: string | null
+          color_highlight?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
           contact_email?: string | null
           contact_url?: string | null
           created_at?: string | null
@@ -53,6 +61,10 @@ export type Database = {
         Update: {
           booking_link?: string | null
           business_name?: string
+          color_background?: string | null
+          color_highlight?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
           contact_email?: string | null
           contact_url?: string | null
           created_at?: string | null
@@ -199,7 +211,7 @@ export type Database = {
           {
             foreignKeyName: "content_assets_content_id_fkey"
             columns: ["content_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "content"
             referencedColumns: ["id"]
           },

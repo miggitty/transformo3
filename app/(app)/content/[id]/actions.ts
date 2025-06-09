@@ -76,6 +76,11 @@ export async function generateContent(payload: {
   booking_link: string | null;
   email_name_token: string | null;
   email_sign_off: string | null;
+  // New color fields
+  color_primary: string | null;
+  color_secondary: string | null;
+  color_background: string | null;
+  color_highlight: string | null;
 }) {
   const webhookUrl = process.env.N8N_WEBHOOK_URL_CONTENT_CREATION;
 
@@ -120,6 +125,11 @@ export async function generateContent(payload: {
       booking_link: sanitizeText(payload.booking_link),
       email_name_token: sanitizeText(payload.email_name_token),
       email_sign_off: sanitizeText(payload.email_sign_off),
+      // Add new color fields to cleaned payload
+      color_primary: sanitizeText(payload.color_primary),
+      color_secondary: sanitizeText(payload.color_secondary),
+      color_background: sanitizeText(payload.color_background),
+      color_highlight: sanitizeText(payload.color_highlight),
       // Handle JSON fields - convert null to empty object
       social_media_profiles: payload.social_media_profiles || {},
       social_media_integrations: payload.social_media_integrations || {},

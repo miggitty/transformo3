@@ -81,6 +81,10 @@ export default function ResearchEditor({ content: contentProp }: ResearchEditorP
         booking_link: contentProp.businesses.booking_link,
         email_name_token: contentProp.businesses.email_name_token,
         email_sign_off: contentProp.businesses.email_sign_off,
+        color_primary: contentProp.businesses.color_primary,
+        color_secondary: contentProp.businesses.color_secondary,
+        color_background: contentProp.businesses.color_background,
+        color_highlight: contentProp.businesses.color_highlight,
       });
 
       if (success) {
