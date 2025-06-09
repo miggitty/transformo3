@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ContentAsset, ContentWithBusiness } from '@/types';
 import { updateContentAsset } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
+import { VideoPlayer } from '@/components/shared/video-player';
 
 interface SocialShortVideoFormProps {
   asset: ContentAsset;
@@ -40,11 +41,7 @@ export default function SocialShortVideoForm({
         {content.video_short_url && (
           <div className="space-y-2">
             <Label>Video</Label>
-            <video
-              src={content.video_short_url}
-              controls
-              className="w-full rounded-lg"
-            />
+            <VideoPlayer src={content.video_short_url} />
           </div>
         )}
         <div className="space-y-2">

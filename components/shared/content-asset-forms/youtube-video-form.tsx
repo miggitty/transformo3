@@ -10,6 +10,7 @@ import { ContentAsset, ContentWithBusiness } from '@/types';
 import { updateContentAsset } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { VideoPlayer } from '@/components/shared/video-player';
 
 interface YouTubeVideoFormProps {
   asset: ContentAsset;
@@ -73,11 +74,7 @@ export default function YouTubeVideoForm({
         {content.video_long_url && (
           <div className="space-y-2">
             <Label>Video</Label>
-            <video
-              src={content.video_long_url}
-              controls
-              className="w-full rounded-lg"
-            />
+            <VideoPlayer src={content.video_long_url} />
           </div>
         )}
       </CardContent>
