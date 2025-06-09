@@ -7,73 +7,66 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       businesses: {
         Row: {
+          booking_link: string | null
+          business_name: string
           contact_email: string | null
+          contact_url: string | null
           created_at: string | null
           cta_email: string | null
-          cta_social: string | null
+          cta_social_long: string | null
+          cta_social_short: string | null
           cta_youtube: string | null
+          email_name_token: string | null
+          email_sign_off: string | null
+          first_name: string | null
           id: string
-          name: string
+          last_name: string | null
           social_media_integrations: Json | null
           social_media_profiles: Json | null
-          social_username: string | null
           website_url: string | null
           writing_style_guide: string | null
         }
         Insert: {
+          booking_link?: string | null
+          business_name: string
           contact_email?: string | null
+          contact_url?: string | null
           created_at?: string | null
           cta_email?: string | null
-          cta_social?: string | null
+          cta_social_long?: string | null
+          cta_social_short?: string | null
           cta_youtube?: string | null
+          email_name_token?: string | null
+          email_sign_off?: string | null
+          first_name?: string | null
           id?: string
-          name: string
+          last_name?: string | null
           social_media_integrations?: Json | null
           social_media_profiles?: Json | null
-          social_username?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
         Update: {
+          booking_link?: string | null
+          business_name?: string
           contact_email?: string | null
+          contact_url?: string | null
           created_at?: string | null
           cta_email?: string | null
-          cta_social?: string | null
+          cta_social_long?: string | null
+          cta_social_short?: string | null
           cta_youtube?: string | null
+          email_name_token?: string | null
+          email_sign_off?: string | null
+          first_name?: string | null
           id?: string
-          name?: string
+          last_name?: string | null
           social_media_integrations?: Json | null
           social_media_profiles?: Json | null
-          social_username?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
@@ -366,11 +359,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const
-

@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/accordion';
 import { AudioPlayer } from '@/components/shared/audio-player';
 import dynamic from 'next/dynamic';
-import { Tables } from '@/types/supabase';
+import { ContentWithBusiness } from '@/types';
 
 const ResearchEditor = dynamic(
   () => import('@/components/shared/research-editor'),
@@ -19,7 +19,7 @@ const ResearchEditor = dynamic(
 );
 
 interface ContentDetailClientPageProps {
-  content: Tables<'content'>;
+  content: ContentWithBusiness;
 }
 
 export default function ContentDetailClientPage({
@@ -85,10 +85,7 @@ export default function ContentDetailClientPage({
         </AccordionItem>
       </Accordion>
 
-      <ResearchEditor
-        contentId={content.id}
-        initialContent={content.research}
-      />
+      <ResearchEditor content={content} />
     </div>
   );
 } 

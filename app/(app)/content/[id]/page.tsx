@@ -2,17 +2,21 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import ContentDetailClientPage from '@/components/shared/content-detail-client-page';
 
-export default async function ContentDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const supabase = await createClient();
+// Define props with an interface for clarity
+interface ContentDetailPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function ContentDetailPage(props: ContentDetailPageProps) {
+  // Await the params before accessing the id property (required in Next.js 15)
+  const params = await props.params;
   const id = params.id;
+
+  const supabase = await createClient();
 
   const { data: content } = await supabase
     .from('content')
-    .select('*')
+    .select('*, businesses(*)')
     .eq('id', id)
     .single();
 

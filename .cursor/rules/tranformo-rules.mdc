@@ -16,6 +16,8 @@ description: these are the general rules when building this app.
 
 ## Development Environment & Migrations
 
+Never complete migrations through MCP server. Always create a migration in the migratons supabase folder and push it correctly.
+
 - All development must use the remote (production) Supabase instance. Store your remote Supabase URL and anon key in `.env.local` at the project root. You can find these in your Supabase project's API settings.
 
   ```env
