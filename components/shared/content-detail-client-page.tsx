@@ -12,6 +12,7 @@ import { ContentWithBusiness, ContentAsset } from '@/types';
 import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import ContentAssetsManager from './content-assets-manager';
+import VideoUploadSection from './video-upload-section';
 import {
   updateContentField,
   generateContent,
@@ -35,8 +36,9 @@ interface ContentDetailClientPageProps {
 }
 
 export default function ContentDetailClientPage({
-  content,
+  content: initialContent,
 }: ContentDetailClientPageProps) {
+  const [content, setContent] = useState<ContentWithBusiness>(initialContent);
   const [contentAssets, setContentAssets] = useState<ContentAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +123,13 @@ export default function ContentDetailClientPage({
       console.log('Fetched content assets:', data);
       setContentAssets(data);
     }
+  };
+
+  const handleVideoUpdate = (videoType: 'long' | 'short', videoUrl: string | null) => {
+    setContent(prev => ({
+      ...prev,
+      [videoType === 'long' ? 'video_long_url' : 'video_short_url']: videoUrl,
+    }));
   };
 
   useEffect(() => {
@@ -237,6 +246,18 @@ export default function ContentDetailClientPage({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {!permissionError && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold">Social Media Videos</h2>
+          </div>
+          <VideoUploadSection
+            content={content}
+            onVideoUpdate={handleVideoUpdate}
+          />
+        </div>
+      )}
 
       {!permissionError && (
               <ContentAssetsManager

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 // Define a schema for the updatable fields
 const updatableFields = z.enum(['transcript', 'research', 'video_script']);
+const videoFields = z.enum(['video_long_url', 'video_short_url']);
 
 export async function updateContentField({
   contentId,
@@ -46,6 +47,50 @@ export async function updateContentField({
     return {
       success: false,
       error: 'Failed to save changes. Please try again.',
+    };
+  }
+
+  revalidatePath(`/content/${contentId}`);
+  return { success: true, error: null };
+}
+
+export async function updateVideoUrl({
+  contentId,
+  videoType,
+  videoUrl,
+}: {
+  contentId: string;
+  videoType: 'long' | 'short';
+  videoUrl: string | null;
+}) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'You must be logged in to update videos.' };
+  }
+
+  const fieldName = videoType === 'long' ? 'video_long_url' : 'video_short_url';
+  
+  // Validate the field name
+  const parsedFieldName = videoFields.safeParse(fieldName);
+  if (!parsedFieldName.success) {
+    return { success: false, error: 'Invalid video field name.' };
+  }
+
+  const { error } = await supabase
+    .from('content')
+    .update({ [parsedFieldName.data]: videoUrl })
+    .eq('id', contentId);
+
+  if (error) {
+    console.error('Error updating video URL:', error);
+    return {
+      success: false,
+      error: 'Failed to update video. Please try again.',
     };
   }
 
