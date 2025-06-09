@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       businesses: {
@@ -31,6 +56,7 @@ export type Database = {
           last_name: string | null
           social_media_integrations: Json | null
           social_media_profiles: Json | null
+          timezone: string | null
           website_url: string | null
           writing_style_guide: string | null
         }
@@ -55,6 +81,7 @@ export type Database = {
           last_name?: string | null
           social_media_integrations?: Json | null
           social_media_profiles?: Json | null
+          timezone?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
@@ -79,6 +106,7 @@ export type Database = {
           last_name?: string | null
           social_media_integrations?: Json | null
           social_media_profiles?: Json | null
+          timezone?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
@@ -211,7 +239,7 @@ export type Database = {
           {
             foreignKeyName: "content_assets_content_id_fkey"
             columns: ["content_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "content"
             referencedColumns: ["id"]
           },
@@ -265,9 +293,7 @@ export type Database = {
   }
 }
 
-export type ContentAsset = Database["public"]["Tables"]["content_assets"]["Row"]
-
-type PublicSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
@@ -373,6 +399,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

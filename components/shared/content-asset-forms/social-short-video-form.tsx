@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 interface SocialShortVideoFormProps {
   asset: ContentAsset;
-  content: ContentWithBusiness['content'];
+  content: ContentWithBusiness;
 }
 
 export default function SocialShortVideoForm({

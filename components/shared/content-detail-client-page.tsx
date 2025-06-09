@@ -108,6 +108,21 @@ export default function ContentDetailClientPage({
     });
   };
 
+  const fetchContentAssets = async () => {
+    const { data, error: fetchError } = await supabase
+      .from('content_assets')
+      .select('*')
+      .eq('content_id', content.id);
+
+    if (fetchError) {
+      console.error('Error fetching content assets:', fetchError);
+      setError('Failed to load content assets.');
+    } else {
+      console.log('Fetched content assets:', data);
+      setContentAssets(data);
+    }
+  };
+
   useEffect(() => {
     const checkPermissionsAndFetch = async () => {
       const {
@@ -127,17 +142,7 @@ export default function ContentDetailClientPage({
         }
       }
 
-      const { data, error: fetchError } = await supabase
-        .from('content_assets')
-        .select('*')
-        .eq('content_id', content.id);
-
-      if (fetchError) {
-        console.error('Error fetching content assets:', fetchError);
-        setError('Failed to load content assets.');
-      } else {
-        setContentAssets(data);
-      }
+      await fetchContentAssets();
       setIsLoading(false);
     };
 
@@ -234,14 +239,22 @@ export default function ContentDetailClientPage({
       </Accordion>
 
       {!permissionError && (
-        <ContentAssetsManager
-          assets={contentAssets}
-          content={content}
-          isLoading={isLoading}
-          error={error}
-          onGenerate={handleGenerateContent}
-          isGenerating={isGenerating}
-        />
+              <ContentAssetsManager
+        assets={contentAssets}
+        content={content}
+        isLoading={isLoading}
+        error={error}
+        onGenerate={handleGenerateContent}
+        isGenerating={isGenerating}
+        onRefresh={fetchContentAssets}
+        onAssetUpdate={(updatedAsset: ContentAsset) => {
+          setContentAssets(prev => 
+            prev.map(asset => 
+              asset.id === updatedAsset.id ? updatedAsset : asset
+            )
+          );
+        }}
+      />
       )}
     </div>
   );

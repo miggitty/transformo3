@@ -13,7 +13,7 @@ import Image from 'next/image';
 
 interface YouTubeVideoFormProps {
   asset: ContentAsset;
-  content: ContentWithBusiness['content'];
+  content: ContentWithBusiness;
 }
 
 export default function YouTubeVideoForm({

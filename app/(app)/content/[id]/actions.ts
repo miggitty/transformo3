@@ -170,7 +170,7 @@ export async function generateContent(payload: {
 
 export async function updateContentAsset(
   assetId: string,
-  updates: { [key: string]: any }
+  updates: Record<string, unknown>
 ) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -189,5 +189,213 @@ export async function updateContentAsset(
     revalidatePath(`/content/${data.content_id}`);
   }
 
+  return { success: true };
+}
+
+export async function scheduleContentAssets({
+  contentId,
+  startDate,
+  businessTimezone,
+}: {
+  contentId: string;
+  startDate: string; // ISO string of the start date
+  businessTimezone: string;
+}) {
+  console.log('scheduleContentAssets called with:', { contentId, startDate, businessTimezone });
+  
+  const supabase = await createClient();
+
+  // First, get all unscheduled assets for this content
+  const { data: assets, error: fetchError } = await supabase
+    .from('content_assets')
+    .select('*')
+    .eq('content_id', contentId)
+    .is('asset_scheduled_at', null)
+    .order('created_at');
+
+  console.log('Fetched assets:', { assets: assets?.length || 0, error: fetchError });
+
+  if (fetchError) {
+    console.error('Error fetching content assets:', fetchError);
+    return { success: false, error: 'Failed to fetch content assets.' };
+  }
+
+  if (!assets || assets.length === 0) {
+    console.log('No unscheduled assets found');
+    return { success: false, error: 'No unscheduled assets found.' };
+  }
+
+  // Define the 5-day scheduling sequence
+  const schedulingSequence = [
+    { day: 0, types: ['youtube_video', 'blog_post', 'social_long_video'] },
+    { day: 1, types: ['social_quote_card'] },
+    { day: 2, types: ['email', 'social_blog_post'] },
+    { day: 3, types: ['social_rant_post'] },
+    { day: 4, types: ['social_short_video'] },
+  ];
+
+  // Create a map of asset types to assets
+  const assetMap = new Map<string, typeof assets[0]>();
+  assets.forEach(asset => {
+    if (asset.content_type) {
+      assetMap.set(asset.content_type, asset);
+    }
+  });
+
+  console.log('Asset types found:', Array.from(assetMap.keys()));
+  console.log('Expected types:', schedulingSequence.flatMap(s => s.types));
+
+  // Generate schedule updates
+  const updates: { id: string; asset_scheduled_at: string }[] = [];
+  const startDateTime = new Date(startDate);
+
+  for (const { day, types } of schedulingSequence) {
+    for (const type of types) {
+      const asset = assetMap.get(type);
+      if (asset) {
+        // Create the scheduled date at 10:00 AM
+        const scheduledDate = new Date(startDateTime);
+        scheduledDate.setDate(startDateTime.getDate() + day);
+        scheduledDate.setHours(10, 0, 0, 0);
+        
+        const utcScheduledAt = scheduledDate.toISOString();
+        console.log(`Scheduling ${type} for day ${day}:`, utcScheduledAt);
+
+        updates.push({
+          id: asset.id,
+          asset_scheduled_at: utcScheduledAt,
+        });
+      }
+    }
+  }
+
+  console.log('Generated updates:', updates);
+
+  // Perform bulk update using individual UPDATE queries instead of upsert
+  if (updates.length > 0) {
+    try {
+      console.log('About to update database with:', updates.length, 'updates');
+      
+      // Update each asset individually to avoid RLS issues with upsert
+      let successCount = 0;
+      for (const update of updates) {
+        const { error: updateError } = await supabase
+          .from('content_assets')
+          .update({ asset_scheduled_at: update.asset_scheduled_at })
+          .eq('id', update.id);
+
+        if (updateError) {
+          console.error('Database update error for asset:', update.id, updateError);
+          return { success: false, error: `Database error: ${updateError.message}` };
+        }
+        successCount++;
+      }
+
+      console.log('Successfully scheduled assets:', successCount);
+      revalidatePath(`/content/${contentId}`);
+      return { success: true, scheduled: successCount };
+    } catch (error) {
+      console.error('Unexpected error during database update:', error);
+      return { success: false, error: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
+  }
+
+  console.log('No updates generated');
+  return { success: false, error: 'No assets to schedule.' };
+}
+
+export async function updateAssetSchedule({
+  assetId,
+  newDateTime,
+}: {
+  assetId: string;
+  newDateTime: string; // ISO string in UTC
+}) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('content_assets')
+    .update({ asset_scheduled_at: newDateTime })
+    .eq('id', assetId)
+    .select('content_id')
+    .single();
+
+  if (error) {
+    console.error('Error updating asset schedule:', error);
+    return { success: false, error: error.message };
+  }
+
+  if (data?.content_id) {
+    revalidatePath(`/content/${data.content_id}`);
+  }
+
+  return { success: true };
+}
+
+export async function getBusinessAssets({
+  businessId,
+  startDate,
+  endDate,
+  excludeContentId,
+}: {
+  businessId: string;
+  startDate: string;
+  endDate: string;
+  excludeContentId?: string;
+}) {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from('content_assets')
+    .select(`
+      *,
+      content!inner(
+        id,
+        content_title,
+        business_id
+      )
+    `)
+    .eq('content.business_id', businessId)
+    .not('asset_scheduled_at', 'is', null)
+    .gte('asset_scheduled_at', startDate)
+    .lte('asset_scheduled_at', endDate);
+
+  if (excludeContentId) {
+    query = query.neq('content.id', excludeContentId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching business assets:', error);
+    return { success: false, error: 'Failed to fetch scheduled assets.' };
+  }
+
+  return { success: true, data: data || [] };
+}
+
+export async function resetContentAssetSchedules({
+  contentId,
+}: {
+  contentId: string;
+}) {
+  console.log('resetContentAssetSchedules called for:', contentId);
+  
+  const supabase = await createClient();
+
+  // Reset all scheduled dates for this content's assets
+  const { error } = await supabase
+    .from('content_assets')
+    .update({ asset_scheduled_at: null })
+    .eq('content_id', contentId)
+    .not('asset_scheduled_at', 'is', null);
+
+  if (error) {
+    console.error('Error resetting content asset schedules:', error);
+    return { success: false, error: error.message };
+  }
+
+  console.log('Successfully reset asset schedules for content:', contentId);
+  revalidatePath(`/content/${contentId}`);
   return { success: true };
 } 
