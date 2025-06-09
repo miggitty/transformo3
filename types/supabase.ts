@@ -265,7 +265,9 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+export type ContentAsset = Database["public"]["Tables"]["content_assets"]["Row"]
+
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends

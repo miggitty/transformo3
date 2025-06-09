@@ -166,4 +166,28 @@ export async function generateContent(payload: {
     }
     return { success: false, error: 'An unknown error occurred.' };
   }
+}
+
+export async function updateContentAsset(
+  assetId: string,
+  updates: { [key: string]: any }
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('content_assets')
+    .update(updates)
+    .eq('id', assetId)
+    .select('content_id')
+    .single();
+
+  if (error) {
+    console.error('Error updating content asset:', error);
+    return { success: false, error: error.message };
+  }
+
+  if (data?.content_id) {
+    revalidatePath(`/content/${data.content_id}`);
+  }
+
+  return { success: true };
 } 

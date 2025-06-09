@@ -1,0 +1,87 @@
+'use client';
+
+import { ContentAsset, ContentWithBusiness } from '@/types';
+import YouTubeVideoForm from './content-asset-forms/youtube-video-form';
+import EmailForm from './content-asset-forms/email-form';
+import BlogPostForm from './content-asset-forms/blog-post-form';
+import SocialRantPostForm from './content-asset-forms/social-rant-post-form';
+import SocialBlogPostForm from './content-asset-forms/social-blog-post-form';
+import SocialLongVideoForm from './content-asset-forms/social-long-video-form';
+import SocialShortVideoForm from './content-asset-forms/social-short-video-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface ContentAssetsManagerProps {
+  assets: ContentAsset[];
+  content: ContentWithBusiness['content'];
+  isLoading: boolean;
+  error: string | null;
+}
+
+export default function ContentAssetsManager({
+  assets,
+  content,
+  isLoading,
+  error,
+}: ContentAssetsManagerProps) {
+  const renderAssetForm = (asset: ContentAsset) => {
+    switch (asset.content_type) {
+      case 'youtube_video':
+        return <YouTubeVideoForm asset={asset} content={content} />;
+      case 'email':
+        return <EmailForm asset={asset} />;
+      case 'blog_post':
+        return <BlogPostForm asset={asset} />;
+      case 'social_rant_post':
+        return <SocialRantPostForm asset={asset} />;
+      case 'social_blog_post':
+        return <SocialBlogPostForm asset={asset} />;
+      case 'social_long_video':
+        return <SocialLongVideoForm asset={asset} content={content} />;
+      case 'social_short_video':
+        return <SocialShortVideoForm asset={asset} content={content} />;
+      case 'social_quote_card': // Fallback for the newly discovered type
+      default:
+        // If the type is unknown or we just want to show the data for quote card
+        const isKnownUnsupported = asset.content_type === 'social_quote_card';
+        const title = isKnownUnsupported
+          ? 'Social Quote Card'
+          : `Unsupported Asset Type: "${asset.content_type}"`;
+
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>{title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                This asset type does not have a dedicated editor yet. You can
+                view its data below.
+              </p>
+              <pre className="mt-4 rounded-md bg-muted p-4 text-xs">
+                {JSON.stringify(asset, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <h2 className="text-xl font-semibold">Content Assets</h2>
+
+      {isLoading && <p>Loading content assets...</p>}
+      {error && <p className="text-red-500">{error}</p>}
+
+      {!isLoading && !error && assets.length === 0 && (
+        <p>No content assets found for this item.</p>
+      )}
+
+      {!isLoading &&
+        !error &&
+        assets.map(asset => (
+          <div key={asset.id}>{renderAssetForm(asset)}</div>
+        ))}
+    </div>
+  );
+} 

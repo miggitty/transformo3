@@ -9,9 +9,16 @@ const pwaConfig = {
 
 // Define the main Next.js configuration
 const nextConfig: NextConfig = {
-  // Your Next.js config options go here.
-  // For example:
-  // reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'jlnmumcbqgxnomwfgrce.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/images/**',
+      },
+    ],
+  },
 };
 
 // Wrap the Next.js config with the PWA config
