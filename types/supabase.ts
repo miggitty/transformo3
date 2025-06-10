@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       businesses: {
@@ -43,7 +18,6 @@ export type Database = {
           color_primary: string | null
           color_secondary: string | null
           contact_email: string | null
-          contact_url: string | null
           created_at: string | null
           cta_email: string | null
           cta_social_long: string | null
@@ -54,9 +28,9 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
-          social_media_integrations: Json | null
           social_media_profiles: Json | null
           timezone: string | null
+          upload_post_id: string | null
           website_url: string | null
           writing_style_guide: string | null
         }
@@ -68,7 +42,6 @@ export type Database = {
           color_primary?: string | null
           color_secondary?: string | null
           contact_email?: string | null
-          contact_url?: string | null
           created_at?: string | null
           cta_email?: string | null
           cta_social_long?: string | null
@@ -79,9 +52,9 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
-          social_media_integrations?: Json | null
           social_media_profiles?: Json | null
           timezone?: string | null
+          upload_post_id?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
@@ -93,7 +66,6 @@ export type Database = {
           color_primary?: string | null
           color_secondary?: string | null
           contact_email?: string | null
-          contact_url?: string | null
           created_at?: string | null
           cta_email?: string | null
           cta_social_long?: string | null
@@ -104,9 +76,9 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
-          social_media_integrations?: Json | null
           social_media_profiles?: Json | null
           timezone?: string | null
+          upload_post_id?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
@@ -399,9 +371,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

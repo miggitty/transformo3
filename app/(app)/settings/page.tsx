@@ -1,34 +1,39 @@
 import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { SettingsForm } from '@/components/shared/settings-form';
-import { Tables } from '@/types/supabase';
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { CompanyDetailsForm } from '@/components/shared/settings/company-details-form';
+import { DesignColorsForm } from '@/components/shared/settings/design-colors-form';
+import { SpeakerDetailsForm } from '@/components/shared/settings/speaker-details-form';
+import { SocialMediaForm } from '@/components/shared/settings/social-media-form';
+import { CallToActionsForm } from '@/components/shared/settings/call-to-actions-form';
+import { EmailSettingsForm } from '@/components/shared/settings/email-settings-form';
 
 export default async function SettingsPage() {
-  const cookieStore = cookies();
   const supabase = await createClient();
 
-  // The user is guaranteed to be authenticated by the layout,
-  // so we can safely get the user id.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Fetch the user's profile to get their business_id
+  if (!user) {
+    // This case should be handled by middleware, but good to have a safeguard
+    return <div>User not found.</div>;
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('business_id')
-    .eq('id', user!.id) // user is guaranteed to exist here
+    .eq('id', user.id)
     .single();
 
   if (!profile || !profile.business_id) {
-    // This case should ideally not happen if the trigger is working correctly
-    // but it's good practice to handle it.
-    // Maybe redirect to an error page or a page to create a business profile.
     return <div>Error: Business profile not found.</div>;
   }
 
-  // Fetch the business details using the business_id from the profile
   const { data: business, error } = await supabase
     .from('businesses')
     .select('*')
@@ -40,13 +45,52 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8">
+    <div className="flex-1 space-y-8 p-4 md:p-8">
+      <h1 className="text-3xl font-bold">Business Settings</h1>
+      
       <Card>
         <CardHeader>
-          <CardTitle>Business Settings</CardTitle>
+          <CardTitle>Company Details</CardTitle>
         </CardHeader>
-        {/* We pass the fetched business data to the client component */}
-        <SettingsForm business={business as Tables<'businesses'>} />
+        <CompanyDetailsForm business={business} />
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Design Colors</CardTitle>
+          <CardDescription>
+            These colors will be used to style your brand assets.
+          </CardDescription>
+        </CardHeader>
+        <DesignColorsForm business={business} />
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Speaker Details</CardTitle>
+        </CardHeader>
+        <SpeakerDetailsForm business={business} />
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Social Media</CardTitle>
+        </CardHeader>
+        <SocialMediaForm business={business} />
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Call To Actions</CardTitle>
+        </CardHeader>
+        <CallToActionsForm business={business} />
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Email</CardTitle>
+        </CardHeader>
+        <EmailSettingsForm business={business} />
       </Card>
     </div>
   );
