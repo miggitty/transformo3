@@ -11,38 +11,36 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createClient } from '@/utils/supabase/client';
-import { useState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
+import { signup } from './actions';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
+const initialState = {
+  message: '',
+};
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button className="w-full" type="submit" disabled={pending}>
+      {pending ? 'Signing up...' : 'Sign Up'}
+    </Button>
+  );
+}
+
 export default function SignUpPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [state, formAction] = useFormState(signup, initialState);
 
-  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      // TODO: Handle successful sign-up, maybe show a "check your email" message.
-      console.log('Sign up successful, check your email for verification.');
+  useEffect(() => {
+    if (state.message) {
+      toast.error(state.message);
     }
-    setLoading(false);
-  };
+  }, [state]);
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center gap-6 px-8 sm:max-w-md">
@@ -57,38 +55,64 @@ export default function SignUpPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Sign Up</CardTitle>
           <CardDescription>
-            Enter your email below to create your account.
+            Enter your details below to create your account.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSignUp}>
+        <form action={formAction}>
           <CardContent className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="first-name">First Name</Label>
+                <Input
+                  id="first-name"
+                  name="firstName"
+                  placeholder="Max"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="last-name">Last Name</Label>
+                <Input
+                  id="last-name"
+                  name="lastName"
+                  placeholder="Robinson"
+                  required
+                />
+              </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="m@example.com"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            <div className="grid gap-2">
+              <Label htmlFor="business-name">Business Name (Optional)</Label>
+              <Input
+                id="business-name"
+                name="businessName"
+                placeholder="Acme Inc."
+              />
+            </div>
+            {state.message && (
+              <p className="text-sm text-red-500">{state.message}</p>
+            )}
           </CardContent>
           <CardFooter>
-            <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? 'Signing up...' : 'Sign Up'}
-            </Button>
+            <SubmitButton />
           </CardFooter>
         </form>
       </Card>

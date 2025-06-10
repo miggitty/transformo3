@@ -1,2 +1,0 @@
--- This migration is no longer used for seeding.
--- Seeding is now handled by supabase/seed.sql 
