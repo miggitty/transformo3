@@ -73,28 +73,78 @@ export async function removeHeygenApiKey(businessId: string) {
   return { success: true };
 }
 
-// Action to generate HeyGen video (for triggering n8n workflow)
+// Action to generate HeyGen video (triggers n8n workflow)
 export async function generateHeygenVideo(
   businessId: string,
   contentId: string,
-  _script: string
+  script: string
 ) {
-  // TODO: This will trigger the n8n workflow in Phase 3
-  // For now, we'll just update the content status to 'processing'
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from('content')
-    .update({
-      heygen_status: 'processing'
-    })
-    .eq('id', contentId);
+  try {
+    // First, update the content status to 'processing'
+    const { error: updateError } = await supabase
+      .from('content')
+      .update({
+        heygen_status: 'processing'
+      })
+      .eq('id', contentId);
 
-  if (error) {
-    console.error('Error updating content status:', error);
-    return { error: `Could not start video generation: ${error.message}` };
+    if (updateError) {
+      console.error('Error updating content status:', updateError);
+      return { error: `Could not start video generation: ${updateError.message}` };
+    }
+
+    // Then, trigger the n8n webhook
+    const webhookUrl = process.env.N8N_HEYGEN_WEBHOOK_URL;
+    
+    if (!webhookUrl) {
+      console.error('N8N_HEYGEN_WEBHOOK_URL is not set.');
+      return { error: 'Webhook URL is not configured.' };
+    }
+    
+    const payload = {
+      business_id: businessId,
+      content_id: contentId,
+      script: script
+    };
+
+    console.log('Calling n8n webhook:', webhookUrl, 'with payload:', payload);
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`n8n webhook call failed with status ${response.status}:`, errorBody);
+      
+      // Revert the status update if webhook fails
+      await supabase
+        .from('content')
+        .update({ heygen_status: null })
+        .eq('id', contentId);
+        
+      return { error: `Failed to trigger video generation: ${response.statusText}` };
+    }
+
+    console.log('n8n webhook called successfully');
+    revalidatePath(`/content/${contentId}`);
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error in generateHeygenVideo:', error);
+    
+    // Revert the status update if there's an error
+    await supabase
+      .from('content')
+      .update({ heygen_status: null })
+      .eq('id', contentId);
+      
+    return { error: `An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
-
-  revalidatePath(`/content/${contentId}`);
-  return { success: true };
 } 

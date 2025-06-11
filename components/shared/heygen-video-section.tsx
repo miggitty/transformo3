@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { generateHeygenVideo } from '@/app/actions/settings';
 import { ContentWithBusiness } from '@/types';
 import { createClient } from '@/utils/supabase/client';
-import { Play, Loader2, Video, AlertCircle } from 'lucide-react';
+import { Play, Loader2, Video, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface HeygenVideoSectionProps {
   content: ContentWithBusiness;
@@ -80,6 +80,30 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
     }
 
     setIsGenerating(false);
+  };
+
+  const handleResetStatus = async () => {
+    const supabase = createClient();
+    
+    const { error } = await supabase
+      .from('content')
+      .update({
+        heygen_status: null,
+        heygen_video_id: null,
+        heygen_url: null
+      })
+      .eq('id', content.id);
+
+    if (error) {
+      toast.error('Failed to reset status', { description: error.message });
+    } else {
+      toast.success('Status reset successfully');
+      onContentUpdate({ 
+        heygen_status: null, 
+        heygen_video_id: null, 
+        heygen_url: null 
+      });
+    }
   };
 
   const getStatusBadge = () => {
@@ -170,6 +194,19 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
             )}
             {content.heygen_status === 'processing' ? 'Processing...' : 'Generate AI Video'}
           </Button>
+          
+          {/* Reset Button for Development/Testing */}
+          {(content.heygen_status === 'processing' || content.heygen_status === 'failed') && (
+            <Button 
+              onClick={handleResetStatus}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset
+            </Button>
+          )}
           
           {!canGenerate && content.video_script && (
             <p className="text-sm text-muted-foreground">
