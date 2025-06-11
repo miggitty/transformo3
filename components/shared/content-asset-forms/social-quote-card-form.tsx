@@ -44,6 +44,7 @@ export default function SocialQuoteCardForm({
               width={320}
               height={320}
               className="rounded-lg object-cover"
+
             />
           </div>
         )}

@@ -26,6 +26,9 @@ export type Database = {
           email_name_token: string | null
           email_sign_off: string | null
           first_name: string | null
+          heygen_avatar_id: string | null
+          heygen_secret_id: string | null
+          heygen_voice_id: string | null
           id: string
           last_name: string | null
           social_media_profiles: Json | null
@@ -50,6 +53,9 @@ export type Database = {
           email_name_token?: string | null
           email_sign_off?: string | null
           first_name?: string | null
+          heygen_avatar_id?: string | null
+          heygen_secret_id?: string | null
+          heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
           social_media_profiles?: Json | null
@@ -74,6 +80,9 @@ export type Database = {
           email_name_token?: string | null
           email_sign_off?: string | null
           first_name?: string | null
+          heygen_avatar_id?: string | null
+          heygen_secret_id?: string | null
+          heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
           social_media_profiles?: Json | null
@@ -91,7 +100,9 @@ export type Database = {
           content_title: string | null
           created_at: string | null
           error_message: string | null
+          heygen_status: string | null
           heygen_url: string | null
+          heygen_video_id: string | null
           id: string
           keyword: string | null
           published_at: string | null
@@ -109,7 +120,9 @@ export type Database = {
           content_title?: string | null
           created_at?: string | null
           error_message?: string | null
+          heygen_status?: string | null
           heygen_url?: string | null
+          heygen_video_id?: string | null
           id?: string
           keyword?: string | null
           published_at?: string | null
@@ -127,7 +140,9 @@ export type Database = {
           content_title?: string | null
           created_at?: string | null
           error_message?: string | null
+          heygen_status?: string | null
           heygen_url?: string | null
+          heygen_video_id?: string | null
           id?: string
           keyword?: string | null
           published_at?: string | null

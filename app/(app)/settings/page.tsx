@@ -11,6 +11,7 @@ import { SpeakerDetailsForm } from '@/components/shared/settings/speaker-details
 import { SocialMediaForm } from '@/components/shared/settings/social-media-form';
 import { CallToActionsForm } from '@/components/shared/settings/call-to-actions-form';
 import { EmailSettingsForm } from '@/components/shared/settings/email-settings-form';
+import { HeygenSettingsForm } from '@/components/shared/settings/heygen-settings-form';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -91,6 +92,16 @@ export default async function SettingsPage() {
           <CardTitle>Email</CardTitle>
         </CardHeader>
         <EmailSettingsForm business={business} />
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>HeyGen AI Video</CardTitle>
+          <CardDescription>
+            Configure your HeyGen integration for AI avatar video generation.
+          </CardDescription>
+        </CardHeader>
+        <HeygenSettingsForm business={business} />
       </Card>
     </div>
   );

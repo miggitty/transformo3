@@ -68,6 +68,7 @@ export default function YouTubeVideoForm({
               width={320}
               height={180}
               className="rounded-lg"
+
             />
           </div>
         )}

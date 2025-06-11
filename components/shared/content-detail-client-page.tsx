@@ -13,6 +13,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import ContentAssetsManager from './content-assets-manager';
 import VideoUploadSection from './video-upload-section';
+import { HeygenVideoSection } from './heygen-video-section';
 import {
   updateContentField,
   generateContent,
@@ -84,8 +85,7 @@ export default function ContentDetailClientPage({
         business_name: content.businesses.business_name,
         website_url: content.businesses.website_url,
         social_media_profiles: content.businesses.social_media_profiles,
-        social_media_integrations:
-          content.businesses.social_media_integrations,
+        social_media_integrations: {}, // Field was removed from businesses table, pass empty object
         writing_style_guide: content.businesses.writing_style_guide,
         cta_youtube: content.businesses.cta_youtube,
         cta_email: content.businesses.cta_email,
@@ -129,6 +129,13 @@ export default function ContentDetailClientPage({
     setContent(prev => ({
       ...prev,
       [videoType === 'long' ? 'video_long_url' : 'video_short_url']: videoUrl,
+    }));
+  };
+
+  const handleContentUpdate = (updatedFields: Partial<ContentWithBusiness>) => {
+    setContent(prev => ({
+      ...prev,
+      ...updatedFields,
     }));
   };
 
@@ -227,6 +234,13 @@ export default function ContentDetailClientPage({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {!permissionError && (
+        <HeygenVideoSection 
+          content={content} 
+          onContentUpdate={handleContentUpdate}
+        />
+      )}
 
       <Accordion type="single" collapsible className="w-full rounded-lg border">
         <AccordionItem value="research" className="border-b-0">

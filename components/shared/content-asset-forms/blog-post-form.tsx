@@ -82,6 +82,7 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
               width={320}
               height={180}
               className="rounded-lg"
+
             />
           )}
         </div>
