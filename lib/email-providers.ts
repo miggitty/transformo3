@@ -64,9 +64,18 @@ export class MailerLiteProvider extends BaseEmailProvider {
       return { success: true, groups };
     } catch (error) {
       console.error('MailerLite API error:', error);
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Unable to connect to MailerLite. Please check your internet connection.' 
+        };
+      }
+      
       return { 
         success: false, 
-        error: 'Unable to connect to MailerLite. Please check your internet connection.' 
+        error: 'Service temporarily unavailable. Please try again later.' 
       };
     }
   }
@@ -116,9 +125,18 @@ export class MailChimpProvider extends BaseEmailProvider {
       return { success: true, groups };
     } catch (error) {
       console.error('MailChimp API error:', error);
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Unable to connect to MailChimp. Please check your internet connection.' 
+        };
+      }
+      
       return { 
         success: false, 
-        error: 'Unable to connect to MailChimp. Please check your internet connection.' 
+        error: 'Service temporarily unavailable. Please try again later.' 
       };
     }
   }
@@ -161,9 +179,18 @@ export class BrevoProvider extends BaseEmailProvider {
       return { success: true, groups };
     } catch (error) {
       console.error('Brevo API error:', error);
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { 
+          success: false, 
+          error: 'Unable to connect to Brevo. Please check your internet connection.' 
+        };
+      }
+      
       return { 
         success: false, 
-        error: 'Unable to connect to Brevo. Please check your internet connection.' 
+        error: 'Service temporarily unavailable. Please try again later.' 
       };
     }
   }

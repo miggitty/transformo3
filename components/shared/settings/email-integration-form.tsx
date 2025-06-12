@@ -28,13 +28,32 @@ import { updateEmailSettings, removeEmailApiKey } from '@/app/actions/settings';
 import { useState, useEffect } from 'react';
 import { EmailGroup } from '@/lib/email-providers';
 
+
+
 const emailSettingsFormSchema = z.object({
   email_api_key: z.string().optional(),
   email_provider: z.enum(['mailerlite', 'mailchimp', 'brevo']).optional(),
-  email_sender_name: z.string().optional(),
-  email_sender_email: z.string().email('Please enter a valid email address.').optional().or(z.literal('')),
+  email_sender_name: z.string().min(1, 'Sender name is required when API key is set.').optional().or(z.literal('')),
+  email_sender_email: z.string().email('Please enter a valid email address.').min(1, 'Sender email is required when API key is set.').optional().or(z.literal('')),
   email_selected_group_id: z.string().optional(),
   email_selected_group_name: z.string().optional(),
+}).refine((data) => {
+  // If no provider is selected, all fields are optional
+  if (!data.email_provider) return true;
+  
+  // If provider is selected but no API key is being set, sender fields are optional
+  if (!data.email_api_key) return true;
+  
+  // If API key is being set, sender fields are required
+  if (data.email_api_key) {
+    return data.email_sender_name && data.email_sender_name.length > 0 &&
+           data.email_sender_email && data.email_sender_email.length > 0;
+  }
+  
+  return true;
+}, {
+  message: "Sender name and email are required when setting up a new API key.",
+  path: ["email_sender_name"]
 });
 
 type EmailSettingsFormValues = z.infer<typeof emailSettingsFormSchema>;
@@ -49,6 +68,7 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
   const [isValidating, setIsValidating] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [validationStatus, setValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+  const [groupsError, setGroupsError] = useState<string | null>(null);
 
 
 
@@ -66,6 +86,19 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
   });
 
   const selectedProvider = form.watch('email_provider');
+  const apiKeyValue = form.watch('email_api_key');
+
+  // Auto-validate API key when it changes (with debouncing)
+  useEffect(() => {
+    if (apiKeyValue && selectedProvider && !isKeySet && apiKeyValue.length > 10) {
+      const timeoutId = setTimeout(() => {
+        validateApiKey(apiKeyValue, selectedProvider);
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKeyValue, selectedProvider, isKeySet]);
 
   // Load groups when provider changes or component mounts
   useEffect(() => {
@@ -74,63 +107,99 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
     } else {
       setGroups([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider, isKeySet]);
 
   async function loadGroups() {
     if (!selectedProvider || !isKeySet) return;
 
     setIsLoadingGroups(true);
+    setGroupsError(null);
+    
     try {
       const response = await fetch('/api/email-integration/groups');
       const result = await response.json();
 
       if (result.success) {
         setGroups(result.groups || []);
+        setGroupsError(null);
+        
         if (result.groups?.length === 0) {
+          setGroupsError(`No email groups found in your ${selectedProvider} account. Please create a group first.`);
           toast.info(`No email groups found in your ${selectedProvider} account. Please create a group first.`);
         }
       } else {
+        setGroupsError(result.error || 'Failed to load groups');
         toast.error('Failed to load groups', { description: result.error });
         setGroups([]);
       }
     } catch (error) {
       console.error('Error loading groups:', error);
-      toast.error('Failed to load groups', { description: 'Please check your internet connection.' });
+      const errorMessage = 'Please check your internet connection.';
+      setGroupsError(errorMessage);
+      toast.error('Failed to load groups', { description: errorMessage });
       setGroups([]);
     } finally {
       setIsLoadingGroups(false);
     }
   }
 
+  async function refreshGroups() {
+    if (!selectedProvider || !isKeySet) return;
+    await loadGroups();
+    toast.success('Groups refreshed successfully');
+  }
+
   async function validateApiKey(apiKey: string, provider: string) {
-    if (!apiKey || !provider) return;
+    if (!apiKey || !provider) return false;
 
     setIsValidating(true);
     setValidationStatus('validating');
 
     try {
-      // Temporarily save settings to validate
-      const tempResult = await updateEmailSettings(business.id, {
+      // First validate the API key by testing the connection
+      const response = await fetch('/api/email-integration/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider,
+          apiKey,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        setValidationStatus('invalid');
+        toast.error('API Key Validation Failed', { description: result.error });
+        return false;
+      }
+
+      // If validation successful, save the settings
+      const saveResult = await updateEmailSettings(business.id, {
         email_api_key: apiKey,
         email_provider: provider as 'mailerlite' | 'mailchimp' | 'brevo',
       });
 
-      if (tempResult.error) {
+      if (saveResult.error) {
         setValidationStatus('invalid');
-        toast.error('Invalid API key', { description: tempResult.error });
+        toast.error('Failed to save API key', { description: saveResult.error });
         return false;
       }
 
       setValidationStatus('valid');
       setIsKeySet(true);
+      toast.success('API key validated and saved successfully');
       
       // Load groups after successful validation
       setTimeout(() => loadGroups(), 500);
       
       return true;
-    } catch (error) {
+    } catch {
       setValidationStatus('invalid');
-      toast.error('Validation failed', { description: 'Please try again.' });
+      toast.error('Validation failed', { description: 'Please check your internet connection and try again.' });
       return false;
     } finally {
       setIsValidating(false);
@@ -179,27 +248,44 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
   }
 
   async function onSubmit(data: EmailSettingsFormValues) {
-    // If key is already set and no new key provided, don't include it in the update
-    if (isKeySet && !data.email_api_key) {
-      delete data.email_api_key;
-    }
-
-    // If new API key provided, validate it first
-    if (data.email_api_key && data.email_provider) {
-      const isValid = await validateApiKey(data.email_api_key, data.email_provider);
-      if (!isValid) return;
-    }
-
-    const result = await updateEmailSettings(business.id, data);
-
-    if (result.error) {
-      toast.error('Failed to update settings', { description: result.error });
-    } else {
-      toast.success('Email Settings Updated');
-      if (data.email_api_key) {
-        setIsKeySet(true);
-        form.resetField('email_api_key');
+    try {
+      // Prevent submission if API key is being validated
+      if (isValidating) {
+        toast.error('Please wait for API key validation to complete');
+        return;
       }
+
+      // If API key is provided but validation failed, prevent submission
+      if (data.email_api_key && validationStatus === 'invalid') {
+        toast.error('Please fix the API key validation errors before saving');
+        return;
+      }
+
+      // If key is already set and no new key provided, don't include it in the update
+      if (isKeySet && !data.email_api_key) {
+        delete data.email_api_key;
+      }
+
+      // If new API key provided, validate it first
+      if (data.email_api_key && data.email_provider) {
+        const isValid = await validateApiKey(data.email_api_key, data.email_provider);
+        if (!isValid) return;
+      }
+
+      const result = await updateEmailSettings(business.id, data);
+
+      if (result.error) {
+        toast.error('Failed to update settings', { description: result.error });
+      } else {
+        toast.success('Email Settings Updated');
+        if (data.email_api_key) {
+          setIsKeySet(true);
+          form.resetField('email_api_key');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving email settings:', error);
+      toast.error('Failed to save settings', { description: 'Please try again.' });
     }
   }
 
@@ -336,7 +422,20 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                 name="email_selected_group_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Group/List</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Email Group/List</FormLabel>
+                      {groups.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={refreshGroups}
+                          disabled={isLoadingGroups}
+                        >
+                          {isLoadingGroups ? 'Refreshing...' : 'Refresh'}
+                        </Button>
+                      )}
+                    </div>
                     <Select 
                       onValueChange={(value) => {
                         field.onChange(value);
@@ -344,12 +443,13 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                         form.setValue('email_selected_group_name', selectedGroup?.name || '');
                       }}
                       defaultValue={field.value}
-                      disabled={isLoadingGroups || groups.length === 0}
+                      disabled={isLoadingGroups || (groups.length === 0 && !groupsError)}
                     >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={
                             isLoadingGroups ? "Loading groups..." :
+                            groupsError ? "Error loading groups" :
                             groups.length === 0 ? "No groups available" :
                             "Select a group..."
                           } />
@@ -364,6 +464,23 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {groupsError && (
+                      <div className="text-sm text-red-600 mt-1">
+                        {groupsError}
+                        {groups.length === 0 && (
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={refreshGroups}
+                            disabled={isLoadingGroups}
+                            className="h-auto p-0 ml-2 text-red-600 underline"
+                          >
+                            Try again
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     <FormDescription>
                       Choose which email list to send campaigns to.
                     </FormDescription>
@@ -376,9 +493,19 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
         </CardContent>
         
         <CardFooter className="border-t px-6 py-4">
-          <Button type="submit" disabled={isValidating || isLoadingGroups}>
-            Save Changes
+          <Button 
+            type="submit" 
+            disabled={isValidating || isLoadingGroups || (!!apiKeyValue && validationStatus === 'invalid')}
+          >
+            {isValidating ? 'Validating...' : 
+             isLoadingGroups ? 'Loading...' : 
+             'Save Changes'}
           </Button>
+          {validationStatus === 'invalid' && !!apiKeyValue && (
+            <p className="text-sm text-red-600 ml-4">
+              Please fix validation errors before saving
+            </p>
+          )}
         </CardFooter>
       </form>
     </Form>

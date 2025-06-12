@@ -1,8 +1,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { validateEmailProviderAndFetchGroups } from '@/lib/email-providers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   // Handle refresh groups functionality
-  return GET(request);
+  return GET();
 } 
