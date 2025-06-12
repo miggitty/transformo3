@@ -15,7 +15,7 @@
     "@fullcalendar/daygrid": "^6.1.17",
     "@fullcalendar/interaction": "^6.1.17",
     "@fullcalendar/react": "^6.1.17",
-    "@hookform/resolvers": "^5.0.1",
+    "@hookform/resolvers": "^5.1.1",
     "@milkdown/core": "^7.13.0",
     "@milkdown/preset-commonmark": "^7.13.0",
     "@milkdown/prose": "^7.13.0",
@@ -57,7 +57,7 @@
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
     "turndown": "^7.2.0",
-    "zod": "^3.25.56"
+    "zod": "^3.25.63"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

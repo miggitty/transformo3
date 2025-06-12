@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { EmailSettingsForm } from '@/components/shared/settings/email-settings-form';
+import { EmailIntegrationForm } from '@/components/shared/settings/email-integration-form';
 import { HeygenSettingsForm } from '@/components/shared/settings/heygen-settings-form';
 import { SocialMediaIntegrationWrapper } from '@/components/shared/settings/social-media-integration-wrapper';
 import ErrorBoundary from '@/components/shared/error-boundary';
@@ -52,9 +52,12 @@ export default async function IntegrationsPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Email</CardTitle>
+          <CardTitle>Email Integration</CardTitle>
+          <CardDescription>
+            Connect your email service provider for marketing campaigns.
+          </CardDescription>
         </CardHeader>
-        <EmailSettingsForm business={business} />
+        <EmailIntegrationForm business={business} />
       </Card>
 
       <Card>

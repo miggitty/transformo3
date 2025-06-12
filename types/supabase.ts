@@ -56,6 +56,13 @@ export type Database = {
           heygen_voice_id: string | null
           id: string
           last_name: string | null
+          email_provider: string | null
+          email_secret_id: string | null
+          email_sender_name: string | null
+          email_sender_email: string | null
+          email_selected_group_id: string | null
+          email_selected_group_name: string | null
+          email_validated_at: string | null
           social_media_profiles: Json | null
           timezone: string | null
           website_url: string | null
@@ -82,6 +89,13 @@ export type Database = {
           heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
+          email_provider?: string | null
+          email_secret_id?: string | null
+          email_sender_name?: string | null
+          email_sender_email?: string | null
+          email_selected_group_id?: string | null
+          email_selected_group_name?: string | null
+          email_validated_at?: string | null
           social_media_profiles?: Json | null
           timezone?: string | null
           website_url?: string | null
@@ -108,6 +122,13 @@ export type Database = {
           heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
+          email_provider?: string | null
+          email_secret_id?: string | null
+          email_sender_name?: string | null
+          email_sender_email?: string | null
+          email_selected_group_id?: string | null
+          email_selected_group_name?: string | null
+          email_validated_at?: string | null
           social_media_profiles?: Json | null
           timezone?: string | null
           website_url?: string | null
@@ -338,6 +359,18 @@ export type Database = {
         Returns: string
       }
       set_heygen_key: {
+        Args: { p_business_id: string; p_new_key: string }
+        Returns: undefined
+      }
+      delete_email_key: {
+        Args: { p_business_id: string }
+        Returns: undefined
+      }
+      get_email_secret: {
+        Args: { p_business_id: string }
+        Returns: string
+      }
+      set_email_key: {
         Args: { p_business_id: string; p_new_key: string }
         Returns: undefined
       }

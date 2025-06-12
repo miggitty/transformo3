@@ -140,7 +140,7 @@ erDiagram
 
 **Audio Input & Processing**
 
-* **\[ \] P1.4.1** Create the mobile-first "Audio Input" page with record/upload functionality and file validation.  
+* **\[x\] P1.4.1** Create the mobile-first "Audio Input" page with record/upload functionality and file validation.  
 * **\[ \] P1.4.2** Implement the frontend logic to show immediate processing feedback and call the n8n webhook with the security header.  
 * **\[ \] P1.4.3** Implement the Realtime listener to handle UI updates upon transcription completion or error.
 

@@ -10,9 +10,63 @@
 ## Overview
 Complete technical implementation guide for email integration feature using MailerLite, MailChimp, and Brevo providers with Supabase Vault security pattern following the exact HeyGen implementation pattern.
 
+## Prerequisites & Environment Setup
+
+### Environment Variables Required
+Add these to your `.env.local` file:
+```bash
+# Supabase Configuration (already exists)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# No additional environment variables needed for email integration
+# API keys are stored securely in Supabase Vault
+```
+
+### ShadCN UI Components Required
+Install the following components before implementing the React component:
+
+```bash
+# Required UI components for the email integration form
+npx shadcn-ui@latest add select
+npx shadcn-ui@latest add input  
+npx shadcn-ui@latest add button
+npx shadcn-ui@latest add form
+npx shadcn-ui@latest add card
+
+# Verify these components are already installed (should be from existing setup)
+npx shadcn-ui@latest add toast  # for notifications
+```
+
+### Dependencies Check
+Verify these packages are in your `package.json`:
+```json
+{
+  "dependencies": {
+    "@hookform/resolvers": "^3.x.x",
+    "react-hook-form": "^7.x.x",
+    "zod": "^3.x.x",
+    "sonner": "^1.x.x",
+    "lucide-react": "^0.x.x"
+  }
+}
+```
+
 ## 1. Database Migration
 
 ### Migration File: `supabase/migrations/YYYYMMDDHHMMSS_implement_email_vault_feature.sql`
+
+> **📅 Migration Filename Generation**
+> 
+> Use the Brisbane timezone convention for consistency:
+> ```bash
+> # Generate timestamp in Brisbane timezone
+> timestamp=$(TZ=Australia/Brisbane date +"%Y%m%d%H%M%S")
+> touch "supabase/migrations/${timestamp}_implement_email_vault_feature.sql"
+> 
+> # Example: 20250608142530_implement_email_vault_feature.sql
+> ```
 
 ```sql
 -- =================================================================
@@ -165,6 +219,42 @@ export interface EmailProviderResponse {
   error?: string;
 }
 
+// Provider-specific response types for better type safety
+interface MailerLiteGroup {
+  id: string;
+  name: string;
+  total: number;
+  created_at: string;
+}
+
+interface MailerLiteResponse {
+  data: MailerLiteGroup[];
+}
+
+interface MailChimpList {
+  id: string;
+  name: string;
+  stats: {
+    member_count: number;
+  };
+  date_created: string;
+}
+
+interface MailChimpResponse {
+  lists: MailChimpList[];
+}
+
+interface BrevoList {
+  id: number;
+  name: string;
+  totalSubscribers: number;
+  createdAt: string;
+}
+
+interface BrevoResponse {
+  lists: BrevoList[];
+}
+
 export class EmailProviderError extends Error {
   constructor(message: string, public statusCode?: number) {
     super(message);
@@ -179,6 +269,9 @@ export class MailerLiteClient {
   constructor(private apiKey: string) {}
 
   async validateAndFetchGroups(): Promise<EmailProviderResponse> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
     try {
       const response = await fetch(`${this.baseUrl}/groups`, {
         headers: {
@@ -186,8 +279,10 @@ export class MailerLiteClient {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        timeout: 10000,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -199,8 +294,8 @@ export class MailerLiteClient {
         return { success: false, error: `API error: ${response.statusText}` };
       }
 
-      const data = await response.json();
-      const groups: EmailGroup[] = data.data?.map((group: any) => ({
+      const data: MailerLiteResponse = await response.json();
+      const groups: EmailGroup[] = data.data?.map((group) => ({
         id: group.id,
         name: group.name,
         subscriber_count: group.total,
@@ -209,7 +304,16 @@ export class MailerLiteClient {
 
       return { success: true, groups };
     } catch (error) {
-      return { success: false, error: 'Network error. Please check your connection.' };
+      clearTimeout(timeout);
+      
+      if (error.name === 'AbortError') {
+        return { success: false, error: 'Request timed out. Please try again.' };
+      }
+      if (error instanceof TypeError) {
+        return { success: false, error: 'Network error. Please check your connection.' };
+      }
+      console.error('MailerLite API error:', error);
+      return { success: false, error: 'An unexpected error occurred. Please try again.' };
     }
   }
 }
@@ -225,14 +329,19 @@ export class MailChimpClient {
   }
 
   async validateAndFetchGroups(): Promise<EmailProviderResponse> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
     try {
       const response = await fetch(`${this.baseUrl}/lists`, {
         headers: {
           'Authorization': `apikey ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        timeout: 10000,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -244,8 +353,8 @@ export class MailChimpClient {
         return { success: false, error: `API error: ${response.statusText}` };
       }
 
-      const data = await response.json();
-      const groups: EmailGroup[] = data.lists?.map((list: any) => ({
+      const data: MailChimpResponse = await response.json();
+      const groups: EmailGroup[] = data.lists?.map((list) => ({
         id: list.id,
         name: list.name,
         subscriber_count: list.stats?.member_count,
@@ -254,7 +363,16 @@ export class MailChimpClient {
 
       return { success: true, groups };
     } catch (error) {
-      return { success: false, error: 'Network error. Please check your connection.' };
+      clearTimeout(timeout);
+      
+      if (error.name === 'AbortError') {
+        return { success: false, error: 'Request timed out. Please try again.' };
+      }
+      if (error instanceof TypeError) {
+        return { success: false, error: 'Network error. Please check your connection.' };
+      }
+      console.error('MailChimp API error:', error);
+      return { success: false, error: 'An unexpected error occurred. Please try again.' };
     }
   }
 }
@@ -266,14 +384,19 @@ export class BrevoClient {
   constructor(private apiKey: string) {}
 
   async validateAndFetchGroups(): Promise<EmailProviderResponse> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
     try {
       const response = await fetch(`${this.baseUrl}/contacts/lists`, {
         headers: {
           'api-key': this.apiKey,
           'Content-Type': 'application/json',
         },
-        timeout: 10000,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -285,8 +408,8 @@ export class BrevoClient {
         return { success: false, error: `API error: ${response.statusText}` };
       }
 
-      const data = await response.json();
-      const groups: EmailGroup[] = data.lists?.map((list: any) => ({
+      const data: BrevoResponse = await response.json();
+      const groups: EmailGroup[] = data.lists?.map((list) => ({
         id: list.id.toString(),
         name: list.name,
         subscriber_count: list.totalSubscribers,
@@ -295,7 +418,16 @@ export class BrevoClient {
 
       return { success: true, groups };
     } catch (error) {
-      return { success: false, error: 'Network error. Please check your connection.' };
+      clearTimeout(timeout);
+      
+      if (error.name === 'AbortError') {
+        return { success: false, error: 'Request timed out. Please try again.' };
+      }
+      if (error instanceof TypeError) {
+        return { success: false, error: 'Network error. Please check your connection.' };
+      }
+      console.error('Brevo API error:', error);
+      return { success: false, error: 'An unexpected error occurred. Please try again.' };
     }
   }
 }
@@ -320,7 +452,11 @@ export function createEmailProviderClient(provider: string, apiKey: string) {
 ### File: `app/actions/settings.ts` (Extended)
 
 ```typescript
-// Add to existing file
+'use server';
+
+import { createClient } from '@/utils/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 const emailSettingsFormSchema = z.object({
   email_provider: z.enum(['mailerlite', 'mailchimp', 'brevo']).optional(),
@@ -432,26 +568,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createEmailProviderClient } from '@/lib/email-providers';
 
-// Rate limiting cache
-const rateLimitCache = new Map<string, { count: number; resetTime: number }>();
-
-function checkRateLimit(key: string, limit: number = 10, windowMs: number = 60000): boolean {
-  const now = Date.now();
-  const userLimit = rateLimitCache.get(key);
-  
-  if (!userLimit || now > userLimit.resetTime) {
-    rateLimitCache.set(key, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  
-  if (userLimit.count >= limit) {
-    return false;
-  }
-  
-  userLimit.count++;
-  return true;
-}
-
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -464,21 +580,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'User not authenticated' },
         { status: 401 }
-      );
-    }
-
-    // Rate limiting by user ID
-    if (!checkRateLimit(`email-groups-${user.id}`, 10, 60000)) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': '60',
-            'X-RateLimit-Limit': '10',
-            'X-RateLimit-Remaining': '0',
-          }
-        }
       );
     }
 
@@ -512,7 +613,7 @@ export async function GET(request: NextRequest) {
 
     if (!business.email_provider || !business.email_secret_id) {
       return NextResponse.json(
-        { error: 'Email provider not configured' },
+        { error: 'Email provider not configured. Please set up your API key first.' },
         { status: 400 }
       );
     }
@@ -523,28 +624,38 @@ export async function GET(request: NextRequest) {
     });
 
     if (keyError || !apiKey) {
+      console.error('Error retrieving API key from vault:', keyError);
       return NextResponse.json(
-        { error: 'API key not found' },
+        { error: 'API key not found. Please reconfigure your email integration.' },
         { status: 404 }
       );
     }
 
     // Create provider client and fetch groups
-    const providerClient = createEmailProviderClient(business.email_provider, apiKey);
-    const result = await providerClient.validateAndFetchGroups();
+    try {
+      const providerClient = createEmailProviderClient(business.email_provider, apiKey);
+      const result = await providerClient.validateAndFetchGroups();
 
-    if (!result.success) {
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error || 'Failed to fetch groups' },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        groups: result.groups || [],
+        provider: business.email_provider,
+      });
+
+    } catch (providerError) {
+      console.error('Error creating provider client:', providerError);
       return NextResponse.json(
-        { error: result.error },
+        { error: 'Invalid email provider configuration' },
         { status: 400 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      groups: result.groups,
-      provider: business.email_provider,
-    });
 
   } catch (error) {
     console.error('Error fetching email groups:', error);

@@ -10,6 +10,15 @@ const heygenSettingsFormSchema = z.object({
   heygen_voice_id: z.string().min(1, 'Voice ID is required.'),
 });
 
+const emailSettingsFormSchema = z.object({
+  email_api_key: z.string().optional(),
+  email_provider: z.enum(['mailerlite', 'mailchimp', 'brevo']).optional(),
+  email_sender_name: z.string().min(1, 'Sender name is required.').optional(),
+  email_sender_email: z.string().email('Please enter a valid email address.').optional(),
+  email_selected_group_id: z.string().optional(),
+  email_selected_group_name: z.string().optional(),
+});
+
 // Action to update settings
 export async function updateHeygenSettings(
   businessId: string,
@@ -147,4 +156,81 @@ export async function generateHeygenVideo(
       
     return { error: `An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
+}
+
+// Email Integration Server Actions
+
+// Action to update email settings
+export async function updateEmailSettings(
+  businessId: string,
+  formData: z.infer<typeof emailSettingsFormSchema>
+) {
+  const supabase = await createClient();
+
+  const parsedData = emailSettingsFormSchema.safeParse(formData);
+  if (!parsedData.success) {
+    const errorMessages = parsedData.error.flatten().fieldErrors;
+    const firstError = Object.values(errorMessages)[0]?.[0] || 'Invalid form data.';
+    return { error: firstError };
+  }
+
+  const { 
+    email_api_key, 
+    email_provider, 
+    email_sender_name, 
+    email_sender_email, 
+    email_selected_group_id, 
+    email_selected_group_name 
+  } = parsedData.data;
+
+  // Only update the secret if a new key was provided.
+  if (email_api_key) {
+    const { error: rpcError } = await supabase.rpc('set_email_key', {
+      p_business_id: businessId,
+      p_new_key: email_api_key,
+    });
+
+    if (rpcError) {
+      console.error('Error saving email secret to Vault:', rpcError);
+      return { error: `Database error: ${rpcError.message}` };
+    }
+  }
+
+  // Always update the non-sensitive fields.
+  const { error: updateError } = await supabase
+    .from('businesses')
+    .update({
+      email_provider: email_provider,
+      email_sender_name: email_sender_name,
+      email_sender_email: email_sender_email,
+      email_selected_group_id: email_selected_group_id,
+      email_selected_group_name: email_selected_group_name,
+      email_validated_at: new Date().toISOString(),
+    })
+    .eq('id', businessId);
+
+  if (updateError) {
+    console.error('Error updating business email settings:', updateError);
+    return { error: `Could not update settings: ${updateError.message}` };
+  }
+
+  revalidatePath('/settings/integrations');
+  return { success: true };
+}
+
+// Action to remove the email API key
+export async function removeEmailApiKey(businessId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc('delete_email_key', {
+    p_business_id: businessId,
+  });
+
+  if (error) {
+    console.error('Error deleting email API key:', error);
+    return { error: `Database error: ${error.message}` };
+  }
+
+  revalidatePath('/settings/integrations');
+  return { success: true };
 } 

@@ -72,6 +72,148 @@ This PRD outlines the development of an email integration system that allows use
 
 ### Database Schema (Following HeyGen Vault Pattern)
 
+#### Complete Database Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    businesses {
+        uuid id PK
+        timestamptz created_at
+        text business_name
+        text website_url
+        text contact_email
+        jsonb social_media_profiles
+        text writing_style_guide
+        text cta_youtube
+        text cta_email
+        text first_name
+        text last_name
+        text cta_social_long
+        text cta_social_short
+        text booking_link
+        text email_name_token
+        text email_sign_off
+        text color_primary
+        text color_secondary
+        text color_background
+        text color_highlight
+        text timezone
+        text heygen_avatar_id
+        text heygen_voice_id
+        uuid heygen_secret_id FK
+        text email_provider
+        uuid email_secret_id FK
+        text email_sender_name
+        text email_sender_email
+        text email_selected_group_id
+        text email_selected_group_name
+        timestamptz email_validated_at
+    }
+    
+    profiles {
+        uuid id PK
+        uuid business_id FK
+        boolean is_admin
+        text first_name
+        text last_name
+    }
+    
+    content {
+        uuid id PK
+        timestamptz created_at
+        uuid business_id FK
+        text content_title
+        text status
+        text transcript
+        text research
+        text video_script
+        text keyword
+        text audio_url
+        text heygen_url
+        text video_long_url
+        text video_short_url
+        text error_message
+        timestamptz scheduled_at
+        timestamptz published_at
+        text heygen_video_id
+        text heygen_status
+    }
+    
+    content_assets {
+        uuid id PK
+        timestamptz created_at
+        uuid content_id FK
+        text name
+        text asset_status
+        text content_type
+        text headline
+        text headline_prompt
+        text content
+        text content_prompt
+        text image_url
+        text image_prompt
+        text blog_url
+        text blog_meta_description
+        text error_message
+        timestamptz asset_scheduled_at
+        timestamptz asset_published_at
+    }
+    
+    upload_post_profiles {
+        uuid id PK
+        uuid business_id FK
+        text upload_post_username UK
+        jsonb social_accounts
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz last_synced_at
+    }
+    
+    vault_secrets {
+        uuid id PK
+        text name
+        text description
+        bytea secret
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
+    auth_users {
+        uuid id PK
+        text email
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
+    storage_objects {
+        uuid id PK
+        text name
+        text bucket_id
+        text owner
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
+    storage_buckets {
+        text id PK
+        text name
+        boolean public
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
+    businesses ||--o| vault_secrets : "heygen_secret_id"
+    businesses ||--o| vault_secrets : "email_secret_id"
+    businesses ||--o{ profiles : "business_id"
+    businesses ||--o{ content : "business_id"
+    businesses ||--o| upload_post_profiles : "business_id"
+    content ||--o{ content_assets : "content_id"
+    profiles ||--|| auth_users : "id"
+    storage_objects }|--|| storage_buckets : "bucket_id"
+```
+
+> **🔐 Security Note**: The `vault_secrets` table uses Supabase Vault encryption. The `secret` column contains the encrypted email provider API keys, which are automatically encrypted/decrypted by Postgres using the `pgsodium` extension.
+
 **Extending businesses table** (exactly like HeyGen implementation):
 ```sql
 -- Add email integration columns to businesses table
@@ -378,27 +520,27 @@ export interface Database {
 **Goal**: Set up secure API key storage using Supabase Vault (following HeyGen pattern)
 
 #### Database Schema & Migrations
-- [ ] Create migration file: `YYYYMMDDHHMMSS_implement_email_vault_feature.sql`
-- [ ] Add email integration columns to `businesses` table:
-  - [ ] `email_provider TEXT CHECK (email_provider IN ('mailerlite', 'mailchimp', 'brevo'))`
-  - [ ] `email_secret_id UUID REFERENCES vault.secrets(id)`
-  - [ ] `email_sender_name TEXT`
-  - [ ] `email_sender_email TEXT`
-  - [ ] `email_selected_group_id TEXT`
-  - [ ] `email_selected_group_name TEXT`
-  - [ ] `email_validated_at TIMESTAMP WITH TIME ZONE`
+- [x] Create migration file: `YYYYMMDDHHMMSS_implement_email_vault_feature.sql`
+- [x] Add email integration columns to `businesses` table:
+  - [x] `email_provider TEXT CHECK (email_provider IN ('mailerlite', 'mailchimp', 'brevo'))`
+  - [x] `email_secret_id UUID REFERENCES vault.secrets(id)`
+  - [x] `email_sender_name TEXT`
+  - [x] `email_sender_email TEXT`
+  - [x] `email_selected_group_id TEXT`
+  - [x] `email_selected_group_name TEXT`
+  - [x] `email_validated_at TIMESTAMP WITH TIME ZONE`
 
 #### Vault RPC Functions
-- [ ] Create `set_email_key(p_business_id uuid, p_new_key text)` function
-- [ ] Create `delete_email_key(p_business_id uuid)` function
-- [ ] Create `get_email_secret(p_business_id uuid)` function
-- [ ] Grant proper permissions to `authenticated` role
-- [ ] Test RPC functions work correctly
+- [x] Create `set_email_key(p_business_id uuid, p_new_key text)` function
+- [x] Create `delete_email_key(p_business_id uuid)` function
+- [x] Create `get_email_secret(p_business_id uuid)` function
+- [x] Grant proper permissions to `authenticated` role
+- [x] Test RPC functions work correctly
 
 #### Apply Migration
-- [ ] Run `supabase db push` to apply migration
-- [ ] Verify all columns and functions exist in database
-- [ ] Test vault integration manually
+- [x] Run `supabase db push` to apply migration
+- [x] Verify all columns and functions exist in database
+- [x] Test vault integration manually
 
 ---
 
@@ -406,23 +548,24 @@ export interface Database {
 **Goal**: Implement backend logic following HeyGen Server Actions pattern
 
 #### TypeScript Types
-- [ ] Update `types/supabase.ts` manually with new business table fields
-- [ ] Add email integration types to business interface
-- [ ] Verify type safety throughout application
+- [x] Update `types/supabase.ts` manually with new business table fields
+- [x] Add email integration types to business interface
+- [x] Verify type safety throughout application
 
 #### Server Actions Implementation
-- [ ] Create/extend `app/actions/settings.ts` file
-- [ ] Implement `updateEmailSettings()` server action:
-  - [ ] Zod schema validation for email settings
-  - [ ] API key storage via `set_email_key` RPC
-  - [ ] Non-sensitive data update in businesses table
-  - [ ] Error handling and response formatting
-- [ ] Implement `removeEmailApiKey()` server action:
-  - [ ] Call `delete_email_key` RPC function
-  - [ ] Proper error handling
-  - [ ] UI state management
-- [ ] Add `revalidatePath('/settings')` for cache invalidation
-- [ ] Test server actions with sample data
+- [x] Create/extend `app/actions/settings.ts` file
+- [x] Implement `updateEmailSettings()` server action:
+  - [x] Zod schema validation for email settings
+  - [x] API key storage via `set_email_key` RPC
+  - [x] Non-sensitive data update in businesses table
+  - [x] Error handling and response formatting
+- [x] Implement `removeEmailApiKey()` server action:
+  - [x] Call `delete_email_key` RPC function
+  - [x] Proper error handling
+  - [x] UI state management
+- [x] Add `revalidatePath('/settings/integrations')` for cache invalidation
+  - [x] **Important**: Use exact path `/settings/integrations` to match page route
+- [x] Test server actions with sample data
 
 ---
 
@@ -430,62 +573,81 @@ export interface Database {
 **Goal**: Implement email provider API clients for validation and group fetching
 
 #### API Client Library
-- [ ] Create `lib/email-providers.ts` with provider abstractions
-- [ ] Implement MailerLite API client:
-  - [ ] Base URL: `https://connect.mailerlite.com/api/`
-  - [ ] Bearer token authentication
-  - [ ] Groups endpoint: `GET /groups`
-  - [ ] Error handling and validation
-- [ ] Implement MailChimp API client:
-  - [ ] Dynamic base URL: `https://{dc}.api.mailchimp.com/3.0/`
-  - [ ] API key authentication
-  - [ ] Lists endpoint: `GET /lists`
-  - [ ] Error handling and validation
-- [ ] Implement Brevo API client:
-  - [ ] Base URL: `https://api.brevo.com/v3/`
-  - [ ] API key header authentication
-  - [ ] Lists endpoint: `GET /contacts/lists`
-  - [ ] Error handling and validation
+- [x] Create `lib/email-providers.ts` with provider abstractions
+- [x] Implement MailerLite API client:
+  - [x] Base URL: `https://connect.mailerlite.com/api/`
+  - [x] Bearer token authentication
+  - [x] Groups endpoint: `GET /groups`
+  - [x] Error handling and validation
+- [x] Implement MailChimp API client:
+  - [x] Dynamic base URL: `https://{dc}.api.mailchimp.com/3.0/`
+  - [x] API key authentication
+  - [x] Lists endpoint: `GET /lists`
+  - [x] Error handling and validation
+- [x] Implement Brevo API client:
+  - [x] Base URL: `https://api.brevo.com/v3/`
+  - [x] API key header authentication
+  - [x] Lists endpoint: `GET /contacts/lists`
+  - [x] Error handling and validation
 
 #### API Route for Group Fetching
-- [ ] Create `app/api/email-integration/groups/route.ts`
-- [ ] Implement business authentication check
-- [ ] Use `get_email_secret()` RPC to retrieve API key
-- [ ] Call appropriate provider API based on `email_provider`
-- [ ] Return standardized group/list format
-- [ ] Comprehensive error handling for API failures
+- [x] Create `app/api/email-integration/groups/route.ts`
+- [x] Implement business authentication check
+- [x] Use `get_email_secret()` RPC to retrieve API key
+- [x] Call appropriate provider API based on `email_provider`
+- [x] Return standardized group/list format
+- [x] Comprehensive error handling for API failures
 
 ---
 
 ### Phase 4: Frontend Components & UI
 **Goal**: Create user interface following exact HeyGen form pattern
 
+#### Prerequisites Check
+- [x] **Install Required ShadCN Components**:
+  ```bash
+  npx shadcn-ui@latest add select
+  npx shadcn-ui@latest add input  
+  npx shadcn-ui@latest add button
+  npx shadcn-ui@latest add form
+  npx shadcn-ui@latest add card
+  ```
+- [x] **Verify Required Dependencies** in `package.json`:
+  - `@hookform/resolvers`
+  - `react-hook-form`
+  - `zod`
+  - `sonner` (for toast notifications)
+  - `lucide-react` (for icons)
+- [x] **Verify Existing Components Available**:
+  - Check `components/ui/` directory has all required components
+  - Test import paths work correctly
+
 #### Email Integration Form Component
-- [ ] Create `components/shared/settings/email-integration-form.tsx`
-- [ ] Implement form structure with react-hook-form and Zod
-- [ ] Add provider selection dropdown (Off, MailerLite, MailChimp, Brevo)
-- [ ] Implement API key input with HeyGen pattern:
-  - [ ] `const [isKeySet, setIsKeySet] = useState(!!business.email_secret_id)`
-  - [ ] Conditional rendering: input OR dots + Remove button
-  - [ ] Proper styling with `variant="destructive"` for Remove button
-- [ ] Add sender name and email inputs with validation
-- [ ] Implement group selection dropdown with dynamic loading
-- [ ] Add form submission handling with server actions
-- [ ] Add toast notifications matching HeyGen pattern
+- [x] Create `components/shared/settings/email-integration-form.tsx`
+- [x] Implement form structure with react-hook-form and Zod
+- [x] Add provider selection dropdown (Off, MailerLite, MailChimp, Brevo)
+- [x] Implement API key input with HeyGen pattern:
+  - [x] `const [isKeySet, setIsKeySet] = useState(!!business.email_secret_id)`
+  - [x] Conditional rendering: input OR dots + Remove button
+  - [x] Proper styling with `variant="destructive"` for Remove button
+- [x] Add sender name and email inputs with validation
+- [x] Implement group selection dropdown with dynamic loading
+- [x] Add form submission handling with server actions
+- [x] Add toast notifications matching HeyGen pattern
 
 #### Form Integration & State Management
-- [ ] Handle provider switching (clear previous settings)
-- [ ] Implement API key validation on entry
-- [ ] Show validation status indicators (✅❌⏳)
-- [ ] Group fetching and selection logic
-- [ ] Form reset and error state handling
-- [ ] Loading states for all async operations
+- [x] Handle provider switching (clear previous settings)
+- [x] Implement API key validation on entry
+- [x] Show validation status indicators (✅❌⏳)
+- [x] Group fetching and selection logic
+- [x] Form reset and error state handling
+- [x] Loading states for all async operations
 
 #### Settings Page Integration
-- [ ] Add EmailIntegrationForm to settings integrations page
-- [ ] Create appropriate card layout and styling
-- [ ] Ensure consistent styling with existing integrations
-- [ ] Test responsive design and accessibility
+- [x] Add EmailIntegrationForm to settings integrations page
+- [x] Create appropriate card layout and styling
+- [x] Ensure consistent styling with existing integrations
+- [x] Test responsive design and accessibility
 
 ---
 
