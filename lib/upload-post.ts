@@ -134,7 +134,7 @@ interface SocialAccount {
 interface SocialAccounts {
   facebook?: SocialAccount | "";
   instagram?: SocialAccount | "";
-  twitter?: SocialAccount | "";
+  x?: SocialAccount | "";
   youtube?: SocialAccount | "";
   linkedin?: SocialAccount | "";
   tiktok?: SocialAccount | "";
@@ -327,14 +327,14 @@ export async function generateJWTUrl(
     redirectUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/settings/integrations?connected=true`,
     logoImage = `${process.env.NEXT_PUBLIC_BASE_URL}/transformo-logo.webp`,
     redirectButtonText = 'Return to Transformo',
-    platforms = ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok']
+    platforms = ['facebook', 'instagram', 'linkedin', 'tiktok', 'x', 'youtube']
   } = options;
 
   // Validate redirect URL for security
   const validatedRedirectUrl = validateRedirectUrl(redirectUrl);
   
   // Validate platforms array
-  const allowedPlatforms = ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok'];
+  const allowedPlatforms = ['facebook', 'instagram', 'linkedin', 'tiktok', 'x', 'youtube'];
   const validatedPlatforms = platforms.filter(platform => 
     allowedPlatforms.includes(platform.toLowerCase())
   );
@@ -349,7 +349,7 @@ export async function generateJWTUrl(
 
   return withRetry(async () => {
     try {
-      const response = await fetch(`${UPLOAD_POST_API_URL}/users/jwt-url`, {
+      const response = await fetch(`${UPLOAD_POST_API_URL}/users/generate-jwt`, {
         method: 'POST',
         headers: createHeaders(),
         body: JSON.stringify({

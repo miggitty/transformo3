@@ -39,9 +39,17 @@ export function SocialMediaIntegrationWrapper() {
       }
       
       if (validation.connected) {
-        // Show success message
+        const platforms = searchParams.get('platforms');
+        const devMode = searchParams.get('dev_mode');
+        
+        // Show success message with platform info
+        const platformList = platforms ? platforms.split(',').join(', ') : 'social media accounts';
+        const description = devMode 
+          ? `Development mode: Successfully simulated connection to ${platformList}`
+          : `Successfully connected to upload-post. Connected platforms: ${platformList}. Syncing your accounts...`;
+          
         toast.success('Social Media Connected!', {
-          description: 'Successfully connected to upload-post. Syncing your accounts...',
+          description,
         });
 
         // Trigger automatic sync
@@ -63,7 +71,9 @@ export function SocialMediaIntegrationWrapper() {
   // Fetch social media data
   const fetchSocialMediaData = async () => {
     try {
-      const response = await fetch('/api/upload-post/profiles');
+      const response = await fetch('/api/upload-post/profiles', {
+        credentials: 'include', // Include cookies for authentication
+      });
       
       if (!response.ok) {
         if (response.status === 429) {
@@ -100,10 +110,11 @@ export function SocialMediaIntegrationWrapper() {
     setConnecting(true);
     
     try {
-      // First, ensure profile exists
+      // First, ensure profile exists (try to create it, but ignore 409 conflicts)
       if (!socialMediaData?.profile) {
         const createResponse = await fetch('/api/upload-post/profiles', {
           method: 'POST',
+          credentials: 'include', // Include cookies for authentication
         });
         
         if (!createResponse.ok) {
@@ -113,14 +124,20 @@ export function SocialMediaIntegrationWrapper() {
           if (createResponse.status === 401) {
             throw new Error('Authentication failed. Please refresh the page and try again.');
           }
-          const errorData = await createResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to create upload-post profile');
+          if (createResponse.status === 409) {
+            // Profile already exists - this is OK, continue to connection step
+            console.log('Profile already exists, proceeding to connection...');
+          } else {
+            const errorData = await createResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to create upload-post profile');
+          }
         }
       }
 
       // Generate JWT URL for connection
       const connectResponse = await fetch('/api/upload-post/connect', {
         method: 'POST',
+        credentials: 'include', // Include cookies for authentication
         headers: {
           'Content-Type': 'application/json',
         },
@@ -140,7 +157,8 @@ export function SocialMediaIntegrationWrapper() {
         throw new Error(errorData.error || 'Failed to generate connection URL');
       }
       
-      const { access_url } = await connectResponse.json();
+      const connectData = await connectResponse.json();
+      const { access_url, dev_mode, message } = connectData;
       
       // Validate the access URL before redirecting
       try {
@@ -149,7 +167,14 @@ export function SocialMediaIntegrationWrapper() {
         throw new Error('Invalid connection URL received. Please try again.');
       }
       
-      // Redirect to upload-post for social media connection
+      if (dev_mode) {
+        console.log('Development mode detected:', message);
+        toast.info('Development Mode', {
+          description: message || 'Using development mode for testing.',
+        });
+      }
+      
+      // Redirect to upload-post (or development callback) for social media connection
       window.location.href = access_url;
       
     } catch (error) {
@@ -171,6 +196,7 @@ export function SocialMediaIntegrationWrapper() {
     try {
       const response = await fetch('/api/upload-post/profiles/sync', {
         method: 'POST',
+        credentials: 'include', // Include cookies for authentication
       });
       
       if (!response.ok) {

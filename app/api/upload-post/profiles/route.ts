@@ -232,13 +232,44 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Debug request information
+    const headers = Object.fromEntries(request.headers.entries());
+    console.log('POST /api/upload-post/profiles - Request Debug:', {
+      url: request.url,
+      method: request.method,
+      cookies: headers.cookie || 'No cookies',
+      authorization: headers.authorization || 'No authorization header',
+      userAgent: headers['user-agent'] || 'No user agent',
+    });
+
     const supabase = await createClient();
     
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
 
-    validateAuthenticatedUser(user);
+    // Debug logging
+    console.log('POST /api/upload-post/profiles - Auth Debug:', {
+      user: user ? { id: user.id, email: user.email } : null,
+      authError: authError ? authError.message : null,
+    });
+
+    if (!user) {
+      console.log('POST /api/upload-post/profiles - No user found in session');
+      return NextResponse.json(
+        { error: 'User not authenticated. Please sign in and try again.' },
+        { status: 401 }
+      );
+    }
+
+    if (!user.id || typeof user.id !== 'string') {
+      console.log('POST /api/upload-post/profiles - Invalid user ID:', user.id);
+      return NextResponse.json(
+        { error: 'Invalid user session' },
+        { status: 401 }
+      );
+    }
 
     // Rate limiting by user ID for profile creation (more restrictive)
     if (!checkRateLimit(`profile-create-${user.id}`, 5, 300000)) { // 5 requests per 5 minutes

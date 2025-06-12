@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { 
   generateJWTUrl,
+  findProfileByUsername,
+  createUserProfile,
   validateBusinessId,
   validateRedirectUrl,
   sanitizeJsonData,
@@ -174,6 +176,12 @@ export async function POST(request: NextRequest) {
     // Sanitize the profile data
     const sanitizedProfile = sanitizeProfileData(uploadPostProfile);
 
+    console.log('POST /api/upload-post/connect - Profile Debug:', {
+      business_id: profile.business_id,
+      upload_post_username: sanitizedProfile.upload_post_username,
+      profile_id: sanitizedProfile.id,
+    });
+
     // Parse and validate request body for custom options (optional)
     let customOptions = {};
     try {
@@ -194,6 +202,8 @@ export async function POST(request: NextRequest) {
 
     try {
       // Generate JWT URL using the upload-post username
+      console.log('Generating JWT URL for username:', sanitizedProfile.upload_post_username);
+      
       const jwtResponse = await generateJWTUrl(
         sanitizedProfile.upload_post_username,
         customOptions
