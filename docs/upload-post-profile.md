@@ -35,10 +35,19 @@ Support for the following platforms with visual status indicators:
 
 **New Structure:**
 ```
-/settings (Settings Overview/Landing)
-├── /settings/business (Business Settings)
-└── /settings/integrations (Integrations)
+Sidebar Navigation:
+├── Content (/content)
+├── New Content (/new)
+└── Settings (collapsible menu)
+    ├── Business Settings (/settings/business)
+    └── Integrations (/settings/integrations)
 ```
+
+**Implementation:**
+- Collapsible Settings menu in sidebar navigation
+- Auto-expands when user is on any settings page
+- `/settings` redirects to `/settings/business` (default)
+- No separate settings overview page needed
 
 ### 2.2 Database Schema Changes
 
@@ -111,15 +120,17 @@ components/ui/
 
 ```
 app/(app)/settings/
-├── page.tsx                       # Settings overview/landing page
+├── page.tsx                       # Redirect to business settings (default)
 ├── business/
-│   └── page.tsx                   # Moved business settings
+│   └── page.tsx                   # Business settings page
 └── integrations/
-    └── page.tsx                   # New integrations page
+    └── page.tsx                   # Integrations page
 
-components/shared/settings/
-├── email-settings-form.tsx        # Move to integrations
-└── heygen-settings-form.tsx       # Move to integrations
+components/shared/
+├── sidebar-nav.tsx                # New collapsible sidebar navigation
+└── settings/
+    ├── email-settings-form.tsx    # Moved to integrations
+    └── heygen-settings-form.tsx   # Moved to integrations
 ```
 
 ## 4. API Integration
@@ -197,11 +208,12 @@ app/api/upload-post/
 
 ### 5.1 Settings Navigation Flow
 
-1. User navigates to `/settings`
-2. Settings overview page shows cards for:
+1. User clicks "Settings" in sidebar navigation
+2. Settings menu expands to show sub-items:
    - Business Settings
    - Integrations
-3. User clicks "Integrations" → Navigate to `/settings/integrations`
+3. User clicks desired sub-item to navigate directly to that page
+4. Active state highlights current page in the sidebar
 
 ### 5.2 Social Media Connection Flow
 
@@ -334,18 +346,18 @@ Based on existing codebase analysis:
 
 ## 10. Implementation Phases
 
-### Phase 1: Database Foundation
+### Phase 1: Database Foundation ✅ COMPLETED
 **Goal**: Set up database schema and types for upload-post integration
 
 **Deliverables**:
-- [ ] Create migration file: `supabase/migrations/YYYYMMDDHHMMSS_remove-upload-post-id-field.sql`
+- [x] Create migration file: `supabase/migrations/20250612195458_remove-upload-post-id-field.sql`
   ```sql
   -- Remove upload_post_id field entirely (no longer needed)
   ALTER TABLE businesses 
   DROP COLUMN IF EXISTS upload_post_id;
   ```
 
-- [ ] Create migration file: `supabase/migrations/YYYYMMDDHHMMSS_create-upload-post-profiles-table.sql`
+- [x] Create migration file: `supabase/migrations/20250612195512_create-upload-post-profiles-table.sql`
   ```sql
   CREATE TABLE upload_post_profiles (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -370,43 +382,48 @@ Based on existing codebase analysis:
       );
   ```
 
-- [ ] Update `types/supabase.ts` to reflect schema changes (regenerate types with `npx supabase gen types typescript`)
-- [ ] Run migrations: `supabase db push`
+- [x] Update `types/supabase.ts` to reflect schema changes (regenerate types with `npx supabase gen types typescript`)
+- [x] Run migrations: `supabase db push`
 
-**Validation**: Database has new table, upload_post_id field removed from businesses table, TypeScript types are updated
+**Validation**: ✅ Database has new table, upload_post_id field removed from businesses table, TypeScript types are updated
 
 ---
 
-### Phase 2: Settings Navigation Restructure
-**Goal**: Reorganize settings into sub-pages structure
+### Phase 2: Settings Navigation Restructure ✅ COMPLETED
+**Goal**: Implement collapsible sidebar navigation for settings
 
 **Deliverables**:
-- [ ] Create new settings overview page: `app/(app)/settings/page.tsx`
-  - Should show cards for "Business Settings" and "Integrations"
-  - Use existing Card components from the codebase
-  - Include navigation links to sub-pages
+- [x] Create new sidebar navigation component: `components/shared/sidebar-nav.tsx`
+  - Client-side component with collapsible Settings menu
+  - Auto-expands when user is on any settings page
+  - Uses Lucide React icons and proper hover states
+  - Manages active state detection with usePathname
 
-- [ ] Create business settings sub-page: `app/(app)/settings/business/page.tsx`
+- [x] Create business settings sub-page: `app/(app)/settings/business/page.tsx`
   - Move ALL existing business settings content from current `/settings` page
   - Should be identical to current settings page functionality
 
-- [ ] Create integrations sub-page structure: `app/(app)/settings/integrations/page.tsx`
+- [x] Create integrations sub-page structure: `app/(app)/settings/integrations/page.tsx`
   - Basic page structure with placeholder for integrations
   - Use same layout patterns as business settings
 
-- [ ] Update sidebar navigation in `app/(app)/layout.tsx`
-  - Settings link should still point to `/settings` (now overview page)
+- [x] Update app layout in `app/(app)/layout.tsx`
+  - Replace hardcoded navigation with new SidebarNav component
+  - Remove old navigation structure
 
-**Validation**: All three pages render correctly, navigation works, business settings functionality preserved
+- [x] Create settings redirect page: `app/(app)/settings/page.tsx`
+  - Redirects `/settings` to `/settings/business` as default
+
+**Validation**: ✅ Collapsible navigation works, all settings pages accessible, business settings functionality preserved
 
 ---
 
-### Phase 3: Move Email & HeyGen to Integrations
+### Phase 3: Move Email & HeyGen to Integrations ✅ COMPLETED
 **Goal**: Relocate existing integrations to new integrations page
 
 **Deliverables**:
-- [ ] Move `EmailSettingsForm` and `HeygenSettingsForm` from business settings to integrations page
-- [ ] Update `app/(app)/settings/integrations/page.tsx`:
+- [x] Move `EmailSettingsForm` and `HeygenSettingsForm` from business settings to integrations page
+- [x] Update `app/(app)/settings/integrations/page.tsx`:
   ```tsx
   import { EmailSettingsForm } from '@/components/shared/settings/email-settings-form';
   import { HeygenSettingsForm } from '@/components/shared/settings/heygen-settings-form';
@@ -414,189 +431,267 @@ Based on existing codebase analysis:
   // Include both forms in Card components following existing patterns
   ```
 
-- [ ] Remove email and heygen sections from `app/(app)/settings/business/page.tsx`
-- [ ] **Update `social-media-form.tsx`**: Remove the upload_post_id field since it's being replaced by the new integration system
-- [ ] Test that all existing functionality works in new location
+- [x] Remove email and heygen sections from `app/(app)/settings/business/page.tsx` (they were never there)
+- [x] **Update `social-media-form.tsx`**: Remove the upload_post_id field since it's being replaced by the new integration system
+- [x] Test that all existing functionality works in new location
 
-**Validation**: Email and HeyGen settings work correctly on integrations page, removed from business page, upload_post_id field removed from social media form
+**Validation**: ✅ Email and HeyGen settings work correctly on integrations page, removed from business page, ✅ upload_post_id field removed from social media form
 
 ---
 
-### Phase 4: Upload-Post API Foundation
+### Phase 4: Upload-Post API Foundation ✅ COMPLETED
 **Goal**: Set up basic upload-post API integration and utilities
 
 **Deliverables**:
-- [ ] Create upload-post API client utility: `lib/upload-post.ts`
+- [x] Create upload-post API client utility: `lib/upload-post.ts`
   ```typescript
-  // Functions for:
+  // Functions implemented:
   // - getUserProfiles() - uses global API key from env
   // - createUserProfile(username: string) - uses global API key from env
   // - generateJWTUrl(username: string, options) - uses global API key from env
-  // - No API key management needed (global key in env)
+  // - findProfileByUsername(username: string) - helper function
+  // - testConnection() - API key validation
   ```
 
-- [ ] Create API route: `app/api/upload-post/profiles/route.ts`
-  - GET: Retrieve user's upload-post profile and social accounts
-  - POST: Create new upload-post profile (uses env API key)
+- [x] Create API route: `app/api/upload-post/profiles/route.ts`
+  - GET: Retrieve user's upload-post profile and social accounts with auto-sync
+  - POST: Create new upload-post profile using transformo_${business_id} format
 
-- [ ] Create API route: `app/api/upload-post/connect/route.ts`
-  - POST: Generate JWT URL for social media connection (uses env API key)
+- [x] Create API route: `app/api/upload-post/connect/route.ts`
+  - POST: Generate JWT URL for social media connection with custom options
 
-- [ ] Verify environment variable `UPLOAD_POST_API_KEY` is accessible in API routes
-- [ ] Create server actions: `app/actions/upload-post.ts` following existing patterns
+- [x] Verify environment variable `UPLOAD_POST_API_KEY` is accessible in API routes
+- [x] Create server actions: `app/actions/upload-post.ts` following existing patterns
+  - testUploadPostConnection()
+  - getUploadPostProfile() 
+  - createUploadPostProfile()
+  - generateSocialMediaConnectionUrl()
+  - syncSocialMediaAccounts()
 
-**Validation**: API routes respond correctly using global API key from environment
+**Validation**: ✅ API routes respond correctly (401 Unauthorized for unauthenticated requests), upload-post integration ready
 
 ---
 
-### Phase 5: Upload-Post Connection Status
-**Goal**: Create upload-post connection status interface
+### Phase 5: Upload-Post Connection Status ✅ COMPLETED → UPDATED
+**Goal**: ~~Create upload-post connection status interface~~ **REMOVED - API key is platform-level, not user-facing**
+
+**Updated Understanding**:
+- Upload-Post API key is a **platform-level configuration** in `.env.local`
+- This is the **Transformo app's API key**, not something end users manage
+- Only ONE API key for the entire platform - managed by developers/admins
+- End users should not see API key status or configuration
 
 **Deliverables**:
-- [ ] Create `components/shared/settings/upload-post-status-card.tsx`
-  - Shows "Upload-Post Integration" status
-  - Display: "API Key: Configured" or "API Key: Not Found" (read from env)
-  - No form needed - API key is in environment variables
-  - Add "Test Connection" button to verify API key works
+- [x] ~~Create `components/shared/settings/upload-post-status-card.tsx`~~ **REMOVED**
+- [x] ~~Add `UploadPostStatusCard` to integrations page~~ **REMOVED**  
+- [x] Environment variable integration (`UPLOAD_POST_API_KEY` in `.env.local`)
+- [x] API key validation in backend functions (for internal use)
 
-- [ ] Add `UploadPostStatusCard` to integrations page  
-- [ ] Add proper error handling for API key validation
-- [ ] Include loading states for connection testing
-
-**Validation**: Can see upload-post API key status and test connection
+**Validation**: ✅ Upload-Post API integration works behind the scenes, no user-facing API key management needed
 
 ---
 
-### Phase 6: Social Media Integration Card - Basic Structure
+### Phase 6: Social Media Integration Card - Basic Structure ✅ COMPLETED
 **Goal**: Create the visual social media integration interface
 
 **Deliverables**:
-- [ ] Create `components/shared/settings/social-media-integration-card.tsx`
-  - Card layout with title "Social Media Integration"
-  - Placeholder for 6 social media icons
-  - "Connect Social Media" button (disabled if no API key)
+- [x] Create `components/shared/settings/social-media-integration-card.tsx`
+  - Card layout with title "Social Media Integration" and Share2 icon
+  - Connected platforms counter badge (0/6 Connected by default)
+  - "Connect Social Media" button (enabled for all users)
+  - ~~Warning message when API key not configured~~ **REMOVED**
+  - Loading states with spinner animation
+  - Full-width button with proper sizing
 
-- [ ] Create `components/shared/settings/social-media-status-icons.tsx`
+- [x] Create `components/shared/settings/social-media-status-icons.tsx`
   - Grid of 6 platform icons using Lucide React:
-    * Facebook, Instagram, Twitter, Youtube, Linkedin, Music (for TikTok)
-  - Grayed out state by default
-  - Connected state with colors and display names
+    * Facebook (blue), Instagram (pink), Twitter (sky), YouTube (red), LinkedIn (blue), TikTok/Music (black)
+  - Grayed out state by default with "Not Connected" badges
+  - Connected state with colors, display names, and "Connected" badges
+  - Responsive grid (2 cols mobile, 3 cols desktop)
+  - Proper type safety with TypeScript interfaces
 
-- [ ] Add social media card to integrations page
-- [ ] Style according to existing Card patterns
+- [x] Add social media card to integrations page
+- [x] Style according to existing Card patterns
 
-**Validation**: Social media card displays with all 6 icons in grayed-out state
+**Validation**: ✅ Social media card displays with all 6 icons in grayed-out state
 
 ---
 
-### Phase 7: Upload-Post Profile Management
+### Phase 7: Upload-Post Profile Management ✅ COMPLETED
 **Goal**: Implement upload-post profile creation and management
 
 **Deliverables**:
-- [ ] Create API route: `app/api/upload-post/profiles/route.ts`
+- [x] Create API route: `app/api/upload-post/profiles/route.ts` **COMPLETED IN PHASE 4**
   - GET: Retrieve user's upload-post profile and social accounts
   - POST: Create new upload-post profile
 
-- [ ] Create API route: `app/api/upload-post/connect/route.ts`
+- [x] Create API route: `app/api/upload-post/connect/route.ts` **COMPLETED IN PHASE 4**
   - POST: Generate JWT URL for social media connection
 
-- [ ] Implement profile creation logic using business ID format: `transformo_${business.id}`
-- [ ] Add profile status checking to social media card
+- [x] Implement profile creation logic using business ID format: `transformo_${business.id}` **COMPLETED IN PHASE 4**
+- [x] Add profile status checking to social media card **READY FOR PHASE 8**
 
-**Validation**: Can create upload-post profiles and check their status
+**Validation**: ✅ Can create upload-post profiles and check their status
 
 ---
 
-### Phase 8: Social Media Connection Flow
+### Phase 8: Social Media Connection Flow ✅ COMPLETED
 **Goal**: Enable users to connect social media accounts through upload-post
 
 **Deliverables**:
-- [ ] Create `components/shared/settings/upload-post-connect-button.tsx`
+- [x] Create `components/shared/settings/social-media-integration-wrapper.tsx` **CLIENT COMPONENT WRAPPER**
   - **Check for existing profile**: On button click, first check if upload-post profile exists in database
   - **Create profile if needed**: If no profile exists, create one using `transformo_${business.id}` format
   - **Generate JWT URL**: Only after profile exists, generate JWT URL for connection
   - Shows appropriate error states for profile creation failures
   - Loading state during profile creation and URL generation
 
-- [ ] Implement connect button logic flow:
+- [x] Implement connect button logic flow:
   ```typescript
   const handleConnect = async () => {
-    setLoading(true);
     try {
       // 1. Check if upload-post profile exists
-      let profile = await getUploadPostProfile(businessId);
+      const profileResult = await getUploadPostProfile();
       
       // 2. Create profile if it doesn't exist
-      if (!profile) {
-        profile = await createUploadPostProfile(businessId);
+      if (!profileResult.data) {
+        const createResult = await createUploadPostProfile();
+        if (!createResult.data) {
+          throw new Error(createResult.error || 'Failed to create profile');
+        }
       }
       
       // 3. Generate JWT URL and redirect
-      const jwtUrl = await generateJWTUrl(profile.upload_post_username);
-      window.location.href = jwtUrl;
+      const jwtResult = await generateSocialMediaConnectionUrl();
+      window.location.href = jwtResult.data.access_url;
     } catch (error) {
       // Handle errors appropriately
-    } finally {
-      setLoading(false);
     }
   };
   ```
 
-- [ ] **Handle return flow from upload-post platform**:
+- [x] **Handle return flow from upload-post platform**:
   - Check for `?connected=true` query parameter on integrations page
   - If present, automatically trigger a sync to refresh social media status
   - Show success toast: "Social media accounts connected successfully"
   - Remove query parameter from URL after processing
 
-- [ ] Add proper error handling for both profile creation and connection failures
+- [x] Add proper error handling for both profile creation and connection failures
+- [x] Update integrations page to use wrapper component instead of placeholder
 
-**Validation**: Users can click connect button, profile is created if needed, then redirected to upload-post platform, and return flow triggers automatic sync
+**Validation**: ✅ Users can click connect button, profile is created if needed, then redirected to upload-post platform, and return flow triggers automatic sync
 
 ---
 
-### Phase 9: Social Accounts Sync
+### Phase 9: Social Accounts Sync ✅ COMPLETED
 **Goal**: Sync connected social media accounts from upload-post
 
 **Deliverables**:
-- [ ] Create API route: `app/api/upload-post/profiles/sync/route.ts`
+- [x] Create API route: `app/api/upload-post/profiles/sync/route.ts`
   - POST: Sync social accounts from upload-post API
   - Update local database with current connection status
+  - Includes rate limiting (1 minute cache) to prevent excessive API calls
+  - Returns cached data if recently synced
 
-- [ ] Implement automatic sync on page load
-- [ ] Update social media icons to show connected state with profile info
-- [ ] Add last sync timestamp display
+- [x] Implement automatic sync on page load
+  - Auto-syncs if data is older than 5 minutes or never synced
+  - Silent background sync doesn't interrupt user experience
+  - Smart caching to avoid unnecessary API calls
 
-**Validation**: Social media icons update to show connected/disconnected status
+- [x] Update social media icons to show connected state with profile info
+  - Icons show brand colors when connected, gray when disconnected
+  - Display names and usernames shown for connected accounts
+  - Proper badges indicating connection status
+
+- [x] Add last sync timestamp display
+  - Shows "Last synced: [timestamp]" in readable format
+  - Manual refresh button with spinning icon during sync
+  - Refresh button appears next to timestamp
+
+**Additional Features Implemented**:
+- [x] Manual refresh functionality with dedicated button
+- [x] Silent sync capability for background operations
+- [x] Smart sync frequency management (5-minute threshold)
+- [x] Rate limiting on API route (1-minute cache)
+- [x] Proper loading states and error handling
+- [x] Toast notifications for user feedback
+
+**Validation**: ✅ Social media icons update to show connected/disconnected status, automatic background sync, manual refresh capability
 
 ---
 
-### Phase 10: UI Polish & Error Handling
+### Phase 10: UI Polish & Error Handling ✅ COMPLETED
 **Goal**: Improve user experience with proper loading states and error handling
 
 **Deliverables**:
-- [ ] Add loading states to all async operations
-- [ ] Implement proper error boundaries for upload-post features
-- [ ] Add responsive design for all new components
-- [ ] Style connected social media icons with proper colors
-- [ ] Add tooltips or additional info for social media accounts
-- [ ] Implement proper form validation and error messages
+- [x] Add loading states to all async operations
+  - Enhanced loading skeleton with detailed card structure
+  - Loading animations for refresh button and connection process
+  - Comprehensive skeleton matching actual component layout
 
-**Validation**: All components handle loading and error states gracefully
+- [x] Implement proper error boundaries for upload-post features
+  - Created `ErrorBoundary` component with React error boundary pattern
+  - Graceful error handling with retry functionality
+  - Development mode error details for debugging
+  - Applied to social media integration wrapper
+
+- [x] Add responsive design for all new components
+  - Grid responsive layouts (2 cols mobile, 3 cols desktop)
+  - Hover effects and smooth transitions
+  - Mobile-optimized spacing and sizing
+
+- [x] Style connected social media icons with proper colors
+  - Brand-accurate colors for each platform
+  - Enhanced hover effects with scale animations
+  - Proper contrast and accessibility considerations
+
+- [x] Add tooltips or additional info for social media accounts
+  - ShadCN Tooltip component integration
+  - Contextual information for connected/disconnected states
+  - Helpful guidance text for connection process
+
+- [x] Implement proper form validation and error messages
+  - Custom error types: `UploadPostError`, `UploadPostAuthError`, `UploadPostRateLimitError`, `UploadPostValidationError`
+  - Enhanced error handling in upload-post library
+  - User-friendly error messages based on error type
+  - Specific error handling for API authentication, rate limiting, and validation
+
+**Additional Features Implemented**:
+- [x] Enhanced error messaging system with context-aware messages
+- [x] Improved loading skeleton with realistic component structure
+- [x] Better hover states and micro-interactions
+- [x] Comprehensive error boundary with retry mechanism
+- [x] Professional tooltip system with helpful guidance
+
+**Validation**: ✅ All components handle loading and error states gracefully with professional UI polish
 
 ---
 
-### Phase 11: Security & Validation
+### Phase 11: Security & Validation ✅
 **Goal**: Ensure secure implementation with proper validation
 
 **Deliverables**:
-- [ ] Add proper authentication checks to all API routes
-- [ ] Implement input validation and sanitization
-- [ ] Add rate limiting where appropriate
-- [ ] Secure API key storage in Supabase vault
-- [ ] Validate JWT tokens on redirect
-- [ ] Add proper RLS policy testing
+- [x] Add proper authentication checks to all API routes
+- [x] Implement input validation and sanitization
+- [x] Add rate limiting where appropriate
+- [x] ~~Secure API key storage in Supabase vault~~ (Not needed - platform-level API key)
+- [x] Validate JWT tokens on redirect
+- [x] Add proper RLS policy testing
 
-**Validation**: Security review passes, no sensitive data exposed
+**Security Features Implemented**:
+- [x] **Comprehensive Input Validation**: Zod schemas for all data validation with custom error types
+- [x] **Enhanced API Route Security**: Authentication checks, rate limiting, and proper error handling
+- [x] **JWT Redirect Validation**: Timestamp-based replay attack prevention with 1-hour expiry
+- [x] **Request Rate Limiting**: Tiered limits (profiles: 30/min, creation: 5/5min, JWT: 10/5min, sync: 20/min)
+- [x] **Data Sanitization**: XSS prevention, JSON validation, and safe data handling
+- [x] **Security Headers**: Content-Type, Frame-Options, XSS-Protection, Referrer-Policy
+- [x] **Retry Logic**: Exponential backoff with jitter for failed API calls
+- [x] **URL Validation**: HTTPS enforcement, domain validation, path validation
+- [x] **Error Handling**: Specific error types with proper HTTP status codes
+- [x] **Database Security**: RLS policies enforced, UUID validation, business_id verification
+
+**Validation**: ✅ Security review complete, comprehensive protection implemented
 
 ---
 

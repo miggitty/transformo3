@@ -16,13 +16,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Tables } from '@/types/supabase';
-import { updateBusinessSettings } from '@/app/(app)/settings/actions';
+import { updateBusinessSettings } from '@/app/(app)/settings/business/actions';
 import { toast } from 'sonner';
 
 const socialPlatforms = ["Facebook", "LinkedIn", "YouTube", "Instagram", "Twitter", "TikTok"];
 
 const formSchema = z.object({
-  upload_post_id: z.string().nullable().optional(),
   ...Object.fromEntries(socialPlatforms.map(platform => [
     platform.toLowerCase(), z.string().url().or(z.literal('')).nullable().optional()
   ]))
@@ -40,7 +39,6 @@ export function SocialMediaForm({ business }: SocialMediaFormProps) {
   const form = useForm<SocialMediaFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      upload_post_id: business.upload_post_id || '',
       ...Object.fromEntries(socialPlatforms.map(platform => [
         platform.toLowerCase(), socialProfiles[platform] || ''
       ]))
@@ -48,15 +46,12 @@ export function SocialMediaForm({ business }: SocialMediaFormProps) {
   });
 
   async function onSubmit(values: SocialMediaFormValues) {
-    const { upload_post_id, ...socialLinks } = values;
-    
     // Filter out empty values before saving
     const social_media_profiles = Object.fromEntries(
-      Object.entries(socialLinks).filter(([, value]) => value)
+      Object.entries(values).filter(([, value]) => value)
     );
 
     const result = await updateBusinessSettings({
-      upload_post_id,
       social_media_profiles,
     }, business.id);
 
@@ -71,23 +66,6 @@ export function SocialMediaForm({ business }: SocialMediaFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <CardContent className="space-y-6 pb-6">
-          <FormField
-            control={form.control}
-            name="upload_post_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>UploadPost.com User ID</FormLabel>
-                <FormDescription>
-                  Once your social media accounts are configured in UploadPost.com you need to add your username here
-                </FormDescription>
-                <FormControl>
-                  <Input placeholder="your-username" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <div>
             <FormLabel>Social Media Post Profiles</FormLabel>
             <FormDescription>

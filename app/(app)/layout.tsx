@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/app/(auth)/actions';
-import { Settings, LogOut, PlusCircle, LayoutGrid } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Tables } from '@/types/supabase';
+import { SidebarNav } from '@/components/shared/sidebar-nav';
 
 async function Sidebar({
   user,
@@ -27,29 +28,7 @@ async function Sidebar({
           </Link>
         </div>
         <div className="flex-1">
-          <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-            <Link
-              href="/content"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <LayoutGrid className="h-4 w-4" />
-              Content
-            </Link>
-            <Link
-              href="/new"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <PlusCircle className="h-4 w-4" />
-              New Content
-            </Link>
-            <Link
-              href="/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </Link>
-          </nav>
+          <SidebarNav />
         </div>
         <div className="mt-auto p-4">
           <div className="mb-2 border-t pt-4">

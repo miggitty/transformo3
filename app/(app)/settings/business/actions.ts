@@ -24,6 +24,6 @@ export async function updateBusinessSettings(
     return { error: 'Could not update business settings.' };
   }
 
-  revalidatePath('/settings');
+  revalidatePath('/settings/business');
   return { data };
 } 

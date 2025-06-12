@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       businesses: {
@@ -33,7 +58,6 @@ export type Database = {
           last_name: string | null
           social_media_profiles: Json | null
           timezone: string | null
-          upload_post_id: string | null
           website_url: string | null
           writing_style_guide: string | null
         }
@@ -60,7 +84,6 @@ export type Database = {
           last_name?: string | null
           social_media_profiles?: Json | null
           timezone?: string | null
-          upload_post_id?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
@@ -87,7 +110,6 @@ export type Database = {
           last_name?: string | null
           social_media_profiles?: Json | null
           timezone?: string | null
-          upload_post_id?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
         }
@@ -264,12 +286,61 @@ export type Database = {
           },
         ]
       }
+      upload_post_profiles: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          last_synced_at: string | null
+          social_accounts: Json | null
+          updated_at: string | null
+          upload_post_username: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          social_accounts?: Json | null
+          updated_at?: string | null
+          upload_post_username: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          social_accounts?: Json | null
+          updated_at?: string | null
+          upload_post_username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_post_profiles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_heygen_key: {
+        Args: { p_business_id: string }
+        Returns: undefined
+      }
+      get_business_secret: {
+        Args: { p_business_id: string }
+        Returns: string
+      }
+      set_heygen_key: {
+        Args: { p_business_id: string; p_new_key: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -386,6 +457,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
