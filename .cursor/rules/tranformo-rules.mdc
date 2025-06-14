@@ -13,14 +13,14 @@ NEVER MAKE AN UPDATE TO THE SUPABASE DATABASE USING THE SUPABASE MCP SERVER. ALW
 * **API Routes**: Create all backend logic within API routes located in the `app/api/` directory. Follow Next.js App Router conventions for route handlers.
 * **Database Migrations**: For any change to the database schema (e.g., creating tables, adding columns, setting up policies), you must write a SQL script. Store all SQL migration scripts in the `supabase/migrations` folder. Each new script should have a timestamp-based name to maintain order.
 * **Type Safety**: Generate TypeScript types from your Supabase schema using the Supabase CLI (`npx supabase gen types typescript`). Store these generated types in a dedicated file, like `types/supabase.ts`, and use them throughout the application for type safety.
-* **Environment Variables**: **Access all secret keys (like Supabase URL and anon/service keys) using `process.env`. Your `.env.local` file should always point to the remote production Supabase instance.**
+* **Environment Variables**: **Access all secret keys (like Supabase URL and anon/service keys) using `process.env`. Your `.env.local` file should always point to the local Supabase instance.**
 * **Code Style**: Follow standard TypeScript and React best practices. Use functional components with hooks. Keep components small and focused on a single responsibility.
 
 ## Development Environment & Migrations
 
 Never complete migrations through MCP server. Always create a migration in the migratons supabase folder and push it correctly.
 
-- All development must use the remote (production) Supabase instance. Store your remote Supabase URL and anon key in `.env.local` at the project root. You can find these in your Supabase project's API settings.
+- All development must use the local Supabase instance. Store your local Supabase URL and anon key in `.env.local` at the project root. You can find these in your Supabase project's API settings.
 
   ```env
   NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
@@ -36,9 +36,9 @@ Never complete migrations through MCP server. Always create a migration in the m
   ```
 - Migration files must be named with the current UTC timestamp: `YYYYMMDDHHMMSS_description.sql`.
 
-## Migration Workflow: Remote-Only
+## Migration Workflow: Local-Only
 
-- All `supabase db push` commands will now target the remote (production) database.
+- All `supabase db push` commands will now target the local database.
 - The `--local` flag is no longer relevant and should not be used.
 - The `supabase db reset` command should be used with extreme care, as it will wipe the production database. This command should only be used if explicitly requested and understood.
 
