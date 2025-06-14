@@ -1,17 +1,18 @@
 export async function triggerN8nWorkflow({
+  webhookUrl,
   audioUrl,
   contentId,
   businessId,
 }: {
+  webhookUrl: string;
   audioUrl: string;
   contentId: string;
   businessId: string;
 }) {
-  const webhookUrl = process.env.N8N_WEBHOOK_URL;
   const apiKey = process.env.N8N_API_KEY;
 
   if (!webhookUrl) {
-    console.error('N8N_WEBHOOK_URL is not defined.');
+    console.error('N8N_WEBHOOK_URL was not passed to the trigger function.');
     throw new Error('n8n webhook URL is not configured.');
   }
 

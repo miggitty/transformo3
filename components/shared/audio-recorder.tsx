@@ -20,8 +20,8 @@ export function AudioRecorder() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [permission, setPermission] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const [timer, setTimer] = useState(0);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function AudioRecorder() {
           video: false,
         });
         setPermission(true);
-        setStream(streamData);
+        streamRef.current = streamData;
       } catch (err: any) {
         toast.error(err.message);
       }
@@ -54,34 +54,51 @@ export function AudioRecorder() {
   };
 
   const startRecording = async () => {
-    if (!permission || !stream) {
+    if (!permission) {
       await getMicrophonePermission();
-      // Need to re-trigger after getting permission
       return;
     }
+    
+    if (!streamRef.current) {
+        toast.error("Microphone stream not available.");
+        return;
+    }
+
     setStatus('recording');
-    const media = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-    mediaRecorder.current = media;
-    mediaRecorder.current.start();
-    let localAudioChunks: Blob[] = [];
-    mediaRecorder.current.ondataavailable = (event) => {
-      if (typeof event.data === 'undefined') return;
-      if (event.data.size === 0) return;
-      localAudioChunks.push(event.data);
-    };
-    setAudioChunks(localAudioChunks);
+    
+    try {
+      const media = new MediaRecorder(streamRef.current, { mimeType: 'audio/webm' });
+      mediaRecorder.current = media;
+      
+      audioChunksRef.current = [];
+      
+      mediaRecorder.current.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.current.start();
+    } catch (error) {
+      console.error('Failed to start MediaRecorder:', error);
+      toast.error('Failed to start recording.');
+      setStatus('idle');
+    }
   };
 
   const stopRecording = () => {
     if (!mediaRecorder.current) return;
+    
     setStatus('processing');
-    mediaRecorder.current.stop();
+    
     mediaRecorder.current.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       setAudioBlob(audioBlob);
-      setAudioChunks([]);
+      audioChunksRef.current = [];
       setStatus('idle');
     };
+
+    mediaRecorder.current.stop();
   };
 
   const handleUpload = async () => {
@@ -94,8 +111,8 @@ export function AudioRecorder() {
     toast.info('Creating content record...');
     const createResult = await createContentRecord();
 
-    if (createResult.error || !createResult.data) {
-      toast.error(createResult.error || 'Failed to create content record.');
+    if (!createResult || createResult.error || !createResult.data) {
+      toast.error(createResult?.error || 'Failed to create content record.');
       setStatus('idle');
       return;
     }
@@ -104,49 +121,51 @@ export function AudioRecorder() {
     const fileName = `${businessId}_${contentId}.webm`;
     
     toast.info('Uploading audio file...');
-    const { error: uploadError } = await supabase.storage
-      .from('audio')
-      .upload(fileName, audioBlob);
+    
+    // Use our new API route for uploading
+    const formData = new FormData();
+    formData.append('file', audioBlob, fileName);
+    formData.append('businessId', businessId || '');
+    formData.append('contentId', contentId || '');
 
-    if (uploadError) {
-      toast.error(uploadError.message);
+    try {
+      const response = await fetch('/api/upload-audio', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      toast.info('Finalizing content...');
+      const finalizeResult = await finalizeContentRecord(contentId, result.publicUrl);
+
+      if (finalizeResult.error) {
+        toast.error(finalizeResult.error);
+      } else {
+        toast.success('Content created successfully!');
+        router.push('/content');
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Failed to upload audio file.');
       setStatus('idle');
       return;
-    }
-
-    toast.info('Finalizing content...');
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('audio')
-      .createSignedUrl(fileName, 31536000); // Expires in 1 year
-
-    if (signedUrlError) {
-      toast.error(signedUrlError.message);
-      setStatus('idle');
-      return;
-    }
-
-    const finalizeResult = await finalizeContentRecord(
-      contentId,
-      signedUrlData.signedUrl,
-    );
-
-    if (finalizeResult.error) {
-      toast.error(finalizeResult.error);
-    } else {
-      toast.success('Content created successfully!');
-      router.push('/content');
     }
 
     setStatus('idle');
     setAudioBlob(null);
   };
 
+  // Auto-start recording after permission is granted (development convenience)
   useEffect(() => {
-    // Automatically trigger startRecording after permission is granted
-    if (permission && stream && status === 'idle' && mediaRecorder.current === null) {
+    if (process.env.NODE_ENV === 'development' && permission && streamRef.current && status === 'idle' && !mediaRecorder.current) {
       startRecording();
     }
-  }, [permission, stream, status]);
+  }, [permission]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
