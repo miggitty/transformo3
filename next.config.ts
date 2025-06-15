@@ -34,11 +34,11 @@ const getImagePatterns = () => {
     });
   }
   
-  // Add ngrok patterns only in development
+  // Add zrok patterns only in development
   if (process.env.NODE_ENV === 'development') {
     patterns.push({
       protocol: 'https' as const,
-      hostname: '*.ngrok-free.app',
+      hostname: '*.share.zrok.io',
       port: '',
       pathname: '/storage/v1/object/**',
     });

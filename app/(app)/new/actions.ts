@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { triggerN8nWorkflow } from '@/lib/n8n';
 
 // Action 1: Create an initial content record
 export async function createContentRecord() {
@@ -87,23 +86,53 @@ export async function finalizeContentRecord(
   // For n8n, we need to provide a publicly accessible URL
   let publicAudioUrl = audioUrl;
   
-  // In local development, convert local Supabase URLs to ngrok URLs for n8n access
-  if (process.env.NODE_ENV === 'development' && audioUrl.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_APP_URL) {
-    // Extract the path from the local Supabase URL and construct ngrok URL
+  // In local development, convert local Supabase URLs to external Supabase URLs for n8n access
+  if (process.env.NODE_ENV === 'development' && audioUrl.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+    // Extract the path from the local Supabase URL and construct external Supabase URL
     const urlPath = audioUrl.replace('http://127.0.0.1:54321', '');
-    publicAudioUrl = `${process.env.NEXT_PUBLIC_APP_URL}${urlPath}`;
+    publicAudioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
   }
   // In production/staging, audioUrl is already a public Supabase URL that n8n can access directly
 
-  await triggerN8nWorkflow({
-    webhookUrl: process.env.N8N_WEBHOOK_URL!,
-    audioUrl: publicAudioUrl,
-    contentId: updatedContent.id,
-    businessId: updatedContent.business_id!,
-  });
+  // Follow the content creation pattern with enriched payload
+  const webhookUrl = process.env.N8N_WEBHOOK_URL_AUDIO_PROCESSING;
+  
+  if (!webhookUrl) {
+    console.error('N8N_WEBHOOK_URL_AUDIO_PROCESSING is not configured');
+    return { error: 'Audio processing webhook not configured' };
+  }
 
-  revalidatePath('/content');
-  revalidatePath(`/content/${contentId}`);
+  try {
+    // Add environment-specific callback information (following content creation pattern)
+    const enrichedPayload = {
+      audio_url: publicAudioUrl,
+      content_id: updatedContent.id,
+      business_id: updatedContent.business_id!,
+      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+      callbackSecret: process.env.N8N_CALLBACK_SECRET,
+      environment: process.env.NODE_ENV
+    };
 
-  return { data: { message: 'Content finalized successfully' } };
+    console.log('Triggering N8N audio processing workflow...');
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(enrichedPayload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('N8N webhook failed:', errorText);
+      return { error: `N8N webhook failed: ${response.statusText}` };
+    }
+
+    revalidatePath('/content');
+    revalidatePath(`/content/${contentId}`);
+
+    return { data: { message: 'Content finalized successfully' } };
+  } catch (error) {
+    console.error('N8N integration error:', error);
+    return { error: 'Failed to trigger N8N workflow' };
+  }
 }

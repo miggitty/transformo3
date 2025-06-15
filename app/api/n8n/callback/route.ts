@@ -8,55 +8,67 @@ const supabase = createClient(
   { auth: { persistSession: false } }
 );
 
-export async function POST(req: NextRequest) {
-  // 1. Secure the webhook
-  const callbackSecret = process.env.N8N_CALLBACK_SECRET;
-  const authHeader = req.headers.get('authorization');
-  if (!callbackSecret || authHeader !== `Bearer ${callbackSecret}`) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
+export async function POST(request: NextRequest) {
+  try {
+    // Verify N8N callback secret (following documented pattern)
+    const callbackSecret = request.headers.get('x-n8n-callback-secret');
+    if (callbackSecret !== process.env.N8N_CALLBACK_SECRET) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  // 2. Parse the request body
-  const { content_id, transcript, content_title, research } = await req.json();
+    const body = await request.json();
+    const { content_id, transcript, content_title, research, success, error, environment } = body;
 
-  if (!content_id || !transcript || !content_title) {
-    return new NextResponse('Missing required fields', { status: 400 });
-  }
-
-  // 3. Update the database
-  const { data, error } = await supabase
-    .from('content')
-    .update({
-      transcript: transcript,
-      content_title: content_title,
-      research: research,
-      status: 'completed', // Final status
-    })
-    .eq('id', content_id)
-    .select();
-
-  if (error) {
-    console.error('Error updating content from n8n callback:', error);
-    return new NextResponse(JSON.stringify({ error: error.message }), {
-      status: 500,
+    // Log the callback for debugging (following documented pattern)
+    console.log(`N8N callback received from ${environment || 'unknown'}:`, {
+      content_id,
+      success,
+      error: error || 'none',
+      hasTranscript: !!transcript,
+      hasTitle: !!content_title
     });
-  }
 
-  // Add a new check to ensure a row was actually updated
-  if (!data || data.length === 0) {
-    console.error(
-      'N8N callback: Update succeeded but no row was found for content_id:',
-      content_id
-    );
-    return new NextResponse(
-      JSON.stringify({ error: 'No content found with the provided ID.' }),
-      {
-        status: 404, // Not Found is more appropriate
+    if (!content_id) {
+      return NextResponse.json({ error: 'Missing content_id' }, { status: 400 });
+    }
+
+    // Handle both success and error cases
+    // If success field is not provided but we have transcript and title, assume success
+    const isSuccess = success !== false && transcript && content_title;
+    
+    const updateData: any = {};
+
+    if (isSuccess) {
+      // Success case - update with processed data
+      updateData.status = 'completed';
+      updateData.transcript = transcript;
+      updateData.content_title = content_title;
+      if (research) {
+        updateData.research = research;
       }
-    );
-  }
+      // Clear any previous error
+      updateData.error_message = null;
+    } else {
+      // Error case - only update status and error message
+      updateData.status = 'processing'; // Keep as processing rather than unknown 'error' status
+      updateData.error_message = error || 'N8N workflow failed without specific error';
+    }
 
-  // 4. Respond to n8n
-  console.log('Successfully updated content from n8n callback:', content_id);
-  return new NextResponse(null, { status: 204 }); // All good
+    // Update content based on N8N callback
+    const { error: updateError } = await supabase
+      .from('content')
+      .update(updateData)
+      .eq('id', content_id);
+
+    if (updateError) {
+      console.error('Error updating content:', updateError);
+      return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
+    }
+
+    console.log(`Successfully updated content ${content_id} - Status: ${updateData.status}`);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('N8N callback error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 } 
