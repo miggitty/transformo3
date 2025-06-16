@@ -153,7 +153,14 @@ export function VideoUploadModal({
         .from('videos')
         .getPublicUrl(fileName);
 
-      const publicUrl = publicUrlData.publicUrl;
+      let publicUrl = publicUrlData.publicUrl;
+
+      // In local development, convert local Supabase URLs to external Supabase URLs for external services access
+      if (process.env.NODE_ENV === 'development' && publicUrl.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+        // Extract the path from the local Supabase URL and construct external Supabase URL
+        const urlPath = publicUrl.replace('http://127.0.0.1:54321', '');
+        publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+      }
 
       // Update the content record using server action
       const { success, error: updateError } = await updateVideoUrl({

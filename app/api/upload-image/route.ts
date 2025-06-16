@@ -65,9 +65,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Return the public URL
-    const { data: { publicUrl } } = getSupabaseAdmin().storage
+    const { data: { publicUrl: localPublicUrl } } = getSupabaseAdmin().storage
       .from('images')
       .getPublicUrl(filename);
+
+    // In local development, convert local Supabase URLs to external Supabase URLs for external services access
+    let publicUrl = localPublicUrl;
+    if (process.env.NODE_ENV === 'development' && localPublicUrl.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+      // Extract the path from the local Supabase URL and construct external Supabase URL
+      const urlPath = localPublicUrl.replace('http://127.0.0.1:54321', '');
+      publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+    }
 
     return NextResponse.json({
       success: true,
