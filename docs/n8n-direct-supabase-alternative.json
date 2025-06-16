@@ -1,0 +1,28 @@
+{
+  "name": "Get Email Credentials (Direct Supabase)",
+  "parameters": {
+    "method": "POST",
+    "url": "={{ $env.SUPABASE_REST_URL }}/rpc/get_email_secret",
+    "authentication": "none",
+    "sendHeaders": true,
+    "headerParameters": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+        },
+        {
+          "name": "apikey", 
+          "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"p_business_id\": \"{{ $json.content.business_id }}\"\n}"
+  }
+} 

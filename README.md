@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Development Environment & Migrations
+
+- All development should use the local Supabase instance. Store your local Supabase URL and anon key in `.env.local` at the project root:
+
+  ```env
+  NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+  ```
+
+- Run migrations locally with:
+  ```sh
+  supabase db push
+  ```
+- Only push migrations to the remote (production) database when explicitly requested.
+- Migration files must be named with the current UTC timestamp: `YYYYMMDDHHMMSS_description.sql`.

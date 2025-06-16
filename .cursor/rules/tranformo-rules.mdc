@@ -1,0 +1,77 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: these are the general rules when building this app.
+---
+
+NEVER MAKE AN UPDATE TO THE SUPABASE DATABASE USING THE SUPABASE MCP SERVER. ALWAYS ASK FIRST AND MAKE CHANGE USING MIGRATIONS.
+
+* **Component Structure**: All new components should be created within the `components/` directory. Reusable UI components go into `components/ui`, and more complex, feature-specific components go into `components/shared`.
+* **API Routes**: Create all backend logic within API routes located in the `app/api/` directory. Follow Next.js App Router conventions for route handlers.
+* **Database Migrations**: For any change to the database schema (e.g., creating tables, adding columns, setting up policies), you must write a SQL script. Store all SQL migration scripts in the `supabase/migrations` folder. Each new script should have a timestamp-based name to maintain order.
+* **Type Safety**: Generate TypeScript types from your Supabase schema using the Supabase CLI (`npx supabase gen types typescript`). Store these generated types in a dedicated file, like `types/supabase.ts`, and use them throughout the application for type safety.
+* **Environment Variables**: **Access all secret keys (like Supabase URL and anon/service keys) using `process.env`. Your `.env.local` file should always point to the local Supabase instance.**
+* **Code Style**: Follow standard TypeScript and React best practices. Use functional components with hooks. Keep components small and focused on a single responsibility.
+
+## Development Environment & Migrations
+
+Never complete migrations through MCP server. Always create a migration in the migratons supabase folder and push it correctly.
+
+- All development must use the local Supabase instance. Store your local Supabase URL and anon key in `.env.local` at the project root. You can find these in your Supabase project's API settings.
+
+  ```env
+  NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-project-anon-key>
+  SUPABASE_SERVICE_ROLE_KEY=<your-project-service-role-key>
+  ```
+
+- Pushing migrations now directly affects the production database. **Extreme caution is advised.**
+
+- Run migrations with:
+  ```sh
+  supabase db push
+  ```
+- Migration files must be named with the current UTC timestamp: `YYYYMMDDHHMMSS_description.sql`.
+
+## Migration Workflow: Local-Only
+
+- All `supabase db push` commands will now target the local database.
+- The `--local` flag is no longer relevant and should not be used.
+- The `supabase db reset` command should be used with extreme care, as it will wipe the production database. This command should only be used if explicitly requested and understood.
+
+- **Best Practice:**
+  - Before running `supabase db push`, always review the changes in your migration files.
+  - Double-check the CLI output to ensure you are targeting the correct project before confirming any migration or reset.
+
+---
+
+**All migrations will be run directly on the production database. Proceed with caution.**
+
+## Migration filename convention (Brisbane time)
+
+YYYYMMDDHHMMSS_<kebab-case-description>.sql
+
+All six numeric fields—year → second—are taken from the current time in the
+Australia/Brisbane timezone (AEST, UTC +10, no daylight-saving).
+
+**Regex:** `/^\d{14}_[a-z0-9-]+\.sql$/`
+
+### Example
+- `20250608001530_add-content-table.sql`  (Represents 12:15:30 AM on 8 June 2025 in Brisbane—even though it's still 7 June UTC.)
+- `20251201133003_create-users.sql`
+
+### How to generate
+
+```bash
+# Option 1 – Supabase CLI (uses your system TZ)
+supabase migration new "<description>"
+
+# Option 2 – Manual (force Brisbane TZ explicitly)
+timestamp=$(TZ=Australia/Brisbane date +"%Y%m%d%H%M%S")
+touch "supabase/migrations/${timestamp}_<description>.sql"
+```
+
+⚠️ Never guess or reuse timestamps—always fetch the current Brisbane time programmatically.

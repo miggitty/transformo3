@@ -1,0 +1,552 @@
+{
+  "name": "Transformo Heygen Video Creation NEW",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cd04f979-ebdc-4942-b9ed-781868e24228",
+        "options": {}
+      },
+      "id": "48d7f408-ea2a-49c1-8cb9-7089faeb6ead",
+      "name": "Start (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        -40
+      ],
+      "webhookId": "cd04f979-ebdc-4942-b9ed-781868e24228"
+    },
+    {
+      "parameters": {
+        "operation": "select"
+      },
+      "id": "2dfd4864-2b18-4ef0-acd9-e152f5ce11df",
+      "name": "Fetch Business Config",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        100,
+        -40
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xPmrzdMb0mt6katW",
+          "name": "Supabase Account - Transformo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "content",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.content_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "heygen_status",
+              "fieldValue": "processing"
+            }
+          ]
+        }
+      },
+      "id": "3539de16-fed3-4cf4-ad44-9b20d1733c46",
+      "name": "Update Status (Processing)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        320,
+        -40
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xPmrzdMb0mt6katW",
+          "name": "Supabase Account - Transformo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $('Fetch Business Config').item.json.heygen_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"video_inputs\": [{ \"character\": { \"type\": \"avatar\", \"avatar_id\": $('Fetch Business Config').item.json.heygen_avatar_id, \"avatar_style\": \"normal\" }, \"voice\": { \"type\": \"text\", \"input_text\": $json.body.script, \"voice_id\": $('Fetch Business Config').item.json.heygen_voice_id } }], \"test\": true, \"aspect_ratio\": \"16:9\" } }}",
+        "options": {}
+      },
+      "id": "0fab1dfe-b5ce-4c1f-9438-2b9d75456c7b",
+      "name": "Generate Video (HeyGen API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        540,
+        -40
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PpJ443pZS42JPiLJ",
+          "name": "HeyGen Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "content",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.content_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "heygen_video_id",
+              "fieldValue": "={{ $('Generate Video (HeyGen API)').item.json.data.video_id }}"
+            }
+          ]
+        }
+      },
+      "id": "4607c4cc-cc29-4929-a71b-755549d995ee",
+      "name": "Save HeyGen Video ID",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        760,
+        -40
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xPmrzdMb0mt6katW",
+          "name": "Supabase Account - Transformo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "49b27086-d699-4cd5-b801-4d524736d59c",
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        180
+      ],
+      "webhookId": "36139982-5f4c-4e23-a52f-6617dbc54916"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.heygen.com/v2/video/status/' + $('Generate Video (HeyGen API)').item.json.data.video_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "04a65e0d-775d-4acc-8ba4-9f418cc54743",
+      "name": "Check Video Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        180
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PpJ443pZS42JPiLJ",
+          "name": "HeyGen Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Check Video Status').item.json.data.status }}",
+              "value2": "completed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "30a484ee-da3f-4443-a5bd-f9250e782e6f",
+      "name": "Is Status 'completed'?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Check Video Status').item.json.data.video_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "189dad5c-2ffd-42f0-8d18-bb82f7680a1f",
+      "name": "Download Video File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload"
+      },
+      "id": "36c2e7f1-a4c6-47ca-895a-77b9970aba1a",
+      "name": "Upload to Supabase Storage",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1620,
+        80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xPmrzdMb0mt6katW",
+          "name": "Supabase Account - Transformo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "content",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.content_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "heygen_status",
+              "fieldValue": "completed"
+            },
+            {
+              "fieldId": "heygen_url",
+              "fieldValue": "={{ $('Check Video Status').item.json.data.video_url }}"
+            },
+            {
+              "fieldId": "video_long_url",
+              "fieldValue": "={{ $('Get Public URL').item.json.publicUrl }}"
+            }
+          ]
+        }
+      },
+      "id": "c75c0863-c4a0-48bd-9aea-b6198fadab21",
+      "name": "Update Status (Completed)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xPmrzdMb0mt6katW",
+          "name": "Supabase Account - Transformo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const runCount = $runIndex;\nconst maxAttempts = 20;\nif (runCount >= maxAttempts) {\n  $node.error = 'Polling timeout after ' + maxAttempts + ' attempts.';\n  return [null, { json: { error: 'Polling timeout' } }];\n}\nreturn [{ json: { runCount: runCount + 1 } }];"
+      },
+      "id": "d40ad598-8d08-4eca-88c3-6d178fb4b160",
+      "name": "Loop Counter & Timeout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        640
+      ],
+      "outputs": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Check Video Status').item.json.data.status }}",
+              "value2": "failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a7356ddf-b62f-4b24-b177-27d6a25cf331",
+      "name": "Is Status 'failed'?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "content",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.content_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "heygen_status",
+              "fieldValue": "failed"
+            }
+          ]
+        }
+      },
+      "id": "3e5dab96-cab3-4384-b7e7-560cb1e9089e",
+      "name": "Update Status (Failed)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        380
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xPmrzdMb0mt6katW",
+          "name": "Supabase Account - Transformo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getPublicUrl"
+      },
+      "id": "a7c9c364-e6c0-4a10-8a8b-9268f972f737",
+      "name": "Get Public URL",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "xPmrzdMb0mt6katW",
+          "name": "Supabase Account - Transformo"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "Fetch Business Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Business Config": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Processing)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status (Processing)": {
+      "main": [
+        [
+          {
+            "node": "Generate Video (HeyGen API)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video (HeyGen API)": {
+      "main": [
+        [
+          {
+            "node": "Save HeyGen Video ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save HeyGen Video ID": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "Check Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Video Status": {
+      "main": [
+        [
+          {
+            "node": "Is Status 'completed'?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Status 'completed'?": {
+      "main": [
+        [
+          {
+            "node": "Download Video File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Status 'failed'?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video File": {
+      "main": [
+        [
+          {
+            "node": "Upload to Supabase Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Supabase Storage": {
+      "main": [
+        [
+          {
+            "node": "Get Public URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Public URL": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Completed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Counter & Timeout": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Status 'failed'?": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Failed)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Counter & Timeout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "20f73348-1055-49c1-9881-38eaf74bc185",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "86a55c1b5377b46a4240c75e9f3a3ba27eaa9da6da01e12f97ff9d8774c58d05"
+  },
+  "id": "Thsv2TuNdTElEkrl",
+  "tags": []
+}

@@ -1,0 +1,517 @@
+{
+  "name": "Email Sending Integration - Production",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "f6d0e003-8d4c-4e4c-8c1a-1e4e2a4c6c1a",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://mmodhofduvuyifwlsrmh.supabase.co/rest/v1/content_assets?asset_scheduled_at=lt.now()&asset_status=eq.Scheduled&content_type=eq.email&select=*,content(business_id,content_title)",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+        },
+        "options": {
+          "headers": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a8b9c2d3-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+      "name": "Poll Scheduled Emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+      "name": "Check If Emails Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "c2d3e4f5-6a7b-8c9d-0e1f-2a3b4c5d6e7f",
+      "name": "Split Into Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app2.transformo.io/api/n8n/email-credentials",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer your-production-n8n-callback-secret-here"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"business_id\": \"{{ $json.content.business_id }}\"\n}"
+      },
+      "id": "d3e4f5a6-7b8c-9d0e-1f2a-3b4c5d6e7f8a",
+      "name": "Get Email Credentials",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "value": "={{ $('Get Email Credentials').item.json.email_config.provider }}",
+        "rules": {
+          "rules": [
+            {
+              "id": "e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b",
+              "outputKey": "mailerlite",
+              "value": "mailerlite"
+            },
+            {
+              "id": "f5a6b7c8-9d0e-1f2a-3b4c-5d6e7f8a9b0c",
+              "outputKey": "mailchimp",
+              "value": "mailchimp"
+            },
+            {
+              "id": "a6b7c8d9-0e1f-2a3b-4c5d-6e7f8a9b0c1d",
+              "outputKey": "brevo",
+              "value": "brevo"
+            }
+          ]
+        }
+      },
+      "id": "e4f5a6b7-8c9d-0e1f-2a3b-4c5d6e7f8a9b",
+      "name": "Switch By Provider",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://connect.mailerlite.com/api/campaigns",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Email Credentials').item.json.email_config.api_key }}"
+            },
+            {
+              "name": "Content-Type", 
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $json.content.content_title }}\",\n  \"type\": \"regular\",\n  \"emails\": [{\n    \"subject\": \"{{ $json.headline }}\",\n    \"from\": \"{{ $('Get Email Credentials').item.json.email_config.sender_email }}\",\n    \"from_name\": \"{{ $('Get Email Credentials').item.json.email_config.sender_name }}\",\n    \"content\": \"{{ $json.content }}\"\n  }],\n  \"groups\": [\"{{ $('Get Email Credentials').item.json.email_config.selected_group_id }}\"]\n}"
+      },
+      "id": "f5a6b7c8-9d0e-1f2a-3b4c-5d6e7f8a9b0c",
+      "name": "Send Email (MailerLite)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://us1.api.mailchimp.com/3.0/campaigns",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=apikey {{ $('Get Email Credentials').item.json.email_config.api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"regular\",\n  \"recipients\": {\n    \"list_id\": \"{{ $('Get Email Credentials').item.json.email_config.selected_group_id }}\"\n  },\n  \"settings\": {\n    \"subject_line\": \"{{ $json.headline }}\",\n    \"from_name\": \"{{ $('Get Email Credentials').item.json.email_config.sender_name }}\",\n    \"reply_to\": \"{{ $('Get Email Credentials').item.json.email_config.sender_email }}\"\n  }\n}"
+      },
+      "id": "a6b7c8d9-0e1f-2a3b-4c5d-6e7f8a9b0c1d",
+      "name": "Send Email (MailChimp)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/emailCampaigns",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "={{ $('Get Email Credentials').item.json.email_config.api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $json.content.content_title }}\",\n  \"subject\": \"{{ $json.headline }}\",\n  \"sender\": {\n    \"name\": \"{{ $('Get Email Credentials').item.json.email_config.sender_name }}\",\n    \"email\": \"{{ $('Get Email Credentials').item.json.email_config.sender_email }}\"\n  },\n  \"htmlContent\": \"{{ $json.content }}\",\n  \"recipients\": {\n    \"listIds\": [\"{{ $('Get Email Credentials').item.json.email_config.selected_group_id }}\"]\n  }\n}"
+      },
+      "id": "b7c8d9e0-1f2a-3b4c-5d6e-7f8a9b0c1d2e",
+      "name": "Send Email (Brevo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://mmodhofduvuyifwlsrmh.supabase.co/rest/v1/content_assets?id=eq.{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"asset_status\": \"Sent\",\n  \"asset_published_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {
+          "headers": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c8d9e0f1-2a3b-4c5d-6e7f-8a9b0c1d2e3f",
+      "name": "Update Status (Success)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://mmodhofduvuyifwlsrmh.supabase.co/rest/v1/content_assets?id=eq.{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"asset_status\": \"Failed\",\n  \"error_message\": \"{{ $json.error || 'Unknown error occurred' }}\"\n}",
+        "options": {
+          "headers": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d9e0f1a2-3b4c-5d6e-7f8a-9b0c1d2e3f4a",
+      "name": "Update Status (Error)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1780,
+        440
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e0f1a2b3-4c5d-6e7f-8a9b-0c1d2e3f4a5b",
+      "name": "No Operation",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        680,
+        440
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Poll Scheduled Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Scheduled Emails": {
+      "main": [
+        [
+          {
+            "node": "Check If Emails Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Emails Found": {
+      "main": [
+        [
+          {
+            "node": "Split Into Batches",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Batches": {
+      "main": [
+        [
+          {
+            "node": "Get Email Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Email Credentials": {
+      "main": [
+        [
+          {
+            "node": "Switch By Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch By Provider": {
+      "main": [
+        [
+          {
+            "node": "Send Email (MailerLite)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email (MailChimp)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email (Brevo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email (Brevo)": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email (MailerLite)": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Update Status (Error)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email (MailChimp)": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Update Status (Error)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email (Brevo)": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Update Status (Error)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "1",
+      "name": "email-integration-prod"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+} 

@@ -1,0 +1,1 @@
+ALTER TABLE businesses ADD COLUMN timezone TEXT DEFAULT 'UTC';
