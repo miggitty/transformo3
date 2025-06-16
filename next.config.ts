@@ -34,11 +34,20 @@ const getImagePatterns = () => {
     });
   }
   
-  // Add zrok patterns only in development
+  // Add tunnel patterns only in development
   if (process.env.NODE_ENV === 'development') {
+    // zrok tunnel pattern
     patterns.push({
       protocol: 'https' as const,
       hostname: '*.share.zrok.io',
+      port: '',
+      pathname: '/storage/v1/object/**',
+    });
+    
+    // ngrok tunnel pattern
+    patterns.push({
+      protocol: 'https' as const,
+      hostname: 'transformosupabase.ngrok.dev',
       port: '',
       pathname: '/storage/v1/object/**',
     });
