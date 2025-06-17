@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   // This proxy route is only needed in development for n8n access via ngrok
   if (process.env.NODE_ENV !== 'development') {
@@ -10,8 +10,11 @@ export async function GET(
   }
   
   try {
+    // Await the params since they're now a Promise in Next.js 15
+    const resolvedParams = await params;
+    
     // Construct the local Supabase storage URL
-    const filePath = params.path.join('/');
+    const filePath = resolvedParams.path.join('/');
     const supabaseStorageUrl = `http://127.0.0.1:54321/storage/v1/object/public/audio/${filePath}`;
     
     // Fetch the file from local Supabase

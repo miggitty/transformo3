@@ -19,12 +19,15 @@ import { Tables } from '@/types/supabase';
 import { updateBusinessSettings } from '@/app/(app)/settings/business/actions';
 import { toast } from 'sonner';
 
-const socialPlatforms = ["Facebook", "LinkedIn", "YouTube", "Instagram", "Twitter", "TikTok"];
+const socialPlatforms = ["Facebook", "LinkedIn", "YouTube", "Instagram", "Twitter", "TikTok"] as const;
 
 const formSchema = z.object({
-  ...Object.fromEntries(socialPlatforms.map(platform => [
-    platform.toLowerCase(), z.string().url().or(z.literal('')).nullable().optional()
-  ]))
+  facebook: z.string().url().or(z.literal('')).nullable().optional(),
+  linkedin: z.string().url().or(z.literal('')).nullable().optional(),
+  youtube: z.string().url().or(z.literal('')).nullable().optional(),
+  instagram: z.string().url().or(z.literal('')).nullable().optional(),
+  twitter: z.string().url().or(z.literal('')).nullable().optional(),
+  tiktok: z.string().url().or(z.literal('')).nullable().optional(),
 });
 
 type SocialMediaFormValues = z.infer<typeof formSchema>;
@@ -39,9 +42,12 @@ export function SocialMediaForm({ business }: SocialMediaFormProps) {
   const form = useForm<SocialMediaFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      ...Object.fromEntries(socialPlatforms.map(platform => [
-        platform.toLowerCase(), socialProfiles[platform] || ''
-      ]))
+      facebook: socialProfiles['Facebook'] || '',
+      linkedin: socialProfiles['LinkedIn'] || '',
+      youtube: socialProfiles['YouTube'] || '',
+      instagram: socialProfiles['Instagram'] || '',
+      twitter: socialProfiles['Twitter'] || '',
+      tiktok: socialProfiles['TikTok'] || '',
     },
   });
 
@@ -72,26 +78,29 @@ export function SocialMediaForm({ business }: SocialMediaFormProps) {
               Add your social media profile links so people can find you online
             </FormDescription>
             <div className="grid grid-cols-1 gap-4 pt-2 md:grid-cols-2">
-              {socialPlatforms.map(platform => (
-                <FormField
-                  key={platform}
-                  control={form.control}
-                  name={platform.toLowerCase() as keyof SocialMediaFormValues}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{platform}</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={`https://${platform.toLowerCase()}.com/your-profile`}
-                          {...field}
-                          value={field.value ?? ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
+              {socialPlatforms.map((platform: string) => {
+                const fieldName = platform.toLowerCase() as keyof SocialMediaFormValues;
+                return (
+                  <FormField
+                    key={platform}
+                    control={form.control}
+                    name={fieldName}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{platform}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={`https://${platform.toLowerCase()}.com/your-profile`}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                );
+              })}
             </div>
           </div>
         </CardContent>

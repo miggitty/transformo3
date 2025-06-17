@@ -449,7 +449,7 @@ export function validateJWTRedirect(searchParams: URLSearchParams): {
     
     // Allow connections without timestamp for backward compatibility
     return { isValid: true, connected: true };
-  } catch (error) {
+  } catch {
     return { 
       isValid: false, 
       connected: false, 

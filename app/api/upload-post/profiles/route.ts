@@ -65,7 +65,7 @@ function sanitizeProfileData(profile: Record<string, unknown>) {
  * GET /api/upload-post/profiles
  * Retrieve user's upload-post profile and social accounts
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     

@@ -47,7 +47,7 @@ export default async function IntegrationsPage() {
       <h1 className="text-3xl font-bold">Integrations</h1>
       
       <ErrorBoundary>
-        <SocialMediaIntegrationWrapper businessId={business.id} />
+        <SocialMediaIntegrationWrapper />
       </ErrorBoundary>
       
       <Card>
