@@ -15,7 +15,9 @@ export default function SignInPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClientSafe();
+  
+  // Create client only when component is actually rendered (not during build)
+  const [supabase] = useState(() => createClientSafe());
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
