@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -30,7 +30,7 @@ interface SocialAccounts {
 }
 
 interface SocialMediaData {
-  profile: any;
+  profile: Record<string, unknown>;
   social_accounts: SocialAccounts;
   synced: boolean;
   last_synced_at?: string;

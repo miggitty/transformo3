@@ -1,6 +1,6 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Toggle } from '@/components/ui/toggle';
 import {
@@ -15,7 +15,7 @@ import {
   Heading4,
 } from 'lucide-react';
 
-const TiptapToolbar = ({ editor }: { editor: any }) => {
+const TiptapToolbar = ({ editor }: { editor: Editor | null }) => {
   if (!editor) {
     return null;
   }

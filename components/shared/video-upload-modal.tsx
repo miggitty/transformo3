@@ -113,7 +113,7 @@ export function VideoUploadModal({
     if (file) {
       handleFileSelect(file);
     }
-  }, []);
+  }, [handleFileSelect]);
 
   const handleUpload = async () => {
     if (!selectedFile) {

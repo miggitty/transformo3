@@ -6,7 +6,6 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export async function signOut() {
-  const cookieStore = cookies();
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signOut();

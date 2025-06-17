@@ -132,7 +132,7 @@ export function validateRedirectUrl(url: string): string {
   return result.data;
 }
 
-export function validateSocialAccounts(accounts: any): any {
+export function validateSocialAccounts(accounts: unknown): Record<string, unknown> {
   const result = socialAccountsSchema.safeParse(accounts);
   if (!result.success) {
     throw new Error(`Invalid social accounts: ${result.error.errors[0]?.message}`);
@@ -140,7 +140,7 @@ export function validateSocialAccounts(accounts: any): any {
   return result.data;
 }
 
-export function validatePlatforms(platforms: any): string[] {
+export function validatePlatforms(platforms: unknown): string[] {
   const result = platformsSchema.safeParse(platforms);
   if (!result.success) {
     throw new Error(`Invalid platforms: ${result.error.errors[0]?.message}`);
@@ -149,7 +149,7 @@ export function validatePlatforms(platforms: any): string[] {
 }
 
 // Sanitization functions
-export function sanitizeString(input: any, maxLength: number = 255): string {
+export function sanitizeString(input: unknown, maxLength: number = 255): string {
   if (typeof input !== 'string') {
     return '';
   }
@@ -160,7 +160,7 @@ export function sanitizeString(input: any, maxLength: number = 255): string {
     .slice(0, maxLength);
 }
 
-export function sanitizeJsonData(data: any): any {
+export function sanitizeJsonData(data: unknown): Record<string, unknown> {
   if (data === null || data === undefined) {
     return {};
   }
@@ -228,7 +228,7 @@ export function validateJWTRedirectParams(searchParams: URLSearchParams): {
     
     // Allow connections without timestamp for backward compatibility
     return { isValid: true, connected: true };
-  } catch (error) {
+  } catch {
     return { 
       isValid: false, 
       connected: false, 

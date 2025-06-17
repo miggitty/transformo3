@@ -73,7 +73,7 @@ export default function SignInPage() {
         </Button>
 
         <p className="px-4 py-4 text-center text-sm">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/sign-up" className="font-bold underline">
             Sign Up
           </Link>

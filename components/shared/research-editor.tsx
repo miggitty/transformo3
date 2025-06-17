@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { marked } from 'marked';
 

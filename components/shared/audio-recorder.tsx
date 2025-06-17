@@ -9,13 +9,11 @@ import {
   createContentRecord,
   finalizeContentRecord,
 } from '@/app/(app)/new/actions';
-import { useSupabaseBrowser } from '../providers/supabase-provider';
 
 type RecordingStatus = 'idle' | 'recording' | 'processing' | 'uploading';
 
 export function AudioRecorder() {
   const router = useRouter();
-  const supabase = useSupabaseBrowser();
   const [status, setStatus] = useState<RecordingStatus>('idle');
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [permission, setPermission] = useState(false);
@@ -45,8 +43,9 @@ export function AudioRecorder() {
         });
         setPermission(true);
         streamRef.current = streamData;
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to get microphone permission';
+        toast.error(message);
       }
     } else {
       toast.error('The MediaRecorder API is not supported in your browser.');
@@ -149,9 +148,10 @@ export function AudioRecorder() {
         toast.success('Content created successfully!');
         router.push('/content');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to upload audio file.';
       console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload audio file.');
+      toast.error(message);
       setStatus('idle');
       return;
     }
@@ -165,7 +165,7 @@ export function AudioRecorder() {
     if (process.env.NODE_ENV === 'development' && permission && streamRef.current && status === 'idle' && !mediaRecorder.current) {
       startRecording();
     }
-  }, [permission]);
+  }, [permission, status]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);

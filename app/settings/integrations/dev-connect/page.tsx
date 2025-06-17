@@ -69,8 +69,6 @@ export default function DevConnectPage() {
   const [connecting, setConnecting] = useState(false);
   
   const username = searchParams.get('username');
-  const businessId = searchParams.get('business_id');
-  const timestamp = searchParams.get('timestamp');
 
   const handlePlatformToggle = (platformId: string) => {
     setSelectedPlatforms(prev => 

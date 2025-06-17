@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { 
-  getUserProfiles, 
   createUserProfile, 
   findProfileByUsername,
   validateBusinessId,
   sanitizeJsonData,
-  UploadPostError,
   UploadPostAuthError,
   UploadPostValidationError,
   UploadPostRateLimitError
@@ -32,30 +30,34 @@ function checkRateLimit(key: string, limit: number = 10, windowMs: number = 6000
   return true;
 }
 
-function validateAuthenticatedUser(user: any): asserts user is { id: string } {
+function validateAuthenticatedUser(user: unknown): asserts user is { id: string } {
   if (!user) {
     throw new UploadPostAuthError('User not authenticated');
   }
   
-  if (!user.id || typeof user.id !== 'string') {
+  if (!user || typeof user !== 'object' || !('id' in user) || typeof user.id !== 'string') {
     throw new UploadPostValidationError('Invalid user ID');
   }
 }
 
-function validateBusinessProfile(profile: any) {
-  if (!profile || !profile.business_id) {
+function validateBusinessProfile(profile: unknown) {
+  if (!profile || typeof profile !== 'object' || !('business_id' in profile) || !profile.business_id) {
     throw new UploadPostValidationError('Business profile not found or invalid');
   }
   
   // Validate business_id format
-  validateBusinessId(profile.business_id);
+  validateBusinessId(profile.business_id as string);
 }
 
-function sanitizeProfileData(profile: any) {
+function sanitizeProfileData(profile: Record<string, unknown>) {
   return {
-    ...profile,
+    id: profile.id,
+    business_id: profile.business_id,
+    upload_post_username: typeof profile.upload_post_username === 'string' ? profile.upload_post_username.trim() : '',
     social_accounts: sanitizeJsonData(profile.social_accounts),
-    upload_post_username: profile.upload_post_username?.trim() || '',
+    created_at: profile.created_at,
+    updated_at: profile.updated_at,
+    last_synced_at: profile.last_synced_at,
   };
 }
 

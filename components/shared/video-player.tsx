@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Play } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 
 interface VideoPlayerProps {
   src: string;

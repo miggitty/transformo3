@@ -2,7 +2,6 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 import { createUserProfile, findProfileByUsername, generateJWTUrl, testConnection } from '@/lib/upload-post';
 
 /**
@@ -134,7 +133,7 @@ export async function createUploadPostProfile() {
 /**
  * Generate JWT URL for social media connection
  */
-export async function generateSocialMediaConnectionUrl(customOptions: Record<string, any> = {}) {
+export async function generateSocialMediaConnectionUrl(customOptions: Record<string, unknown> = {}) {
   const supabase = await createClient();
 
   try {

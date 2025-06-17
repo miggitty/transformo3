@@ -7,8 +7,8 @@ import { SocialMediaIntegrationCard } from './social-media-integration-card';
 import { validateJWTRedirect } from '@/lib/upload-post';
 
 interface SocialMediaData {
-  profile: any;
-  social_accounts: any;
+  profile: Record<string, unknown>;
+  social_accounts: Record<string, unknown>;
   synced: boolean;
   last_synced_at?: string;
   error?: string;

@@ -33,72 +33,77 @@ function checkRateLimit(key: string, limit: number = 10, windowMs: number = 6000
   return true;
 }
 
-function validateAuthenticatedUser(user: any): asserts user is { id: string } {
+function validateAuthenticatedUser(user: unknown): asserts user is { id: string } {
   if (!user) {
     throw new UploadPostAuthError('User not authenticated');
   }
   
-  if (!user.id || typeof user.id !== 'string') {
+  if (!user || typeof user !== 'object' || !('id' in user) || typeof user.id !== 'string') {
     throw new UploadPostValidationError('Invalid user ID');
   }
 }
 
-function validateBusinessProfile(profile: any) {
-  if (!profile || !profile.business_id) {
+function validateBusinessProfile(profile: unknown) {
+  if (!profile || typeof profile !== 'object' || !('business_id' in profile) || !profile.business_id) {
     throw new UploadPostValidationError('Business profile not found or invalid');
   }
   
   // Validate business_id format
-  validateBusinessId(profile.business_id);
+  validateBusinessId(profile.business_id as string);
 }
 
-function sanitizeProfileData(profile: any) {
+function sanitizeProfileData(profile: Record<string, unknown>) {
   return {
-    ...profile,
+    id: profile.id,
+    business_id: profile.business_id,
+    upload_post_username: typeof profile.upload_post_username === 'string' ? profile.upload_post_username.trim() : '',
     social_accounts: sanitizeJsonData(profile.social_accounts),
-    upload_post_username: profile.upload_post_username?.trim() || '',
+    created_at: profile.created_at,
+    updated_at: profile.updated_at,
+    last_synced_at: profile.last_synced_at,
   };
 }
 
-function validateJWTOptions(options: any): any {
+function validateJWTOptions(options: unknown): Record<string, unknown> {
   if (!options || typeof options !== 'object') {
     return {};
   }
 
-  const validatedOptions: any = {};
+  const validatedOptions: Record<string, unknown> = {};
+  const opts = options as Record<string, unknown>;
 
   // Validate redirectUrl if provided
-  if (options.redirectUrl && typeof options.redirectUrl === 'string') {
+  if (opts.redirectUrl && typeof opts.redirectUrl === 'string') {
     try {
-      validatedOptions.redirectUrl = validateRedirectUrl(options.redirectUrl);
+      validatedOptions.redirectUrl = validateRedirectUrl(opts.redirectUrl);
     } catch (error) {
       throw new UploadPostValidationError(`Invalid redirect URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   // Validate logoImage if provided (basic URL validation)
-  if (options.logoImage && typeof options.logoImage === 'string') {
+  if (opts.logoImage && typeof opts.logoImage === 'string') {
     try {
-      new URL(options.logoImage);
-      validatedOptions.logoImage = options.logoImage;
+      new URL(opts.logoImage);
+      validatedOptions.logoImage = opts.logoImage;
     } catch {
       throw new UploadPostValidationError('Invalid logo image URL');
     }
   }
 
   // Validate redirectButtonText (sanitize)
-  if (options.redirectButtonText && typeof options.redirectButtonText === 'string') {
-    validatedOptions.redirectButtonText = options.redirectButtonText.trim().slice(0, 100); // Limit length
+  if (opts.redirectButtonText && typeof opts.redirectButtonText === 'string') {
+    validatedOptions.redirectButtonText = opts.redirectButtonText.trim().slice(0, 100); // Limit length
   }
 
   // Validate platforms array
-  if (options.platforms && Array.isArray(options.platforms)) {
+  if (opts.platforms && Array.isArray(opts.platforms)) {
     const allowedPlatforms = ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok'];
-    validatedOptions.platforms = options.platforms
-      .filter((platform: any) => typeof platform === 'string' && allowedPlatforms.includes(platform.toLowerCase()))
-      .map((platform: string) => platform.toLowerCase());
+    validatedOptions.platforms = opts.platforms
+      .filter((platform: unknown) => typeof platform === 'string' && allowedPlatforms.includes(platform.toLowerCase()))
+      .map((platform: unknown) => (platform as string).toLowerCase());
       
-    if (validatedOptions.platforms.length === 0) {
+    if ((validatedOptions.platforms as string[]).length === 0) {
       delete validatedOptions.platforms; // Use defaults
     }
   }
