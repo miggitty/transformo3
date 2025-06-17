@@ -18,7 +18,14 @@ export default function SupabaseProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [supabase] = useState(() => createClient());
+  const [supabase] = useState(() => {
+    try {
+      return createClient();
+    } catch (error) {
+      console.warn('Failed to create Supabase client:', error);
+      return null as any;
+    }
+  });
 
   return (
     <SupabaseContext.Provider value={{ supabase }}>
