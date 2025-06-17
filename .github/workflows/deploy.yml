@@ -15,9 +15,16 @@ jobs:
         with:
           version: latest
           
+      - name: Force IPv4 Connection
+        id: ipv4
+        run: |
+          DB_HOST="db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co"
+          IPV4_HOST=$(dig +short A $DB_HOST)
+          echo "host=$IPV4_HOST" >> "$GITHUB_OUTPUT"
+
       - name: Run Migrations
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: supabase db push 
+        run: |
+          DB_URL="postgres://postgres:${SUPABASE_DB_PASSWORD}@${{ steps.ipv4.outputs.host }}:5432/postgres"
+          supabase db push --db-url "$DB_URL" 
