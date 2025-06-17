@@ -75,7 +75,16 @@ export function VideoUploadModal({
     return 'mp4'; // fallback
   };
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
+    if (!file) return;
+    
+    if (!supabase) {
+      toast.error('Database connection unavailable.');
+      return;
+    }
+
+    const filename = `${businessId}_${contentId}_${videoType}`;
+
     const error = validateFile(file);
     if (error) {
       toast.error(error);

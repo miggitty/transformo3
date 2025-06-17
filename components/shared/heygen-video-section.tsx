@@ -83,8 +83,11 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
   };
 
   const handleResetStatus = async () => {
-    const supabase = createClient();
-    
+    if (!supabase) {
+      toast.error('Database connection unavailable.');
+      return;
+    }
+
     const { error } = await supabase
       .from('content')
       .update({

@@ -32,3 +32,12 @@ export function createClient(): SupabaseClient<Database> | null {
     supabaseAnonKey
   );
 }
+
+// Safe client for client-side components that throws if env vars are missing
+export function createClientSafe(): SupabaseClient<Database> {
+  const client = createClient();
+  if (!client) {
+    throw new Error('@supabase/ssr: Your project\'s URL and API key are required to create a Supabase client!\n\nCheck your Supabase project\'s API settings to find these values\n\nhttps://supabase.com/dashboard/project/_/settings/api');
+  }
+  return client;
+}
