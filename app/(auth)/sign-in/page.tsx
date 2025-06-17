@@ -33,7 +33,7 @@ export default function SignInPage() {
       } else {
         router.push('/content'); // Redirect to content page on successful sign-in
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Authentication service unavailable. Please try again later.');
       setLoading(false);
     }

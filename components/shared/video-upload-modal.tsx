@@ -83,8 +83,6 @@ export function VideoUploadModal({
       return;
     }
 
-    const filename = `${businessId}_${contentId}_${videoType}`;
-
     const error = validateFile(file);
     if (error) {
       toast.error(error);
