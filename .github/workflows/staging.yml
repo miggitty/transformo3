@@ -1,0 +1,21 @@
+name: Deploy and Migrate Staging
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+          
+      - name: Run Migrations on Staging
+        env:
+          SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_DB_URL" 
