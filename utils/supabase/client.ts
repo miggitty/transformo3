@@ -1,6 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { type Database } from '@/types/supabase';
 
-export function createClient() {
+export function createClient(): SupabaseClient<Database> | null {
   // During build time, environment variables might not be available
   // Return a null client that can be handled gracefully
   if (typeof window === 'undefined') {
@@ -9,7 +11,7 @@ export function createClient() {
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.warn('Supabase environment variables not available during build time');
-      return null as any;
+      return null;
     }
   }
   
