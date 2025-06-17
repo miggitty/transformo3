@@ -15,16 +15,25 @@ jobs:
         with:
           version: latest
           
+      - name: Install dnsutils
+        run: sudo apt-get update && sudo apt-get install -y dnsutils
+
       - name: Force IPv4 Connection
         id: ipv4
         run: |
           DB_HOST="db.${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co"
+          echo "Resolving IPv4 address for $DB_HOST..."
           IPV4_HOST=$(dig +short A $DB_HOST)
+          if [ -z "$IPV4_HOST" ]; then
+            echo "::error::Could not resolve IPv4 address for $DB_HOST. The host may not have an A record or DNS resolution failed."
+            exit 1
+          fi
+          echo "Successfully resolved IPv4 host: $IPV4_HOST"
           echo "host=$IPV4_HOST" >> "$GITHUB_OUTPUT"
 
       - name: Run Migrations
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          DB_URL="postgres://postgres:${SUPABASE_DB_PASSWORD}@${{ steps.ipv4.outputs.host }}:5432/postgres"
+          DB_URL="postgres://postgres:${{ secrets.SUPABASE_DB_PASSWORD }}@${{ steps.ipv4.outputs.host }}:5432/postgres"
           supabase db push --db-url "$DB_URL" 
