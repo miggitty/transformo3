@@ -2,7 +2,6 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { Tables } from '@/types/supabase';
 
 export async function updateBusinessSettings(

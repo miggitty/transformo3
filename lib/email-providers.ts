@@ -119,7 +119,9 @@ export class MailChimpProvider extends BaseEmailProvider {
       const groups: EmailGroup[] = (data.lists || []).map((list: Record<string, unknown>) => ({
         id: String(list.id),
         name: String(list.name),
-        subscriber_count: (list.stats as Record<string, unknown>)?.member_count as number | undefined,
+        subscriber_count: list.stats && typeof list.stats === 'object' && list.stats !== null 
+          ? (list.stats as Record<string, unknown>).member_count as number | undefined
+          : undefined,
       }));
 
       return { success: true, groups };

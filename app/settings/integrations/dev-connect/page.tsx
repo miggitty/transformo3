@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,7 +62,7 @@ const socialPlatforms = [
   }
 ];
 
-export default function DevConnectPage() {
+function DevConnectContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -229,5 +229,13 @@ export default function DevConnectPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function DevConnectPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DevConnectContent />
+    </Suspense>
   );
 } 
