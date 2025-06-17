@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:vercel": "npm run db:migrate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:reset": "supabase db reset && node supabase/seed-users.mjs",
