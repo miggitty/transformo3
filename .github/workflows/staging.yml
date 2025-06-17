@@ -16,6 +16,12 @@ jobs:
         with:
           version: latest
           
+      - name: Debug Database URL
+        run: |
+          URL_VALUE="${{ secrets.STAGING_SUPABASE_DB_URL }}"
+          echo "Secret length: ${#URL_VALUE}"
+          echo "First 15 characters of secret: ${URL_VALUE:0:15}"
+
       - name: Run Migrations on Staging
         env:
           SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
