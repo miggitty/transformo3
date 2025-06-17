@@ -7,9 +7,13 @@ let supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
 function getSupabaseAdmin() {
   if (!supabaseAdmin) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Missing required Supabase environment variables');
+    }
+    
     supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
       {
         auth: {
           autoRefreshToken: false,
