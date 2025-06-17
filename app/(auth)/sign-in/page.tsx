@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClientSafe } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,18 +9,29 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { type Database } from '@/types/supabase';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
   const router = useRouter();
   
-  // Create client only when component is actually rendered (not during build)
-  const [supabase] = useState(() => createClientSafe());
+  // Create client only after component mounts (not during build)
+  useEffect(() => {
+    setSupabase(createClientSafe());
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!supabase) {
+      toast.error('Authentication service not ready. Please try again.');
+      return;
+    }
+    
     setLoading(true);
 
     try {
