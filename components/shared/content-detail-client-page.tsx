@@ -163,7 +163,7 @@ export default function ContentDetailClientPage({
     };
 
     checkPermissionsAndFetch();
-  }, [content.id, content.business_id, supabase]);
+  }, [content.id, content.business_id, supabase, fetchContentAssets]);
 
   return (
     <div className="flex w-full flex-col gap-4 md:gap-8">

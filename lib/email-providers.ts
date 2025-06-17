@@ -55,10 +55,10 @@ export class MailerLiteProvider extends BaseEmailProvider {
       const data = await response.json();
       
       // MailerLite returns groups in data.data array
-      const groups: EmailGroup[] = (data.data || []).map((group: any) => ({
-        id: group.id,
-        name: group.name,
-        subscriber_count: group.active_count,
+      const groups: EmailGroup[] = (data.data || []).map((group: Record<string, unknown>) => ({
+        id: String(group.id),
+        name: String(group.name),
+        subscriber_count: typeof group.active_count === 'number' ? group.active_count : undefined,
       }));
 
       return { success: true, groups };
@@ -116,10 +116,10 @@ export class MailChimpProvider extends BaseEmailProvider {
       const data = await response.json();
       
       // MailChimp returns lists in lists array
-      const groups: EmailGroup[] = (data.lists || []).map((list: any) => ({
-        id: list.id,
-        name: list.name,
-        subscriber_count: list.stats?.member_count,
+      const groups: EmailGroup[] = (data.lists || []).map((list: Record<string, unknown>) => ({
+        id: String(list.id),
+        name: String(list.name),
+        subscriber_count: (list.stats as Record<string, unknown>)?.member_count as number | undefined,
       }));
 
       return { success: true, groups };
@@ -170,10 +170,10 @@ export class BrevoProvider extends BaseEmailProvider {
       const data = await response.json();
       
       // Brevo returns lists in lists array
-      const groups: EmailGroup[] = (data.lists || []).map((list: any) => ({
-        id: list.id.toString(),
-        name: list.name,
-        subscriber_count: list.totalSubscribers,
+      const groups: EmailGroup[] = (data.lists || []).map((list: Record<string, unknown>) => ({
+        id: String(list.id),
+        name: String(list.name),
+        subscriber_count: typeof list.totalSubscribers === 'number' ? list.totalSubscribers : undefined,
       }));
 
       return { success: true, groups };

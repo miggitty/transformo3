@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function signup(prevState: any, formData: FormData) {
+export async function signup(prevState: unknown, formData: FormData) {
   // Use the server client for the initial user sign-up
   const supabaseUserClient = await createServerClient();
 

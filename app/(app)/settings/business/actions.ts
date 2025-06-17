@@ -9,7 +9,6 @@ export async function updateBusinessSettings(
   formData: Partial<Tables<'businesses'>>,
   businessId: string,
 ) {
-  const cookieStore = cookies();
   const supabase = await createClient();
 
   const { data, error } = await supabase

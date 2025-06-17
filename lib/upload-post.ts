@@ -105,21 +105,22 @@ export function validateBusinessId(businessId: string): string {
   return businessId;
 }
 
-export function sanitizeJsonData(data: any): any {
+export function sanitizeJsonData(data: unknown): Record<string, unknown> {
   if (data === null || data === undefined) {
     return {};
   }
   
   if (typeof data === 'string') {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      return typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
     } catch {
       return {};
     }
   }
   
   if (typeof data === 'object' && !Array.isArray(data)) {
-    return data;
+    return data as Record<string, unknown>;
   }
   
   return {};

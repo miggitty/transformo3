@@ -55,9 +55,10 @@ export async function createContentRecord() {
       data: contentData,
     });
     return { data: contentData };
-  } catch (e: any) {
-    console.error('Action Exception:', e.message);
-    return { error: e.message };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error occurred';
+    console.error('Action Exception:', message);
+    return { error: message };
   }
 }
 

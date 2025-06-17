@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     // If success field is not provided but we have transcript and title, assume success
     const isSuccess = success !== false && transcript && content_title;
     
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (isSuccess) {
       // Success case - update with processed data
