@@ -11,31 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Supabase CLI
-        run: |
-          # Create a temporary directory for download
-          mkdir -p /tmp/supabase-install
-          cd /tmp/supabase-install
-          
-          # Download latest Supabase CLI
-          curl -sSfL https://github.com/supabase/cli/releases/download/v1.200.3/supabase_linux_amd64.tar.gz -o supabase.tar.gz
-          
-          # Extract and install
-          tar -xzf supabase.tar.gz
-          sudo cp supabase /usr/local/bin/
-          sudo chmod +x /usr/local/bin/supabase
-          
-          # Clean up
-          cd /
-          rm -rf /tmp/supabase-install
-          
-          # Verify installation
-          supabase --version
-          
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
           
       - name: Run Migrations
         env:
@@ -43,24 +21,5 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
-          # Create a temporary config file without problematic fields
-          cat > /tmp/supabase-config.toml << 'EOF'
-          project_id = "transformo3"
-          
-          [db]
-          major_version = 15
-          EOF
-          
-          # Link using the simplified config
-          SUPABASE_CONFIG_PATH=/tmp/supabase-config.toml supabase link --project-ref $SUPABASE_PROJECT_ID
-          
-          # Apply migrations directly using psql
-          DB_URL="postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres"
-          
-          # Run each migration file in order
-          for migration_file in supabase/migrations/*.sql; do
-            if [ -f "$migration_file" ]; then
-              echo "Applying migration: $migration_file"
-              psql "$DB_URL" -f "$migration_file"
-            fi
-          done 
+          supabase link --project-ref $SUPABASE_PROJECT_ID
+          supabase db push 
