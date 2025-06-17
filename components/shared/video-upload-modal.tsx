@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { createClient } from '@/utils/supabase/client';
+import { createClientSafe } from '@/utils/supabase/client';
 import { updateVideoUrl } from '@/app/(app)/content/[id]/actions';
 import { Upload, X, Video, Loader2, CheckCircle } from 'lucide-react';
 
@@ -38,7 +38,7 @@ export function VideoUploadModal({
   const [uploadComplete, setUploadComplete] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
+  const supabase = createClientSafe();
 
   // Reset modal state when it opens
   useEffect(() => {
@@ -75,7 +75,9 @@ export function VideoUploadModal({
     return 'mp4'; // fallback
   };
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
+    if (!file) return;
+    
     const error = validateFile(file);
     if (error) {
       toast.error(error);

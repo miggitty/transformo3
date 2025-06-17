@@ -3,22 +3,14 @@ name: Deploy and Migrate
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          
       - name: Install Supabase CLI
         run: |
           curl -sSfL https://github.com/supabase/cli/releases/download/v1.200.3/supabase_linux_amd64.tar.gz | tar -xz

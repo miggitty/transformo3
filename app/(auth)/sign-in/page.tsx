@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useState, useEffect } from 'react';
+import { createClientSafe } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,28 +9,46 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { type Database } from '@/types/supabase';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  
+  // Create client only after component mounts (not during build)
+  useEffect(() => {
+    setSupabase(createClientSafe());
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!supabase) {
+      toast.error('Authentication service not ready. Please try again.');
+      return;
+    }
+    
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      toast.error(error.message);
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+      } else {
+        router.push('/content'); // Redirect to content page on successful sign-in
+      }
+    } catch {
+      toast.error('Authentication service unavailable. Please try again later.');
       setLoading(false);
-    } else {
-      router.push('/content'); // Redirect to content page on successful sign-in
     }
   };
 

@@ -36,6 +36,11 @@ export function DeleteVideoDialog({
   const supabase = createClient();
 
   const handleDelete = async () => {
+    if (!supabase) {
+      toast.error('Database connection unavailable.');
+      return;
+    }
+
     setIsDeleting(true);
     
     try {
