@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:vercel": "npm run db:migrate && next build",
     "start": "next start",
     "lint": "next lint",
-    "db:reset": "supabase db reset && node supabase/seed-users.mjs"
+    "db:reset": "supabase db reset && node supabase/seed-users.mjs",
+    "db:migrate": "supabase db push --password $SUPABASE_DB_PASSWORD",
+    "db:migrate:local": "supabase db push --local"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.17",
