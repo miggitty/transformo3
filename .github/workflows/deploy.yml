@@ -11,26 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Supabase CLI
-        run: |
-          # Create a temporary directory for download
-          mkdir -p /tmp/supabase-install
-          cd /tmp/supabase-install
-          
-          # Download Supabase CLI
-          curl -sSfL https://github.com/supabase/cli/releases/download/v1.200.3/supabase_linux_amd64.tar.gz -o supabase.tar.gz
-          
-          # Extract and install
-          tar -xzf supabase.tar.gz
-          sudo cp supabase /usr/local/bin/
-          sudo chmod +x /usr/local/bin/supabase
-          
-          # Clean up
-          cd /
-          rm -rf /tmp/supabase-install
-          
-          # Verify installation
-          supabase --version
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
           
       - name: Run Migrations
         env:
@@ -38,5 +21,5 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
-          supabase link --project-ref $SUPABASE_PROJECT_ID
-          supabase db push --password $SUPABASE_DB_PASSWORD 
+          DB_URL="postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.${SUPABASE_PROJECT_ID}.supabase.co:5432/postgres"
+          supabase db push --db-url "${DB_URL}" 
