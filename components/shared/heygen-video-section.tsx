@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { generateHeygenVideo } from '@/app/actions/settings';
 import { ContentWithBusiness } from '@/types';
-import { createClient } from '@/utils/supabase/client';
+import { createClientSafe } from '@/utils/supabase/client';
 import { Play, Loader2, Video, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface HeygenVideoSectionProps {
@@ -17,7 +17,7 @@ interface HeygenVideoSectionProps {
 
 export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSectionProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const supabase = createClient();
+  const supabase = createClientSafe();
 
   // Set up real-time subscription for status updates
   useEffect(() => {
@@ -83,11 +83,6 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
   };
 
   const handleResetStatus = async () => {
-    if (!supabase) {
-      toast.error('Database connection unavailable.');
-      return;
-    }
-
     const { error } = await supabase
       .from('content')
       .update({
