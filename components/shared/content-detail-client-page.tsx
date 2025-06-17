@@ -111,6 +111,11 @@ export default function ContentDetailClientPage({
   };
 
   const fetchContentAssets = async () => {
+    if (!supabase) {
+      setError('Database connection unavailable.');
+      return;
+    }
+
     const { data, error: fetchError } = await supabase
       .from('content_assets')
       .select('*')
@@ -141,6 +146,12 @@ export default function ContentDetailClientPage({
 
   useEffect(() => {
     const checkPermissionsAndFetch = async () => {
+      if (!supabase) {
+        setError('Database connection unavailable.');
+        setIsLoading(false);
+        return;
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();

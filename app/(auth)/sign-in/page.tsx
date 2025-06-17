@@ -21,6 +21,12 @@ export default function SignInPage() {
     e.preventDefault();
     setLoading(true);
 
+    if (!supabase) {
+      toast.error('Authentication service unavailable. Please try again later.');
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
