@@ -1,9 +1,9 @@
-name: Deploy Production
+name: Deploy Staging
 
 on:
   push:
     branches:
-      - main
+      - staging
 
 jobs:
   migrate:
@@ -16,7 +16,7 @@ jobs:
         with:
           version: latest
           
-      - name: Run Migrations
+      - name: Run Migrations on Staging
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
         run: supabase db push --db-url "$SUPABASE_DB_URL" 
