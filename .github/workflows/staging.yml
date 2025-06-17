@@ -1,8 +1,9 @@
-name: Deploy and Migrate Staging
+name: Deploy Staging
 
 on:
   push:
-    branches: [staging]
+    branches:
+      - staging
 
 jobs:
   migrate:
