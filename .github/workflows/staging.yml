@@ -13,21 +13,17 @@ jobs:
       
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 1.200.3
         
       - name: Run Migrations on Staging
         env:
-          SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
+          STAGING_SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
         run: |
           echo "🚀 Running database migrations for staging..."
           
-          # Check if there are any pending migrations
-          echo "📋 Checking migration status..."
-          supabase db push --db-url "$SUPABASE_DB_URL" --dry-run || echo "No migrations to apply"
-          
-          # Apply migrations
+          # Apply migrations (skip dry-run to avoid prepared statement issues)
           echo "⚡ Applying migrations..."
-          supabase db push --db-url "$SUPABASE_DB_URL"
+          supabase db push --db-url "$STAGING_SUPABASE_DB_URL" --include-all
           
           echo "✅ Staging database migrations completed!"
           echo "📋 Vercel will auto-deploy the app via Git integration" 
