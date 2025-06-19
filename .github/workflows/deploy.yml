@@ -17,9 +17,9 @@ jobs:
         
       - name: Run Migrations on Production
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PROD_SUPABASE_DB_URL: ${{ secrets.PROD_SUPABASE_DB_URL }}
         run: |
           echo "🚀 Running database migrations for production..."
-          supabase db push --db-url "$SUPABASE_DB_URL"
+          supabase db push --db-url "$PROD_SUPABASE_DB_URL"
           echo "✅ Production database migrations completed!"
           echo "📋 Vercel will auto-deploy the app via Git integration" 
