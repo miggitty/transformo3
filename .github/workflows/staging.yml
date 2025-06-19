@@ -23,7 +23,7 @@ jobs:
           
           # Apply migrations (skip dry-run to avoid prepared statement issues)
           echo "⚡ Applying migrations..."
-          supabase db push --db-url "$STAGING_SUPABASE_DB_URL" --include-all
+          supabase db push --db-url "$STAGING_SUPABASE_DB_URL"
           
           echo "✅ Staging database migrations completed!"
 
