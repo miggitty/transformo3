@@ -20,7 +20,14 @@ jobs:
           PROD_SUPABASE_DB_URL: ${{ secrets.PROD_SUPABASE_DB_URL }}
         run: |
           echo "🚀 Running database migrations for production..."
-          supabase db push --db-url "$PROD_SUPABASE_DB_URL" --ignore-version-mismatch
+          
+          # Try migration, if it fails due to prepared statement, retry once
+          if ! supabase db push --db-url "$PROD_SUPABASE_DB_URL"; then
+            echo "⚠️  First attempt failed, retrying with fresh connection..."
+            sleep 2
+            supabase db push --db-url "$PROD_SUPABASE_DB_URL"
+          fi
+          
           echo "✅ Production database migrations completed!"
 
   deploy:

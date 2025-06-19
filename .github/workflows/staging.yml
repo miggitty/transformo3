@@ -21,9 +21,15 @@ jobs:
         run: |
           echo "🚀 Running database migrations for staging..."
           
-          # Apply migrations with explicit flags to avoid prepared statement issues
+          # Apply migrations with retry logic for prepared statement conflicts
           echo "⚡ Applying migrations..."
-          supabase db push --db-url "$STAGING_SUPABASE_DB_URL" --ignore-version-mismatch
+          
+          # Try migration, if it fails due to prepared statement, retry once
+          if ! supabase db push --db-url "$STAGING_SUPABASE_DB_URL"; then
+            echo "⚠️  First attempt failed, retrying with fresh connection..."
+            sleep 2
+            supabase db push --db-url "$STAGING_SUPABASE_DB_URL"
+          fi
           
           echo "✅ Staging database migrations completed!"
 
