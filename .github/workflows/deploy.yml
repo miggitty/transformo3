@@ -1,4 +1,4 @@
-name: Production Database Migration
+name: Deploy Production
 
 on:
   push:
@@ -22,4 +22,26 @@ jobs:
           echo "🚀 Running database migrations for production..."
           supabase db push --db-url "$PROD_SUPABASE_DB_URL"
           echo "✅ Production database migrations completed!"
-          echo "📋 Vercel will auto-deploy the app via Git integration" 
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Deploy to Production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "🚀 Deploying to production..."
+          
+          # Deploy to production
+          vercel --prod --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID --confirm --force
+          
+          echo "✅ Production deployment completed!"
+          echo "🌐 Available at: https://app3.transformo.io" 

@@ -1,4 +1,4 @@
-name: Staging Database Migration
+name: Deploy Staging
 
 on:
   push:
@@ -26,4 +26,32 @@ jobs:
           supabase db push --db-url "$STAGING_SUPABASE_DB_URL" --include-all
           
           echo "✅ Staging database migrations completed!"
-          echo "📋 Vercel will auto-deploy the app via Git integration" 
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Deploy to Staging
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "🚀 Deploying to staging..."
+          
+          # Deploy to preview (not production)
+          DEPLOYMENT_URL=$(vercel --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID --confirm --force --no-wait | grep -o 'https://[^[:space:]]*')
+          
+          echo "📋 Deployment URL: $DEPLOYMENT_URL"
+          
+          # Assign the deployment to staging domain
+          echo "🔗 Assigning to staging domain..."
+          vercel alias set $DEPLOYMENT_URL staging.app3.transformo.io --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID
+          
+          echo "✅ Staging deployment completed!"
+          echo "🌐 Available at: https://staging.app3.transformo.io" 
