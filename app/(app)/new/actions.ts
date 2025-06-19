@@ -69,6 +69,11 @@ export async function finalizeContentRecord(
 ) {
   const supabase = await createSupabaseServerClient();
 
+  console.log('=== Audio URL Debug Info ===');
+  console.log('Input audioUrl:', audioUrl);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('NEXT_PUBLIC_SUPABASE_EXTERNAL_URL:', process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL);
+
   const { data: updatedContent, error } = await supabase
     .from('content')
     .update({
@@ -92,11 +97,23 @@ export async function finalizeContentRecord(
     // Extract the path from the local Supabase URL and construct external Supabase URL
     const urlPath = audioUrl.replace('http://127.0.0.1:54321', '');
     publicAudioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+    console.log('URL converted for development - urlPath:', urlPath);
+    console.log('URL converted for development - publicAudioUrl:', publicAudioUrl);
   }
   // In production/staging, audioUrl is already a public Supabase URL that n8n can access directly
 
+  console.log('Final publicAudioUrl being sent to N8N:', publicAudioUrl);
+  console.log('publicAudioUrl type:', typeof publicAudioUrl);
+  console.log('publicAudioUrl length:', publicAudioUrl?.length);
+
   // Follow the content creation pattern with enriched payload
   const webhookUrl = process.env.N8N_WEBHOOK_URL_AUDIO_PROCESSING;
+  
+  console.log('=== N8N Environment Variables Debug ===');
+  console.log('N8N_WEBHOOK_URL_AUDIO_PROCESSING:', webhookUrl);
+  console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
+  console.log('N8N_CALLBACK_SECRET exists:', !!process.env.N8N_CALLBACK_SECRET);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
   
   if (!webhookUrl) {
     console.error('N8N_WEBHOOK_URL_AUDIO_PROCESSING is not configured');
@@ -115,6 +132,8 @@ export async function finalizeContentRecord(
     };
 
     console.log('Triggering N8N audio processing workflow...');
+    console.log('N8N Payload being sent:', JSON.stringify(enrichedPayload, null, 2));
+    console.log('Making fetch request to:', webhookUrl);
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -122,11 +141,17 @@ export async function finalizeContentRecord(
       body: JSON.stringify(enrichedPayload),
     });
 
+    console.log('N8N webhook response status:', response.status);
+    console.log('N8N webhook response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('N8N webhook failed:', errorText);
       return { error: `N8N webhook failed: ${response.statusText}` };
     }
+
+    const responseText = await response.text();
+    console.log('N8N webhook response body:', responseText);
 
     revalidatePath('/content');
     revalidatePath(`/content/${contentId}`);
