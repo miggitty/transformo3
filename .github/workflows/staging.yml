@@ -68,10 +68,6 @@ jobs:
           DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
           
           echo "📋 Deployment URL: $DEPLOYMENT_URL"
-          
-          # Assign the deployment to staging domain
-          echo "🔗 Assigning to staging domain..."
-          vercel alias set $DEPLOYMENT_URL staging.app3.transformo.io --token=$VERCEL_TOKEN
-          
           echo "✅ Staging deployment completed!"
-          echo "🌐 Available at: https://staging.app3.transformo.io" 
+          echo "🌐 Preview available at: $DEPLOYMENT_URL"
+          echo "📝 Note: Configure staging.app3.transformo.io domain in Vercel dashboard to use custom domain" 
