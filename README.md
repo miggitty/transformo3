@@ -50,3 +50,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
   ```
 - Only push migrations to the remote (production) database when explicitly requested.
 - Migration files must be named with the current UTC timestamp: `YYYYMMDDHHMMSS_description.sql`.
+
+# Transformo3
+
+<!-- Test deployment workflow - disconnected from Vercel Git integration -->
