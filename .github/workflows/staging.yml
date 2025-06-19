@@ -1,4 +1,4 @@
-name: Deploy Staging
+name: Staging Database Migration
 
 on:
   push:
@@ -18,41 +18,16 @@ jobs:
       - name: Run Migrations on Staging
         env:
           SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
-        run: supabase db push --db-url "$SUPABASE_DB_URL"
-        
-  deploy:
-    runs-on: ubuntu-latest
-    needs: migrate
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-        
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_STAGING }}
-          
-      - name: Build Project Artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_STAGING }}
-          
-      - name: Deploy Project Artifacts to Vercel
-        id: vercel-deploy
         run: |
-          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
-          echo "Deployment URL: $url"
-          echo "deployment-url=$url" >> $GITHUB_OUTPUT
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_STAGING }}
+          echo "🚀 Running database migrations for staging..."
           
-      - name: Comment deployment URL on PR
-        if: success()
-        run: |
-          echo "✅ Staging deployment successful!"
-          echo "🚀 Deployment URL: ${{ steps.vercel-deploy.outputs.deployment-url }}" 
+          # Check if there are any pending migrations
+          echo "📋 Checking migration status..."
+          supabase db push --db-url "$SUPABASE_DB_URL" --dry-run || echo "No migrations to apply"
+          
+          # Apply migrations
+          echo "⚡ Applying migrations..."
+          supabase db push --db-url "$SUPABASE_DB_URL"
+          
+          echo "✅ Staging database migrations completed!"
+          echo "📋 Vercel will auto-deploy the app via Git integration" 
