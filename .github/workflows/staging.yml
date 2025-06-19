@@ -13,7 +13,7 @@ jobs:
       
       - uses: supabase/setup-cli@v1
         with:
-          version: 1.200.3
+          version: latest
         
       - name: Run Migrations on Staging
         env:
@@ -21,9 +21,9 @@ jobs:
         run: |
           echo "🚀 Running database migrations for staging..."
           
-          # Apply migrations (skip dry-run to avoid prepared statement issues)
+          # Apply migrations with explicit flags to avoid prepared statement issues
           echo "⚡ Applying migrations..."
-          supabase db push --db-url "$STAGING_SUPABASE_DB_URL"
+          supabase db push --db-url "$STAGING_SUPABASE_DB_URL" --ignore-version-mismatch
           
           echo "✅ Staging database migrations completed!"
 
