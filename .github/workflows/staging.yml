@@ -21,15 +21,12 @@ jobs:
         run: |
           echo "🚀 Running database migrations for staging..."
           
-          # Apply migrations with retry logic for prepared statement conflicts
-          echo "⚡ Applying migrations..."
+          # Use direct connection with session mode to avoid prepared statement conflicts
+          DIRECT_DB_URL=$(echo "$STAGING_SUPABASE_DB_URL" | sed 's/\?.*$//')
+          DIRECT_DB_URL="${DIRECT_DB_URL}?sslmode=require&pgbouncer=false"
           
-          # Try migration, if it fails due to prepared statement, retry once
-          if ! supabase db push --db-url "$STAGING_SUPABASE_DB_URL"; then
-            echo "⚠️  First attempt failed, retrying with fresh connection..."
-            sleep 2
-            supabase db push --db-url "$STAGING_SUPABASE_DB_URL"
-          fi
+          echo "⚡ Applying migrations with direct connection..."
+          supabase db push --db-url "$DIRECT_DB_URL"
           
           echo "✅ Staging database migrations completed!"
 
