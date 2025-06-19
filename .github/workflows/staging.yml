@@ -36,6 +36,20 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
         
+      - name: Pull Vercel Environment Information
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+        
+      - name: Build Project Artifacts
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --token=$VERCEL_TOKEN
+        
       - name: Deploy to Staging
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -44,14 +58,14 @@ jobs:
         run: |
           echo "🚀 Deploying to staging..."
           
-          # Deploy to preview (not production)
-          DEPLOYMENT_URL=$(vercel --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID --confirm --force --no-wait | grep -o 'https://[^[:space:]]*')
+          # Deploy to preview and capture URL
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
           
           echo "📋 Deployment URL: $DEPLOYMENT_URL"
           
           # Assign the deployment to staging domain
           echo "🔗 Assigning to staging domain..."
-          vercel alias set $DEPLOYMENT_URL staging.app3.transformo.io --token $VERCEL_TOKEN --scope $VERCEL_ORG_ID
+          vercel alias set $DEPLOYMENT_URL staging.app3.transformo.io --token=$VERCEL_TOKEN
           
           echo "✅ Staging deployment completed!"
           echo "🌐 Available at: https://staging.app3.transformo.io" 
