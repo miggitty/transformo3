@@ -1,4 +1,4 @@
-name: Staging Database Migration
+name: Deploy Staging
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       
       - uses: supabase/setup-cli@v1
         with:
-          version: 1.200.3
+          version: latest
         
       - name: Run Migrations on Staging
         env:
@@ -21,9 +21,50 @@ jobs:
         run: |
           echo "🚀 Running database migrations for staging..."
           
-          # Apply migrations (skip dry-run to avoid prepared statement issues)
-          echo "⚡ Applying migrations..."
-          supabase db push --db-url "$STAGING_SUPABASE_DB_URL" --include-all
+          # Use direct connection with session mode to avoid prepared statement conflicts
+          DIRECT_DB_URL=$(echo "$STAGING_SUPABASE_DB_URL" | sed 's/\?.*$//')
+          DIRECT_DB_URL="${DIRECT_DB_URL}?sslmode=require&pgbouncer=false"
+          
+          echo "⚡ Applying migrations with direct connection..."
+          supabase db push --db-url "$DIRECT_DB_URL"
           
           echo "✅ Staging database migrations completed!"
-          echo "📋 Vercel will auto-deploy the app via Git integration" 
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Pull Vercel Environment Information
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+        
+      - name: Build Project Artifacts
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel build --token=$VERCEL_TOKEN
+        
+      - name: Deploy to Staging
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "🚀 Deploying to staging..."
+          
+          # Deploy to preview and capture URL
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+          
+          echo "📋 Deployment URL: $DEPLOYMENT_URL"
+          echo "✅ Staging deployment completed!"
+          echo "🌐 Preview available at: $DEPLOYMENT_URL"
+          echo "📝 Note: Configure staging.app3.transformo.io domain in Vercel dashboard to use custom domain" 

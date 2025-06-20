@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
 import { ContentTable } from '@/components/shared/content-table';
+import { DebugEnvVars } from '@/components/shared/debug-env-vars';
 
 export default async function ContentPage() {
   const supabase = await createClient();
@@ -42,27 +43,30 @@ export default async function ContentPage() {
   }
   
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Content List 300 - Testing DB Connection Trania</CardTitle>
-          <CardDescription>
-            Manage and create new content for your business.
-          </CardDescription>
-        </div>
-        <Link href="/new">
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Content
-          </Button>
-        </Link>
-      </CardHeader>
-      <CardContent>
-        <ContentTable
-          serverContent={content || []}
-          businessId={businessId || ''}
-        />
-      </CardContent>
-    </Card>
+    <>
+      <DebugEnvVars />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Content List 300 - Testing DB Connection jesse</CardTitle>
+            <CardDescription>
+              Manage and create new content for your business.
+            </CardDescription>
+          </div>
+          <Link href="/new">
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Content
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <ContentTable
+            serverContent={content || []}
+            businessId={businessId || ''}
+          />
+        </CardContent>
+      </Card>
+    </>
   );
 } 
