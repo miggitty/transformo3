@@ -48,7 +48,7 @@ export default async function ContentPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Content List 300 - Testing DB Connection Joseph</CardTitle>
+            <CardTitle>Content List 300 - Testing DB Connection Jireh</CardTitle>
             <CardDescription>
               Manage and create new content for your business.
             </CardDescription>
