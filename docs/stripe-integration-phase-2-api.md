@@ -5,10 +5,15 @@
 ---
 
 ## **Phase Overview**
-Implement backend logic for Stripe integration following Transformo's established API route patterns and server action conventions.
+Implement backend logic for Stripe integration following Transformo's established API route patterns and server action conventions, using official Stripe best practices.
 
 **Duration**: 4-5 hours  
 **Prerequisites**: Phase 1 completed, Stripe environment variables configured
+
+**References**: 
+- [Stripe Next.js Subscription Guide](https://stripe.com/docs/billing/subscriptions/build-subscriptions-nextjs)
+- [Stripe Webhooks Guide](https://stripe.com/docs/webhooks)
+- [Stripe Free Trials](https://stripe.com/docs/billing/subscriptions/trials)
 
 ---
 
@@ -53,11 +58,11 @@ Implement backend logic for Stripe integration following Transformo's establishe
 ### **1.1 Install Dependencies**
 
 ```bash
-# Install Stripe SDK
+# Install Stripe SDK (latest version)
 npm install stripe @stripe/stripe-js
 
-# Install additional dependencies for webhook handling
-npm install micro raw-body
+# Install date utilities for subscription calculations
+npm install date-fns
 ```
 
 ### **1.2 Environment Variables**
@@ -90,7 +95,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2024-12-18.acacia', // Use latest API version
   typescript: true,
 });
 
@@ -103,7 +108,7 @@ export const STRIPE_CONFIG = {
 
 // Verify price IDs are configured
 if (!STRIPE_CONFIG.MONTHLY_PRICE_ID || !STRIPE_CONFIG.YEARLY_PRICE_ID) {
-  throw new Error('Stripe price IDs must be configured in environment variables');
+  console.warn('Stripe price IDs not configured. Set STRIPE_MONTHLY_PRICE_ID and STRIPE_YEARLY_PRICE_ID in environment variables.');
 }
 ```
 
@@ -164,16 +169,17 @@ async function ensureStripeCustomer(business: Tables<'businesses'>, userEmail: s
     return business.stripe_customer_id;
   }
 
-  // Create Stripe customer
+  // Create Stripe customer with proper metadata
   const customer = await stripe.customers.create({
     email: userEmail,
     name: business.business_name,
     metadata: {
       business_id: business.id,
+      supabase_business_id: business.id, // Backup reference
     },
   });
 
-  // Update business with Stripe customer ID
+  // Update business with Stripe customer ID using service role
   const supabase = await createClient();
   const { error: updateError } = await supabase
     .from('businesses')
@@ -181,6 +187,8 @@ async function ensureStripeCustomer(business: Tables<'businesses'>, userEmail: s
     .eq('id', business.id);
 
   if (updateError) {
+    // Clean up Stripe customer if we can't save to database
+    await stripe.customers.del(customer.id);
     throw new Error('Failed to save Stripe customer ID');
   }
 
@@ -200,10 +208,29 @@ export async function createCheckoutSession(plan: PlanType) {
       ? STRIPE_CONFIG.MONTHLY_PRICE_ID 
       : STRIPE_CONFIG.YEARLY_PRICE_ID;
 
-    // Create checkout session
+    if (!priceId) {
+      throw new Error(`Price ID not configured for ${plan} plan`);
+    }
+
+    // Check if customer already has an active subscription
+    const existingSubscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'active',
+      limit: 1,
+    });
+
+    if (existingSubscriptions.data.length > 0) {
+      return { 
+        success: false, 
+        error: 'Customer already has an active subscription' 
+      };
+    }
+
+    // Create checkout session following Stripe best practices
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
+      billing_address_collection: 'required',
       line_items: [
         {
           price: priceId,
@@ -215,17 +242,24 @@ export async function createCheckoutSession(plan: PlanType) {
         trial_period_days: STRIPE_CONFIG.TRIAL_PERIOD_DAYS,
         metadata: {
           business_id: business.id,
+          created_by: user.id,
         },
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?success=true`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?canceled=true`,
       metadata: {
         business_id: business.id,
+        user_id: user.id,
+      },
+      allow_promotion_codes: true, // Allow discount codes
+      customer_update: {
+        address: 'auto',
+        name: 'auto',
       },
     });
 
     if (!session.url) {
-      throw new Error('Failed to create checkout session');
+      throw new Error('Failed to create checkout session URL');
     }
 
     return { success: true, url: session.url };
@@ -244,7 +278,14 @@ export async function createPortalSession() {
     const { business } = await getUserBusiness();
     
     if (!business.stripe_customer_id) {
-      throw new Error('No active subscription found');
+      throw new Error('No Stripe customer found. Please contact support.');
+    }
+
+    // Verify customer exists in Stripe
+    try {
+      await stripe.customers.retrieve(business.stripe_customer_id);
+    } catch (error) {
+      throw new Error('Stripe customer not found. Please contact support.');
     }
 
     const session = await stripe.billingPortal.sessions.create({
@@ -284,6 +325,39 @@ export async function getSubscriptionStatus() {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to get subscription status' 
+    };
+  }
+}
+
+// Cancel subscription (sets to cancel at period end)
+export async function cancelSubscription() {
+  try {
+    const { business } = await getUserBusiness();
+    
+    const supabase = await createClient();
+    const { data: subscription, error } = await supabase
+      .from('subscriptions')
+      .select('stripe_subscription_id')
+      .eq('business_id', business.id)
+      .single();
+
+    if (error || !subscription) {
+      throw new Error('No active subscription found');
+    }
+
+    // Cancel at period end (user keeps access until end of billing period)
+    await stripe.subscriptions.update(subscription.stripe_subscription_id, {
+      cancel_at_period_end: true,
+    });
+
+    revalidatePath('/billing');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to cancel subscription' 
     };
   }
 }
@@ -330,9 +404,11 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
           hasAccess: true,
           status: 'trialing',
           daysLeft: Math.max(0, daysLeft),
-          showBanner: true,
+          showBanner: daysLeft <= 3, // Show banner in last 3 days of trial
           bannerType: 'trial',
-          message: `${Math.max(0, daysLeft)} days left in your free trial`,
+          message: daysLeft > 0 
+            ? `${Math.max(0, daysLeft)} days left in your free trial`
+            : 'Your free trial has ended',
         };
       }
       return {
@@ -350,7 +426,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
       };
 
     case 'past_due':
-      // 7-day grace period
+      // 7-day grace period from current period end
       const gracePeriodEnd = new Date(currentPeriodEnd.getTime() + (7 * 24 * 60 * 60 * 1000));
       if (now < gracePeriodEnd) {
         const daysLeft = Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -390,6 +466,21 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
         message: 'Subscription expired. Please subscribe to continue using the platform.',
       };
 
+    case 'incomplete':
+    case 'incomplete_expired':
+      return {
+        hasAccess: false,
+        status: 'access_denied',
+        message: 'Payment incomplete. Please complete your subscription setup.',
+      };
+
+    case 'unpaid':
+      return {
+        hasAccess: false,
+        status: 'access_denied',
+        message: 'Subscription unpaid. Please update your payment method.',
+      };
+
     default:
       return {
         hasAccess: false,
@@ -401,26 +492,36 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
 
 // Get plan display name from price ID
 export function getPlanName(priceId: string): string {
-  if (priceId === process.env.STRIPE_MONTHLY_PRICE_ID) {
+  if (priceId === process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID) {
     return 'Monthly Plan';
   }
-  if (priceId === process.env.STRIPE_YEARLY_PRICE_ID) {
+  if (priceId === process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID) {
     return 'Yearly Plan';
   }
   return 'Unknown Plan';
 }
 
 // Calculate savings for yearly plan
-export function calculateYearlySavings(): { monthlyTotal: number; yearlyPrice: number; savings: number } {
+export function calculateYearlySavings(): { monthlyTotal: number; yearlyPrice: number; savings: number; percentSavings: number } {
   const monthlyTotal = 199 * 12; // $199 × 12 months
   const yearlyPrice = 1990; // $1990 yearly
   const savings = monthlyTotal - yearlyPrice;
+  const percentSavings = Math.round((savings / monthlyTotal) * 100);
   
   return {
     monthlyTotal,
     yearlyPrice,
     savings,
+    percentSavings,
   };
+}
+
+// Format price for display
+export function formatPrice(cents: number, currency: string = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(cents / 100);
 }
 ```
 
@@ -430,23 +531,36 @@ export function calculateYearlySavings(): { monthlyTotal: number; yearlyPrice: n
 
 ### **3.1 Webhook Handler**
 
-Create `app/api/stripe/webhooks/route.ts` following app's API route patterns:
+Create `app/api/stripe/webhooks/route.ts` following Stripe security best practices:
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
-// Create service role client for webhook operations
-async function createServiceRoleClient() {
-  return createClient(process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Create admin Supabase client for webhook operations
+function createAdminClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Missing Supabase environment variables');
+  }
+  
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
 }
 
 // Check if event was already processed (idempotency)
-async function isEventProcessed(eventId: string) {
-  const supabase = await createServiceRoleClient();
+async function isEventProcessed(eventId: string): Promise<boolean> {
+  const supabase = createAdminClient();
   
   const { data, error } = await supabase
     .from('stripe_events')
@@ -454,12 +568,12 @@ async function isEventProcessed(eventId: string) {
     .eq('stripe_event_id', eventId)
     .single();
 
-  return !error && data;
+  return !error && !!data;
 }
 
 // Mark event as processed
-async function markEventProcessed(eventId: string, eventType: string, eventData?: any) {
-  const supabase = await createServiceRoleClient();
+async function markEventProcessed(eventId: string, eventType: string, eventData?: any): Promise<void> {
+  const supabase = createAdminClient();
   
   const { error } = await supabase
     .from('stripe_events')
@@ -471,19 +585,23 @@ async function markEventProcessed(eventId: string, eventType: string, eventData?
 
   if (error) {
     console.error('Error marking event as processed:', error);
+    throw error;
   }
 }
 
 // Handle checkout.session.completed
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
   if (!session.subscription || !session.customer) {
     throw new Error('Invalid checkout session: missing subscription or customer');
   }
 
-  const supabase = await createServiceRoleClient();
+  const supabase = createAdminClient();
   
   // Get subscription details from Stripe
-  const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+  const subscription = await stripe.subscriptions.retrieve(session.subscription as string, {
+    expand: ['items.data.price']
+  });
+  
   const businessId = session.metadata?.business_id;
 
   if (!businessId) {
@@ -507,13 +625,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (error) {
     throw new Error(`Failed to create subscription record: ${error.message}`);
   }
+
+  console.log(`Subscription created for business ${businessId}: ${subscription.id}`);
 }
 
 // Handle invoice.paid
-async function handleInvoicePaid(invoice: Stripe.Invoice) {
+async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   if (!invoice.subscription) return;
 
-  const supabase = await createServiceRoleClient();
+  const supabase = createAdminClient();
   
   // Get subscription details from Stripe
   const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
@@ -532,13 +652,15 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   if (error) {
     throw new Error(`Failed to update subscription record: ${error.message}`);
   }
+
+  console.log(`Invoice paid for subscription: ${subscription.id}`);
 }
 
 // Handle invoice.payment_failed
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
+async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   if (!invoice.subscription) return;
 
-  const supabase = await createServiceRoleClient();
+  const supabase = createAdminClient();
   
   // Get subscription details from Stripe
   const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
@@ -554,11 +676,13 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   if (error) {
     throw new Error(`Failed to update subscription status: ${error.message}`);
   }
+
+  console.log(`Payment failed for subscription: ${subscription.id}`);
 }
 
 // Handle customer.subscription.updated
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const supabase = await createServiceRoleClient();
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
+  const supabase = createAdminClient();
 
   // Update subscription record
   const { error } = await supabase
@@ -575,11 +699,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (error) {
     throw new Error(`Failed to update subscription: ${error.message}`);
   }
+
+  console.log(`Subscription updated: ${subscription.id} - Status: ${subscription.status}`);
 }
 
 // Handle customer.subscription.deleted
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const supabase = await createServiceRoleClient();
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
+  const supabase = createAdminClient();
 
   // Update subscription status to canceled
   const { error } = await supabase
@@ -592,12 +718,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   if (error) {
     throw new Error(`Failed to mark subscription as canceled: ${error.message}`);
   }
+
+  console.log(`Subscription deleted: ${subscription.id}`);
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const headersList = headers();
+    const headersList = await headers();
     const signature = headersList.get('stripe-signature');
 
     if (!signature) {
@@ -608,13 +736,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.STRIPE_WEBHOOK_SIGNING_SECRET) {
+      console.error('Missing STRIPE_WEBHOOK_SIGNING_SECRET');
+      return NextResponse.json(
+        { error: 'Webhook secret not configured' },
+        { status: 500 }
+      );
+    }
+
     // Verify webhook signature
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_WEBHOOK_SIGNING_SECRET!
+        process.env.STRIPE_WEBHOOK_SIGNING_SECRET
       );
     } catch (err) {
       console.error('Webhook signature verification failed:', err);
@@ -686,7 +822,8 @@ export async function POST(request: NextRequest) {
 
 ```bash
 # Install Stripe CLI
-# Follow instructions at: https://stripe.com/docs/stripe-cli#install
+# macOS: brew install stripe/stripe-cli/stripe
+# Windows: Download from https://github.com/stripe/stripe-cli/releases
 
 # Login to Stripe CLI
 stripe login
@@ -694,20 +831,38 @@ stripe login
 # Forward webhooks to local development
 stripe listen --forward-to localhost:3000/api/stripe/webhooks
 
-# Note the webhook signing secret and add it to .env.local
+# Copy the webhook signing secret from CLI output to .env.local
+# STRIPE_WEBHOOK_SIGNING_SECRET=whsec_...
 ```
 
 ### **4.2 Test Webhook Events**
 
 ```bash
-# Test checkout session completed
+# Test specific events
 stripe trigger checkout.session.completed
-
-# Test invoice paid
 stripe trigger invoice.paid
-
-# Test payment failed
 stripe trigger invoice.payment_failed
+stripe trigger customer.subscription.updated
+stripe trigger customer.subscription.deleted
+
+# Test with specific data
+stripe trigger checkout.session.completed --add checkout_session:metadata[business_id]=test-business-id
+```
+
+### **4.3 Local Testing Checklist**
+
+```bash
+# 1. Verify webhook endpoint responds
+curl -X POST http://localhost:3000/api/stripe/webhooks
+
+# 2. Test checkout session creation
+# Navigate to /billing and try creating a subscription
+
+# 3. Test portal access
+# Create a subscription then access the portal
+
+# 4. Verify database updates
+# Check subscriptions table after webhook events
 ```
 
 ---
@@ -717,13 +872,16 @@ stripe trigger invoice.payment_failed
 Before moving to Phase 3, verify:
 
 - [ ] Environment variables configured correctly
-- [ ] Stripe SDK properly initialized
+- [ ] Stripe SDK properly initialized with latest API version
 - [ ] Server actions handle subscription operations
 - [ ] Webhook handler processes all required events
 - [ ] Event idempotency working correctly
 - [ ] Subscription status utilities function properly
 - [ ] Error handling covers edge cases
 - [ ] Webhook signature verification passes
+- [ ] Customer portal integration works
+- [ ] Free trial setup correctly configured
+- [ ] All Stripe API calls follow official documentation patterns
 
 ---
 

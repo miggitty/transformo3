@@ -1,179 +1,410 @@
 # **Stripe Subscription Integration PRD**
 
-## **📋 Document Suite**
-
-This is the main PRD document. Related documents:
-- **[Phase 1: Database Schema & Migrations](./stripe-integration-phase-1-database.md)** - Database setup and migration scripts
-- **[Phase 2: API Routes & Server Actions](./stripe-integration-phase-2-api.md)** - Backend implementation
-- **[Phase 3: UI Components & Forms](./stripe-integration-phase-3-ui.md)** - Frontend components and pages
-- **[Phase 4: Integration & Access Control](./stripe-integration-phase-4-integration.md)** - Middleware and access control
+**Project**: Transformo SaaS Platform  
+**Feature**: Subscription Billing with Stripe  
+**Version**: 1.0  
+**Last Updated**: December 2024
 
 ---
 
-## **1. Project Overview & Goals**
+## **🎯 Overview**
 
-### **Background**
-Transformo is a Next.js 15 SaaS application using Supabase for database and authentication. The app helps businesses create and manage content across multiple platforms. Currently, the app is free to use, but we need to implement a subscription billing system to monetize the platform.
+This PRD outlines the implementation of Stripe subscription billing for Transformo, a Next.js 15 SaaS application that transforms audio content into multiple formats for content creators and marketers.
 
-### **Architecture Context**
-The app follows specific patterns that **MUST** be preserved:
-- **Next.js App Router** with server components and server actions
-- **Supabase** for database with RLS policies and Vault for secrets
-- **ShadCN UI** components with Tailwind CSS
-- **TypeScript** with generated Supabase types
-- **Migration-first** database schema changes
-- **Business-centric** data model (each user belongs to a business)
+**Business Goal**: Enable subscription revenue with a 7-day free trial, monthly/yearly billing options, and proper access control throughout the application.
 
-### **Goals**
-- [ ] Implement Stripe subscription billing with 7-day free trial
-- [ ] Gate application features based on subscription status
-- [ ] Provide self-service billing management via Stripe Customer Portal
-- [ ] Maintain data integrity between Stripe and Supabase
-- [ ] Follow existing app patterns and reuse components
+**Technical Goals**: 
+- Seamless Stripe integration following official best practices
+- Robust webhook handling for subscription lifecycle management
+- Graceful access control with proper fallbacks
+- Performance-optimized middleware with caching
+- Production-ready security and error handling
 
 ---
 
-## **2. User Stories**
+## **📚 Official Stripe Documentation References**
 
-### **As a Business Owner/Admin:**
-- [ ] I want to start a 7-day free trial by providing payment details
-- [ ] I want to see a trial countdown showing remaining days
-- [ ] I want to choose between monthly ($199) and yearly ($1990) plans
-- [ ] I want a self-service portal to manage my subscription
-- [ ] I want to retain access until the end of my billing period after cancellation
-- [ ] I want a 7-day grace period if my payment fails
+This implementation is based on official Stripe documentation and best practices:
 
-### **As a Team Member:**
-- [ ] I want my access to be controlled by my business's subscription status
-- [ ] I want clear messaging when access is restricted
+### **Primary Resources**
+1. **[Next.js Subscription Guide](https://stripe.com/docs/billing/subscriptions/build-subscriptions-nextjs)** - Main implementation guide
+2. **[Stripe Checkout Sessions](https://stripe.com/docs/payments/checkout)** - Payment flow setup
+3. **[Subscription Trials](https://stripe.com/docs/billing/subscriptions/trials)** - Free trial implementation
+4. **[Webhook Handling](https://stripe.com/docs/webhooks)** - Event processing and security
+5. **[Customer Portal](https://stripe.com/docs/billing/subscriptions/customer-portal)** - Self-service billing
+
+### **Security & Best Practices**
+- **[Webhook Signatures](https://stripe.com/docs/webhooks/signatures)** - Event verification
+- **[Idempotency](https://stripe.com/docs/api/idempotent_requests)** - Duplicate event handling
+- **[Error Handling](https://stripe.com/docs/error-handling)** - Graceful failure management
+
+### **Revenue Recovery**
+- **[Smart Retries](https://stripe.com/docs/billing/revenue-recovery)** - Failed payment handling
+- **[Grace Periods](https://stripe.com/docs/billing/revenue-recovery#grace-periods)** - Access control during payment issues
 
 ---
 
-## **3. Technical Architecture**
+## **🏗️ Technical Architecture**
 
-### **3.1 Core Design Principles**
-Following the app's existing patterns:
+### **Data Model**
+- **Business-centric billing**: One Stripe customer per business (not per user)
+- **Subscription tracking**: Full lifecycle management via webhooks
+- **Audit trail**: Complete event logging for compliance and debugging
 
-1. **Business-Centric Billing**: Each business gets one Stripe Customer
-2. **Vault-Based Secrets**: Stripe Customer ID stored in business record
-3. **Server Actions**: Use server actions for all subscription operations
-4. **RLS Policies**: Subscription data protected by business ownership
-5. **Middleware Access Control**: Existing middleware enhanced for billing checks
-6. **Component Reuse**: Leverage existing ShadCN components and form patterns
-
-### **3.2 Data Flow**
+### **Access Control Strategy**
 ```
-User → Business → Stripe Customer → Subscription → Access Control
+Trial (7 days) → Active Subscription → Past Due (7-day grace) → Access Denied
+                ↓
+            Canceled (access until period end) → Access Denied
 ```
 
-### **3.3 Access Control Logic**
-The existing `middleware.ts` will be enhanced to check subscription status:
-
-1. **Authentication Check** (existing) → **Subscription Check** (new)
-2. Query subscriptions table for user's business
-3. Apply access rules based on status and dates:
-   - `trialing` or `active`: Full access
-   - `past_due`: 7-day grace period with warning banner
-   - `canceled`: Access until `current_period_end`
-   - No subscription: Redirect to billing
+### **Infrastructure Requirements**
+- **Environment**: Next.js 15 App Router with Supabase backend
+- **Authentication**: Supabase Auth with RLS policies
+- **Payments**: Stripe Checkout with Customer Portal
+- **Real-time**: Webhook-driven subscription status updates
 
 ---
 
-## **4. Implementation Phases**
+## **💰 Business Model**
 
-### **Phase 1: Database Foundation** ⏱️ 2-3 hours
-Set up database schema following app's migration patterns
-**→ [Detailed Phase 1 Guide](./stripe-integration-phase-1-database.md)**
+### **Pricing Structure**
+- **Free Trial**: 7 days, full feature access
+- **Monthly Plan**: $29/month
+- **Yearly Plan**: $290/year (2 months free)
+- **Grace Period**: 7 days for failed payments
 
-### **Phase 2: API & Server Actions** ⏱️ 4-5 hours  
-Implement backend logic following app's API route patterns
-**→ [Detailed Phase 2 Guide](./stripe-integration-phase-2-api.md)**
+### **Feature Access Levels**
+```typescript
+type AccessLevel = 'full' | 'trial' | 'grace' | 'denied';
 
-### **Phase 3: UI Components & Pages** ⏱️ 5-6 hours
-Build frontend following app's ShadCN component patterns
-**→ [Detailed Phase 3 Guide](./stripe-integration-phase-3-ui.md)**
-
-### **Phase 4: Integration & Access Control** ⏱️ 3-4 hours
-Integrate middleware and access control
-**→ [Detailed Phase 4 Guide](./stripe-integration-phase-4-integration.md)**
+// Trial: Full access with usage limitations and trial banners
+// Full: Complete access to all features
+// Grace: Continued access with payment failure warnings
+// Denied: No access, redirect to billing page
+```
 
 ---
 
-## **5. Environment Setup**
+## **🎯 Core Features**
+
+### **✅ Subscription Management**
+- Stripe Checkout integration with trial support
+- Customer Portal for self-service billing
+- Multiple pricing plans (monthly/yearly)
+- Automatic proration for plan changes
+
+### **✅ Access Control**
+- Middleware-based subscription verification
+- Feature-specific access gates
+- Graceful degradation for edge cases
+- Real-time subscription status updates
+
+### **✅ Payment Lifecycle**
+- 7-day free trial with card collection
+- Automatic trial-to-paid conversion
+- Failed payment handling with grace period
+- Subscription cancellation with access until period end
+
+### **✅ User Experience**
+- Seamless signup flow with immediate trial access
+- Clear subscription status indicators
+- Contextual upgrade prompts
+- Comprehensive billing management
+
+---
+
+## **🔄 Implementation Phases**
+
+This implementation is structured in 4 sequential phases, each building on the previous:
+
+### **[Phase 1: Database Schema & Migrations](./stripe-integration-phase-1-database.md)**
+**Duration**: 2-3 hours
+
+**Core Tasks**:
+- Add `stripe_customer_id` to businesses table
+- Create `subscriptions` table with full Stripe data model
+- Create `stripe_events` table for webhook idempotency
+- Implement RLS policies and performance indexes
+- Generate updated TypeScript types
+
+**Key Outcomes**:
+- Database foundation ready for Stripe integration
+- Proper constraints ensuring data integrity
+- Audit trail infrastructure for compliance
+- Type-safe database interactions
+
+---
+
+### **[Phase 2: API Routes & Server Actions](./stripe-integration-phase-2-api.md)**
+**Duration**: 4-5 hours
+
+**Core Tasks**:
+- Install and configure Stripe dependencies
+- Create billing server actions (checkout, portal, status)
+- Implement robust webhook handler with signature verification
+- Build subscription utility functions
+- Set up proper error handling and logging
+
+**Key Outcomes**:
+- Complete backend Stripe integration
+- Secure webhook processing with idempotency
+- Server actions following app conventions
+- Production-ready error handling
+
+---
+
+### **[Phase 3: UI Components & Forms](./stripe-integration-phase-3-ui.md)**
+**Duration**: 5-6 hours
+
+**Core Tasks**:
+- Build billing page with plan selection
+- Create subscription management dashboard
+- Implement trial countdown and status banners
+- Add upgrade prompts and billing portal access
+- Design responsive billing UI with ShadCN
+
+**Key Outcomes**:
+- Complete billing user interface
+- Trial experience with clear progression
+- Self-service subscription management
+- Mobile-responsive design
+
+---
+
+### **[Phase 4: Integration & Access Control](./stripe-integration-phase-4-integration.md)**
+**Duration**: 3-4 hours
+
+**Core Tasks**:
+- Enhance middleware with subscription checks
+- Create access gate components with fallbacks
+- Integrate subscription provider throughout app
+- Add performance optimizations and caching
+- Implement feature-specific access controls
+
+**Key Outcomes**:
+- Complete access control implementation
+- Performance-optimized middleware
+- Graceful degradation for all scenarios
+- Production-ready user experience
+
+---
+
+## **🔐 Security Implementation**
+
+### **Webhook Security**
+```typescript
+// Required for all webhook endpoints
+const sig = headers.get('stripe-signature');
+const event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+```
+
+### **RLS Policies**
+```sql
+-- Users can only access their business subscription
+CREATE POLICY "subscription_access" ON subscriptions
+FOR ALL USING (business_id IN (
+  SELECT business_id FROM profiles WHERE id = auth.uid()
+));
+
+-- Service role for webhook processing
+CREATE POLICY "service_role_access" ON subscriptions
+FOR ALL TO service_role USING (true);
+```
+
+### **Access Control Middleware**
+- Cached subscription lookups (1-minute TTL)
+- Graceful degradation on database errors
+- Protection of all content routes
+- Bypass for public and auth routes
+
+---
+
+## **📊 Monitoring & Analytics**
+
+### **Required Tracking**
+- Subscription lifecycle events (trial start, conversion, churn)
+- Failed payment recovery rates
+- Grace period effectiveness
+- Customer portal usage
+- API performance metrics
+
+### **Stripe Dashboard Setup**
+- Revenue recognition configuration
+- Tax handling setup (if applicable)
+- Dispute monitoring
+- Subscription metrics tracking
+
+---
+
+## **🚀 Environment Configuration**
 
 ### **Required Environment Variables**
 ```bash
-# Stripe Keys (add to .env.local)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_... # or sk_live_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... # or pk_live_...
 STRIPE_WEBHOOK_SIGNING_SECRET=whsec_...
 
-# Product IDs (set after creating in Stripe Dashboard)
-STRIPE_MONTHLY_PRICE_ID=price_...
-STRIPE_YEARLY_PRICE_ID=price_...
+# Pricing Configuration
+STRIPE_MONTHLY_PRICE_ID=price_... # Monthly plan price ID
+STRIPE_YEARLY_PRICE_ID=price_... # Yearly plan price ID
+
+# Application URLs
+NEXT_PUBLIC_BASE_URL=https://your-domain.com # or http://localhost:3000 for dev
 ```
 
 ### **Stripe Dashboard Setup**
-1. Create Product: "Transformo SaaS Plan"
-2. Create Prices:
-   - Monthly: $199.00 USD, recurring monthly
-   - Yearly: $1990.00 USD, recurring yearly
-3. Enable customer emails for failed payments
-4. Configure webhook endpoint: `{your-domain}/api/stripe/webhooks`
+1. Create products and pricing in Stripe Dashboard
+2. Configure webhook endpoint: `https://your-domain.com/api/stripe/webhooks`
+3. Subscribe to events: `customer.subscription.*`, `invoice.*`, `payment_intent.*`
+4. Configure Customer Portal settings
+5. Set up tax handling (if required)
 
 ---
 
-## **6. Success Criteria**
+## **✅ Testing Strategy**
 
-### **Functional Requirements**
-- [ ] New users can start 7-day free trial with credit card
-- [ ] Trial countdown displays remaining days
-- [ ] Payment failure triggers 7-day grace period with banner
-- [ ] Users can manage subscriptions via Stripe Customer Portal
-- [ ] App features gated based on subscription status
-- [ ] Webhook events properly sync subscription data
+### **Automated Testing**
+- Unit tests for subscription utility functions
+- Integration tests for server actions
+- Webhook endpoint testing with Stripe CLI
+- Middleware performance testing
 
-### **Technical Requirements**
-- [ ] All database changes via migration files
-- [ ] Server actions used for subscription operations
-- [ ] Existing ShadCN components reused
-- [ ] TypeScript types generated from Supabase schema
-- [ ] RLS policies protect subscription data
-- [ ] Middleware handles access control efficiently
+### **Manual Testing Scenarios**
+```bash
+# Test all subscription states
+1. New user trial signup
+2. Trial to paid conversion
+3. Failed payment scenarios
+4. Subscription cancellation
+5. Plan changes and proration
+6. Customer portal functionality
+7. Access control edge cases
+```
 
-### **User Experience Requirements**
-- [ ] Seamless trial signup flow
-- [ ] Clear subscription status visibility
-- [ ] Non-intrusive but clear access restriction messaging
-- [ ] Consistent UI following app's design patterns
-
----
-
-## **7. Risk Mitigation**
-
-### **Data Integrity**
-- Webhook idempotency prevents duplicate processing
-- Database transactions ensure atomic operations
-- Event logging tracks all Stripe webhook events
-
-### **Security**
-- Stripe signature verification on all webhooks
-- Supabase RLS policies protect subscription data
-- Environment variables for all sensitive keys
-
-### **User Experience**
-- Grace period prevents abrupt access loss
-- Clear messaging for all subscription states
-- Stripe Customer Portal for self-service management
+### **Performance Benchmarks**
+- Middleware overhead: < 100ms
+- Subscription lookup: < 50ms (cached)
+- Webhook processing: < 500ms
+- Page load impact: < 200ms additional
 
 ---
 
-## **Next Steps**
+## **🎯 Success Metrics**
 
-1. **Start with Phase 1**: Database schema and migrations
-2. **Set up Stripe Dashboard**: Create products and prices
-3. **Configure Environment**: Add Stripe keys to `.env.local`
-4. **Follow Phase Guides**: Complete each phase in order
-5. **Test Thoroughly**: Use Stripe test mode throughout development
+### **Technical KPIs**
+- **Webhook Success Rate**: > 99.5%
+- **Page Load Performance**: < 2s including subscription checks
+- **API Error Rate**: < 0.1%
+- **Database Query Performance**: < 100ms avg
 
-Each phase includes detailed checklists and implementation guides to ensure the AI coding tool has everything needed for successful implementation. 
+### **Business KPIs**
+- **Trial Conversion Rate**: > 20%
+- **Churn Rate**: < 5% monthly
+- **Failed Payment Recovery**: > 60%
+- **Customer Portal Usage**: > 80% of billing interactions
+
+---
+
+## **🔄 Post-Launch Optimization**
+
+### **Phase 5: Advanced Features** (Future)
+- Usage-based billing for enterprise plans
+- Team collaboration and seat management
+- Advanced analytics and reporting
+- Multi-currency support
+- Regional tax compliance
+
+### **Ongoing Maintenance**
+- Monthly webhook health checks
+- Quarterly security reviews
+- Performance monitoring and optimization
+- Customer feedback integration
+- Stripe API version updates
+
+---
+
+## **📋 Implementation Checklist**
+
+### **Pre-Implementation**
+- [ ] Stripe account setup with test/live environments
+- [ ] Product and pricing configuration in Stripe Dashboard
+- [ ] Webhook endpoint configuration
+- [ ] Environment variables configured
+- [ ] Team access to Stripe Dashboard
+
+### **Phase 1: Database**
+- [ ] Migration file created with Brisbane timezone naming
+- [ ] Tables created with proper constraints and RLS
+- [ ] Indexes optimized for subscription lookups
+- [ ] TypeScript types generated and verified
+- [ ] Database schema tested with sample data
+
+### **Phase 2: Backend**
+- [ ] Stripe SDK installed and configured
+- [ ] Server actions implemented and tested
+- [ ] Webhook handler with signature verification
+- [ ] Error handling and logging implemented
+- [ ] Idempotency handling verified
+
+### **Phase 3: Frontend**
+- [ ] Billing page with plan selection
+- [ ] Subscription dashboard with portal access
+- [ ] Trial banners and countdown timers
+- [ ] Mobile-responsive design verified
+- [ ] Upgrade flows tested end-to-end
+
+### **Phase 4: Integration**
+- [ ] Middleware with subscription checks
+- [ ] Access gates protecting all content
+- [ ] Performance optimization with caching
+- [ ] Error states with graceful fallbacks
+- [ ] Complete user journey tested
+
+### **Launch Readiness**
+- [ ] All environment variables configured for production
+- [ ] Webhook endpoints tested with Stripe CLI
+- [ ] Error monitoring and logging configured
+- [ ] Customer support documentation prepared
+- [ ] Rollback plan documented and tested
+
+---
+
+## **🆘 Support & Troubleshooting**
+
+### **Common Issues & Solutions**
+
+**Webhook Processing Failures**:
+- Verify webhook signing secret
+- Check event idempotency handling
+- Review Stripe Dashboard event logs
+- Monitor application error logs
+
+**Access Control Issues**:
+- Verify RLS policies are correctly applied
+- Check subscription status in database
+- Review middleware caching behavior
+- Test with different subscription states
+
+**Performance Problems**:
+- Monitor subscription cache hit rates
+- Review database query performance
+- Check middleware execution time
+- Optimize subscription lookup queries
+
+### **Emergency Procedures**
+- **Webhook Downtime**: Events are retried by Stripe for 3 days
+- **Database Issues**: Middleware allows access on errors to prevent blocking
+- **Billing Portal Errors**: Direct users to email support with clear escalation
+- **Payment Failures**: Grace period provides 7-day buffer for resolution
+
+---
+
+**Implementation Contact**: Development Team  
+**Business Contact**: Product Management  
+**Technical Review**: Senior Engineering Team
+
+---
+
+*This PRD serves as the complete technical specification for implementing Stripe subscription billing in the Transformo application. Each phase includes detailed implementation guides with code examples, security considerations, and testing procedures.* 
