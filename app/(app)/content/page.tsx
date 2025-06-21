@@ -12,6 +12,8 @@ import { createClient } from '@/utils/supabase/server';
 import { ContentTable } from '@/components/shared/content-table';
 import { DebugEnvVars } from '@/components/shared/debug-env-vars';
 import { AccessGate } from '@/components/shared/access-gate';
+import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
+import { Suspense } from 'react';
 
 export default async function ContentPage() {
   const supabase = await createClient();
@@ -54,6 +56,9 @@ export default async function ContentPage() {
         </div>
       }
     >
+      <Suspense fallback={null}>
+        <TrialSuccessBanner />
+      </Suspense>
       <DebugEnvVars />
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

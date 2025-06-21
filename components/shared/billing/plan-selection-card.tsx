@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { createCheckoutSession } from '@/app/actions/billing';
+import { createCheckoutSession, createTrialSubscriptionSetup } from '@/app/actions/billing';
 import { calculateYearlySavings } from '@/lib/subscription';
 import { Tables } from '@/types/supabase';
 import { useState } from 'react';
@@ -16,10 +16,29 @@ interface PlanSelectionCardProps {
 }
 
 export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
+  const [isLoadingTrial, setIsLoadingTrial] = useState(false);
   const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
   const [isLoadingYearly, setIsLoadingYearly] = useState(false);
   
   const { savings, percentSavings } = calculateYearlySavings();
+
+  const handleTrialSetup = async () => {
+    setIsLoadingTrial(true);
+    try {
+      const result = await createTrialSubscriptionSetup();
+      if (result.success && result.url) {
+        // Redirect to Stripe Checkout for trial setup
+        window.location.href = result.url;
+      } else {
+        toast.error(result.error || 'Failed to start trial setup');
+      }
+    } catch (error) {
+      console.error('Trial setup error:', error);
+      toast.error('Failed to start trial setup');
+    } finally {
+      setIsLoadingTrial(false);
+    }
+  };
 
   const handlePlanSelection = async (plan: 'monthly' | 'yearly') => {
     const setLoading = plan === 'monthly' ? setIsLoadingMonthly : setIsLoadingYearly;
@@ -52,7 +71,7 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
     'API access for integrations',
   ];
 
-  const isLoading = isLoadingMonthly || isLoadingYearly;
+  const isLoading = isLoadingTrial || isLoadingMonthly || isLoadingYearly;
   const hasActiveSubscription = subscription && ['trialing', 'active'].includes(subscription.status) && !subscription.cancel_at_period_end;
   const currentPlan = subscription?.price_id;
 
@@ -103,7 +122,7 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
           <CardTitle>Choose Your Plan</CardTitle>
         </div>
         <CardDescription>
-          Start with a 7-day free trial. No credit card required during trial. Cancel anytime.
+          Start with a 7-day free trial. Add your payment method to get started - you won't be charged until your trial ends.
         </CardDescription>
       </CardHeader>
       
@@ -140,12 +159,12 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
             </div>
             
             <Button 
-              onClick={() => handlePlanSelection('monthly')}
+              onClick={handleTrialSetup}
               disabled={isLoading}
               className="w-full"
               variant="outline"
             >
-              {isLoadingMonthly ? (
+              {isLoadingTrial ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Start Free Trial
@@ -170,11 +189,11 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
             </div>
             
             <Button 
-              onClick={() => handlePlanSelection('yearly')}
+              onClick={handleTrialSetup}
               disabled={isLoading}
               className="w-full bg-primary hover:bg-primary/90"
             >
-              {isLoadingYearly ? (
+              {isLoadingTrial ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Start Free Trial
@@ -187,7 +206,7 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
           <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
             <p className="font-medium">🎉 7-Day Free Trial</p>
             <p>
-              No payment required during trial &bull; Full access to all features &bull; Cancel anytime
+              Add payment method but no charges during trial &bull; Full access to all features &bull; Cancel anytime
             </p>
           </div>
           <p className="text-xs text-muted-foreground">

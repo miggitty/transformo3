@@ -77,5 +77,5 @@ export async function signup(prevState: unknown, formData: FormData) {
   }
 
   revalidatePath('/', 'layout');
-  redirect('/content');
+  redirect('/trial-setup');
 } 

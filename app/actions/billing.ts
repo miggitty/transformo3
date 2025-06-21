@@ -238,4 +238,76 @@ export async function cancelSubscription() {
       error: error instanceof Error ? error.message : 'Failed to cancel subscription' 
     };
   }
+}
+
+// Create trial subscription with payment method for new users (Option 2 flow)
+export async function createTrialSubscriptionSetup() {
+  try {
+    validateStripeConfig();
+    const { business, user } = await getUserBusiness();
+    
+    // Ensure Stripe customer exists
+    const customerId = await ensureStripeCustomer(business, user.email!);
+    
+    // Check if customer already has a subscription
+    const existingSubscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      limit: 1,
+    });
+
+    if (existingSubscriptions.data.length > 0) {
+      return { 
+        success: false, 
+        error: 'Customer already has a subscription' 
+      };
+    }
+
+    // Create setup session to collect payment method and create trial subscription
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      billing_address_collection: 'required',
+      line_items: [
+        {
+          price: STRIPE_CONFIG.MONTHLY_PRICE_ID, // Default to monthly
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      subscription_data: {
+        trial_period_days: STRIPE_CONFIG.TRIAL_PERIOD_DAYS,
+        metadata: {
+          business_id: business.id,
+          created_by: user.id,
+          signup_flow: 'trial_with_payment_method',
+        },
+      },
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/content?trial_setup=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?setup_canceled=true`,
+      metadata: {
+        business_id: business.id,
+        user_id: user.id,
+        flow_type: 'trial_setup',
+      },
+      allow_promotion_codes: true,
+      customer_update: {
+        address: 'auto',
+        name: 'auto',
+      },
+      // Collect payment method but don't charge during trial
+      payment_method_collection: 'always',
+    });
+
+    if (!session.url) {
+      throw new Error('Failed to create trial setup session URL');
+    }
+
+    return { success: true, url: session.url };
+  } catch (error) {
+    console.error('Error creating trial subscription setup:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to create trial subscription setup' 
+    };
+  }
 } 

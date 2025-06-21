@@ -12,6 +12,7 @@ const PROTECTED_ROUTES = [
 // Routes that should bypass subscription checks
 const BYPASS_ROUTES = [
   '/billing',
+  '/trial-setup',
   '/sign-in',
   '/sign-up',
   '/sign-out',

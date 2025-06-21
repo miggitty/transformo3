@@ -29,6 +29,7 @@ export function BillingPageClient({ business, subscription: initialSubscription 
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const canceled = urlParams.get('canceled');
+    const setupCanceled = urlParams.get('setup_canceled');
 
     if (success === 'true') {
       toast.success('Subscription activated successfully!');
@@ -37,6 +38,10 @@ export function BillingPageClient({ business, subscription: initialSubscription 
       window.history.replaceState({}, '', window.location.pathname);
     } else if (canceled === 'true') {
       toast.error('Subscription setup was canceled.');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (setupCanceled === 'true') {
+      toast.error('Trial setup was canceled. You can try again anytime to start your free trial.');
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
