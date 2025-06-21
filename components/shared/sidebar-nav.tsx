@@ -10,7 +10,8 @@ import {
   ChevronDown, 
   ChevronRight,
   Building2,
-  Plug
+  Plug,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +25,11 @@ const navigationItems = [
     href: '/new',
     label: 'New Content',
     icon: PlusCircle,
+  },
+  {
+    href: '/billing',
+    label: 'Billing',
+    icon: CreditCard,
   },
 ];
 

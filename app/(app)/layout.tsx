@@ -7,6 +7,8 @@ import { signOut } from '@/app/(auth)/actions';
 import { LogOut } from 'lucide-react';
 import { Tables } from '@/types/supabase';
 import { SidebarNav } from '@/components/shared/sidebar-nav';
+import { SubscriptionProvider } from '@/components/providers/subscription-provider';
+import { GlobalSubscriptionBanner } from '@/components/shared/global-subscription-banner';
 
 async function Sidebar({
   user,
@@ -74,16 +76,35 @@ export default async function AppLayout({
     email: user.email!,
   };
 
+  // Get subscription data for the layout
+  let subscription = null;
+  if (profile?.business_id) {
+    const { data, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('business_id', profile.business_id)
+      .single();
+      
+    if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+      console.error('Subscription fetch error:', subscriptionError);
+    } else {
+      subscription = data;
+    }
+  }
+
   return (
-    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <Sidebar
-        user={userWithProfile as Tables<'profiles'> & { email: string }}
-      />
-      <div className="flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-auto p-4 lg:p-6">
-          <main className="mx-auto max-w-4xl flex-1">{children}</main>
+    <SubscriptionProvider initialSubscription={subscription}>
+      <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+        <Sidebar
+          user={userWithProfile as Tables<'profiles'> & { email: string }}
+        />
+        <div className="flex flex-col overflow-hidden">
+          <GlobalSubscriptionBanner />
+          <div className="flex-1 overflow-auto p-4 lg:p-6">
+            <main className="mx-auto max-w-4xl flex-1">{children}</main>
+          </div>
         </div>
       </div>
-    </div>
+    </SubscriptionProvider>
   );
 } 

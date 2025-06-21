@@ -11,6 +11,7 @@ import { PlusCircle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
 import { ContentTable } from '@/components/shared/content-table';
 import { DebugEnvVars } from '@/components/shared/debug-env-vars';
+import { AccessGate } from '@/components/shared/access-gate';
 
 export default async function ContentPage() {
   const supabase = await createClient();
@@ -43,7 +44,16 @@ export default async function ContentPage() {
   }
   
   return (
-    <>
+    <AccessGate 
+      feature="content management"
+      fallback={
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            Content management requires an active subscription.
+          </p>
+        </div>
+      }
+    >
       <DebugEnvVars />
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -67,6 +77,6 @@ export default async function ContentPage() {
           />
         </CardContent>
       </Card>
-    </>
+    </AccessGate>
   );
 } 

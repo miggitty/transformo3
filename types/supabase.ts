@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
+          extensions?: Json
           operationName?: string
           query?: string
           variables?: Json
-          extensions?: Json
         }
         Returns: Json
       }
@@ -49,21 +49,22 @@ export type Database = {
           cta_social_short: string | null
           cta_youtube: string | null
           email_name_token: string | null
+          email_provider: string | null
+          email_secret_id: string | null
+          email_selected_group_id: string | null
+          email_selected_group_name: string | null
+          email_sender_email: string | null
+          email_sender_name: string | null
           email_sign_off: string | null
+          email_validated_at: string | null
           first_name: string | null
           heygen_avatar_id: string | null
           heygen_secret_id: string | null
           heygen_voice_id: string | null
           id: string
           last_name: string | null
-          email_provider: string | null
-          email_secret_id: string | null
-          email_sender_name: string | null
-          email_sender_email: string | null
-          email_selected_group_id: string | null
-          email_selected_group_name: string | null
-          email_validated_at: string | null
           social_media_profiles: Json | null
+          stripe_customer_id: string | null
           timezone: string | null
           website_url: string | null
           writing_style_guide: string | null
@@ -82,21 +83,22 @@ export type Database = {
           cta_social_short?: string | null
           cta_youtube?: string | null
           email_name_token?: string | null
+          email_provider?: string | null
+          email_secret_id?: string | null
+          email_selected_group_id?: string | null
+          email_selected_group_name?: string | null
+          email_sender_email?: string | null
+          email_sender_name?: string | null
           email_sign_off?: string | null
+          email_validated_at?: string | null
           first_name?: string | null
           heygen_avatar_id?: string | null
           heygen_secret_id?: string | null
           heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
-          email_provider?: string | null
-          email_secret_id?: string | null
-          email_sender_name?: string | null
-          email_sender_email?: string | null
-          email_selected_group_id?: string | null
-          email_selected_group_name?: string | null
-          email_validated_at?: string | null
           social_media_profiles?: Json | null
+          stripe_customer_id?: string | null
           timezone?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
@@ -115,21 +117,22 @@ export type Database = {
           cta_social_short?: string | null
           cta_youtube?: string | null
           email_name_token?: string | null
+          email_provider?: string | null
+          email_secret_id?: string | null
+          email_selected_group_id?: string | null
+          email_selected_group_name?: string | null
+          email_sender_email?: string | null
+          email_sender_name?: string | null
           email_sign_off?: string | null
+          email_validated_at?: string | null
           first_name?: string | null
           heygen_avatar_id?: string | null
           heygen_secret_id?: string | null
           heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
-          email_provider?: string | null
-          email_secret_id?: string | null
-          email_sender_name?: string | null
-          email_sender_email?: string | null
-          email_selected_group_id?: string | null
-          email_selected_group_name?: string | null
-          email_validated_at?: string | null
           social_media_profiles?: Json | null
+          stripe_customer_id?: string | null
           timezone?: string | null
           website_url?: string | null
           writing_style_guide?: string | null
@@ -153,6 +156,7 @@ export type Database = {
           scheduled_at: string | null
           status: string | null
           transcript: string | null
+          updated_at: string | null
           video_long_url: string | null
           video_script: string | null
           video_short_url: string | null
@@ -173,6 +177,7 @@ export type Database = {
           scheduled_at?: string | null
           status?: string | null
           transcript?: string | null
+          updated_at?: string | null
           video_long_url?: string | null
           video_script?: string | null
           video_short_url?: string | null
@@ -193,6 +198,7 @@ export type Database = {
           scheduled_at?: string | null
           status?: string | null
           transcript?: string | null
+          updated_at?: string | null
           video_long_url?: string | null
           video_script?: string | null
           video_short_url?: string | null
@@ -307,6 +313,98 @@ export type Database = {
           },
         ]
       }
+      stripe_events: {
+        Row: {
+          api_version: string | null
+          created_at: string | null
+          error_message: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          processed_at: string | null
+          processing_status: string | null
+          stripe_event_id: string
+        }
+        Insert: {
+          api_version?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string | null
+          stripe_event_id: string
+        }
+        Update: {
+          api_version?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string | null
+          stripe_event_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          business_id: string
+          cancel_at_period_end: boolean | null
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string
+          current_period_start: string
+          id: string
+          price_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          trial_end: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end: string
+          current_period_start: string
+          id?: string
+          price_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          trial_end?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          cancel_at_period_end?: boolean | null
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          price_id?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          trial_end?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       upload_post_profiles: {
         Row: {
           business_id: string
@@ -350,6 +448,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_email_key: {
+        Args: { p_business_id: string }
+        Returns: undefined
+      }
       delete_heygen_key: {
         Args: { p_business_id: string }
         Returns: undefined
@@ -358,19 +460,15 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: string
       }
-      set_heygen_key: {
-        Args: { p_business_id: string; p_new_key: string }
-        Returns: undefined
-      }
-      delete_email_key: {
-        Args: { p_business_id: string }
-        Returns: undefined
-      }
       get_email_secret: {
         Args: { p_business_id: string }
         Returns: string
       }
       set_email_key: {
+        Args: { p_business_id: string; p_new_key: string }
+        Returns: undefined
+      }
+      set_heygen_key: {
         Args: { p_business_id: string; p_new_key: string }
         Returns: undefined
       }
@@ -497,3 +595,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
