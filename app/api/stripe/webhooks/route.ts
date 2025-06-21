@@ -73,6 +73,7 @@ async function handleCheckoutCompleted(session: any): Promise<void> {
   }
 
   // Create subscription record
+  const subscriptionItem = (subscription as any).items.data[0];
   const { error } = await supabase
     .from('subscriptions')
     .insert({
@@ -80,9 +81,9 @@ async function handleCheckoutCompleted(session: any): Promise<void> {
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer as string,
       status: subscription.status,
-      price_id: (subscription as any).items.data[0].price.id,
-      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      price_id: subscriptionItem.price.id,
+      current_period_start: new Date(subscriptionItem.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscriptionItem.current_period_end * 1000).toISOString(),
       trial_end: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000).toISOString() : null,
     });
 
@@ -103,12 +104,13 @@ async function handleInvoicePaid(invoice: any): Promise<void> {
   const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string);
 
   // Update subscription record
+  const subscriptionItem = (subscription as any).items.data[0];
   const { error } = await supabase
     .from('subscriptions')
     .update({
       status: subscription.status,
-      current_period_start: new Date((subscription as any).current_period_start * 1000).toISOString(),
-      current_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
+      current_period_start: new Date(subscriptionItem.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscriptionItem.current_period_end * 1000).toISOString(),
       trial_end: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000).toISOString() : null,
     })
     .eq('stripe_subscription_id', subscription.id);
@@ -149,13 +151,14 @@ async function handleSubscriptionUpdated(subscription: any): Promise<void> {
   const supabase = createAdminClient();
 
   // Update subscription record
+  const subscriptionItem = subscription.items.data[0];
   const { error } = await supabase
     .from('subscriptions')
     .update({
       status: subscription.status,
-      price_id: subscription.items.data[0].price.id,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      price_id: subscriptionItem.price.id,
+      current_period_start: new Date(subscriptionItem.current_period_start * 1000).toISOString(),
+      current_period_end: new Date(subscriptionItem.current_period_end * 1000).toISOString(),
       trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
       canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,

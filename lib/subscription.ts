@@ -30,6 +30,17 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
     case 'trialing':
       if (trialEnd) {
         const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        // If subscription is set to cancel at period end, show cancellation message
+        if (subscription.cancel_at_period_end) {
+          return {
+            hasAccess: true,
+            status: 'trialing',
+            daysLeft: Math.max(0, daysLeft),
+            showBanner: true,
+            bannerType: 'expired',
+            message: `Subscription canceled. Access ends in ${Math.max(0, daysLeft)} days.`,
+          };
+        }
         return {
           hasAccess: true,
           status: 'trialing',
@@ -122,19 +133,36 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
 
 // Get plan display name from price ID
 export function getPlanName(priceId: string): string {
+  // Handle production price IDs
   if (priceId === process.env.STRIPE_MONTHLY_PRICE_ID) {
-    return 'Monthly Plan';
+    return 'Monthly Plan ($199/month)';
   }
   if (priceId === process.env.STRIPE_YEARLY_PRICE_ID) {
-    return 'Yearly Plan';
+    return 'Yearly Plan ($1,990/year)';
   }
+  
+  // Handle test/dev price IDs
+  if (priceId && (priceId.includes('monthly') || priceId.includes('month'))) {
+    return 'Monthly Plan ($199/month)';
+  }
+  if (priceId && (priceId.includes('yearly') || priceId.includes('year'))) {
+    return 'Yearly Plan ($1,990/year)';
+  }
+  
+  // For now, default to Monthly Plan for any valid Stripe price ID
+  // This is a temporary solution for the demo - in production, 
+  // the webhook would ensure the correct price_id is stored
+  if (priceId && priceId.startsWith('price_')) {
+    return 'Monthly Plan ($199/month)';
+  }
+  
   return 'Unknown Plan';
 }
 
 // Calculate savings for yearly plan
 export function calculateYearlySavings(): { monthlyTotal: number; yearlyPrice: number; savings: number; percentSavings: number } {
-  const monthlyTotal = 29 * 12; // $29 × 12 months
-  const yearlyPrice = 290; // $290 yearly
+  const monthlyTotal = 199 * 12; // $199 × 12 months
+  const yearlyPrice = 1990; // $1990 yearly
   const savings = monthlyTotal - yearlyPrice;
   const percentSavings = Math.round((savings / monthlyTotal) * 100);
   

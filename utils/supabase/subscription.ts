@@ -75,6 +75,19 @@ export async function checkSubscriptionAccess(request: NextRequest): Promise<Sub
       };
     }
 
+    // If subscription is null but no error, still redirect to billing
+    if (!subscription) {
+      return {
+        hasAccess: false,
+        shouldRedirectToBilling: true,
+        redirectPath: '/billing',
+        user,
+        profile,
+        subscription: null,
+        accessLevel: 'denied',
+      };
+    }
+
     if (subscriptionError) {
       console.error('Subscription check error:', subscriptionError);
       // On database error, allow access to prevent blocking users
@@ -166,10 +179,16 @@ function evaluateSubscriptionAccess(subscription: SubscriptionRow): {
 const subscriptionCache = new Map<string, { result: SubscriptionCheckResult; expiry: number }>();
 const CACHE_TTL = 60 * 1000; // 1 minute
 
+// Function to clear cache (useful for debugging)
+export function clearSubscriptionCache() {
+  subscriptionCache.clear();
+}
+
 export async function getCachedSubscriptionAccess(request: NextRequest): Promise<SubscriptionCheckResult> {
   const cacheKey = request.cookies.get('sb-access-token')?.value || 'anonymous';
   const cached = subscriptionCache.get(cacheKey);
   
+  // Reduce cache time for better responsiveness to subscription changes
   if (cached && cached.expiry > Date.now()) {
     return cached.result;
   }
@@ -182,4 +201,9 @@ export async function getCachedSubscriptionAccess(request: NextRequest): Promise
   });
   
   return result;
+}
+
+// Force refresh cache (for manual refreshes)
+export function forceRefreshCache() {
+  subscriptionCache.clear();
 } 

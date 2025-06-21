@@ -65,10 +65,22 @@ export function SubscriptionProvider({
     }
   }, [initialSubscription]);
 
-  // Auto-refresh subscription status every 5 minutes
+  // Auto-refresh subscription status every 2 minutes (more frequent for better UX)
   useEffect(() => {
-    const interval = setInterval(refreshSubscription, 5 * 60 * 1000);
+    const interval = setInterval(refreshSubscription, 2 * 60 * 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Also refresh when the page becomes visible (user returns from another tab/app)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshSubscription();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const value: SubscriptionContextType = {

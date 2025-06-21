@@ -65,11 +65,13 @@ export default async function BillingPage() {
 
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8">
-      <div>
-        <h1 className="text-3xl font-bold">Billing & Subscription</h1>
-        <p className="text-muted-foreground">
-          Manage your subscription and billing settings
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Billing & Subscription</h1>
+          <p className="text-muted-foreground">
+            Manage your subscription and billing settings
+          </p>
+        </div>
       </div>
       
       <BillingPageClient 

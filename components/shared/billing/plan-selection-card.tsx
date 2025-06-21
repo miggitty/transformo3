@@ -12,9 +12,10 @@ import { Loader2, Check, Sparkles, Star } from 'lucide-react';
 
 interface PlanSelectionCardProps {
   business: Tables<'businesses'>;
+  subscription?: Tables<'subscriptions'> | null;
 }
 
-export function PlanSelectionCard({ }: PlanSelectionCardProps) {
+export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
   const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
   const [isLoadingYearly, setIsLoadingYearly] = useState(false);
   
@@ -52,6 +53,47 @@ export function PlanSelectionCard({ }: PlanSelectionCardProps) {
   ];
 
   const isLoading = isLoadingMonthly || isLoadingYearly;
+  const hasActiveSubscription = subscription && ['trialing', 'active'].includes(subscription.status) && !subscription.cancel_at_period_end;
+  const currentPlan = subscription?.price_id;
+
+  // If user has a canceled subscription, don't show this card at all
+  if (subscription?.cancel_at_period_end) {
+    return null;
+  }
+
+  // If user has an active subscription, show current plan status
+  if (hasActiveSubscription) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Check className="h-5 w-5 text-green-600" />
+            <CardTitle>Current Plan</CardTitle>
+          </div>
+          <CardDescription>
+            You have an active subscription. Use the subscription status card above to manage your billing.
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Check className="h-5 w-5 text-green-600" />
+              <span className="font-semibold text-green-900 dark:text-green-100">
+                {subscription?.status === 'trialing' ? 'Free Trial Active' : 'Subscription Active'}
+              </span>
+            </div>
+            <p className="text-sm text-green-700 dark:text-green-300">
+              {subscription?.status === 'trialing' 
+                ? 'Enjoying your free trial? Your subscription will start automatically when the trial ends.'
+                : 'Thank you for subscribing! You have access to all features.'
+              }
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -89,7 +131,7 @@ export function PlanSelectionCard({ }: PlanSelectionCardProps) {
             <div>
               <h3 className="font-semibold text-lg">Monthly Plan</h3>
               <div className="flex items-baseline space-x-2">
-                <span className="text-3xl font-bold">$29</span>
+                <span className="text-3xl font-bold">$199</span>
                 <span className="text-sm text-muted-foreground">per month</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -119,11 +161,11 @@ export function PlanSelectionCard({ }: PlanSelectionCardProps) {
             <div>
               <h3 className="font-semibold text-lg">Yearly Plan</h3>
               <div className="flex items-baseline space-x-2">
-                <span className="text-3xl font-bold">$290</span>
+                <span className="text-3xl font-bold">$1,990</span>
                 <span className="text-sm text-muted-foreground">per year</span>
               </div>
               <p className="text-xs text-green-600 font-medium">
-                ${Math.round(290/12)} per month &bull; 2 months free
+                ${Math.round(1990/12)} per month &bull; 2 months free
               </p>
             </div>
             

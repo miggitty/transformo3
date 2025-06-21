@@ -54,7 +54,14 @@ export function SubscriptionStatusCard({
       const result = await cancelSubscription();
       if (result.success) {
         toast.success('Subscription canceled. You\'ll maintain access until the end of your billing period.');
+        
+        // Immediate refresh
         onRefresh();
+        
+        // Additional refreshes to catch webhook updates
+        setTimeout(() => onRefresh(), 1000);
+        setTimeout(() => onRefresh(), 3000);
+        setTimeout(() => onRefresh(), 5000);
       } else {
         toast.error(result.error || 'Failed to cancel subscription');
       }
@@ -121,6 +128,77 @@ export function SubscriptionStatusCard({
         return status;
     }
   };
+
+  // Show different layout for canceled subscriptions
+  if (subscription?.cancel_at_period_end) {
+    return (
+      <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-red-900 dark:text-red-100">
+                <AlertTriangle className="h-5 w-5" />
+                Subscription Canceled
+              </CardTitle>
+              <CardDescription className="text-red-700 dark:text-red-300">
+                Your subscription will end when your trial period expires
+              </CardDescription>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="text-red-700 hover:text-red-900 dark:text-red-300"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="text-center py-4">
+            <div className="text-3xl font-bold text-red-900 dark:text-red-100 mb-2">
+              {accessStatus.daysLeft} days left
+            </div>
+            <p className="text-red-700 dark:text-red-300 text-sm">
+              Access ends on {subscription.trial_end ? formatDate(subscription.trial_end) : formatDate(subscription.current_period_end)}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-red-900 dark:text-red-100">Plan</span>
+              <p className="text-red-700 dark:text-red-300">Trial (Canceled)</p>
+            </div>
+            <div>
+              <span className="font-medium text-red-900 dark:text-red-100">Canceled On</span>
+              <p className="text-red-700 dark:text-red-300">
+                {subscription.canceled_at ? formatDate(subscription.canceled_at) : 'Recently'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+        
+        <CardFooter className="flex flex-col space-y-3">
+          <Button 
+            onClick={handlePortalAccess}
+            disabled={isLoadingPortal}
+            className="w-full bg-red-600 hover:bg-red-700 text-white"
+            size="lg"
+          >
+            {isLoadingPortal ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            Reactivate Subscription
+          </Button>
+          <p className="text-xs text-red-600 dark:text-red-400 text-center">
+            Reactivate before {subscription.trial_end ? formatDate(subscription.trial_end) : formatDate(subscription.current_period_end)} to continue using all features
+          </p>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -203,8 +281,8 @@ export function SubscriptionStatusCard({
               </div>
             )}
 
-            {/* Cancellation notice */}
-            {subscription.status === 'canceled' && accessStatus.daysLeft !== undefined && (
+            {/* Cancellation notice - only for status='canceled' (not cancel_at_period_end, which has its own card) */}
+            {subscription.status === 'canceled' && !subscription.cancel_at_period_end && accessStatus.daysLeft !== undefined && (
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-900 dark:border-gray-700">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   Subscription Canceled: {accessStatus.daysLeft} days of access remaining
@@ -244,7 +322,7 @@ export function SubscriptionStatusCard({
               Manage Billing
             </Button>
             
-            {subscription.status === 'active' && (
+            {(subscription.status === 'active' || subscription.status === 'trialing') && !subscription.cancel_at_period_end && (
               <Button 
                 variant="outline"
                 onClick={handleCancelSubscription}

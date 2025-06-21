@@ -10,6 +10,8 @@ import { SubscriptionBanner } from './subscription-banner';
 import { checkSubscriptionAccess } from '@/lib/subscription';
 import { getSubscriptionStatus } from '@/app/actions/billing';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 interface BillingPageClientProps {
   business: Tables<'businesses'>;
@@ -22,7 +24,7 @@ export function BillingPageClient({ business, subscription: initialSubscription 
 
   const accessStatus = checkSubscriptionAccess(subscription);
 
-  // Handle URL parameters for success/cancel
+  // Handle URL parameters for success/cancel and auto-refresh on page focus
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
@@ -38,6 +40,29 @@ export function BillingPageClient({ business, subscription: initialSubscription 
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
+
+    // Auto-refresh subscription when user returns to page (e.g., from Stripe portal)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, refresh subscription status immediately and after a delay
+        refreshSubscription();
+        setTimeout(refreshSubscription, 2000);
+        setTimeout(refreshSubscription, 5000); // Multiple attempts to catch webhook updates
+      }
+    };
+
+    // Also refresh when page gains focus (clicking back into the window)
+    const handleFocus = () => {
+      refreshSubscription();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const refreshSubscription = async () => {
@@ -46,13 +71,9 @@ export function BillingPageClient({ business, subscription: initialSubscription 
       const result = await getSubscriptionStatus();
       if (result.success) {
         setSubscription(result.subscription);
-        toast.success('Subscription status updated');
-      } else {
-        toast.error('Failed to refresh subscription status');
       }
     } catch (error) {
       console.error('Error refreshing subscription:', error);
-      toast.error('Failed to refresh subscription status');
     } finally {
       setIsRefreshing(false);
     }
@@ -61,14 +82,16 @@ export function BillingPageClient({ business, subscription: initialSubscription 
   return (
     <Elements stripe={stripePromise}>
       <div className="space-y-6">
-        {/* Status Banner */}
-        {accessStatus.showBanner && (
+        {/* Status Banner - only show for non-canceled subscriptions */}
+        {accessStatus.showBanner && !subscription?.cancel_at_period_end && (
           <SubscriptionBanner 
             message={accessStatus.message || ''}
             type={accessStatus.bannerType || 'trial'}
             daysLeft={accessStatus.daysLeft}
           />
         )}
+
+
 
         {/* Current Subscription Status */}
         <SubscriptionStatusCard 
@@ -78,10 +101,11 @@ export function BillingPageClient({ business, subscription: initialSubscription 
           isRefreshing={isRefreshing}
         />
 
-        {/* Plan Selection (only show if no active subscription) */}
-        {!subscription && (
-          <PlanSelectionCard business={business} />
-        )}
+        {/* Plan Selection */}
+        <PlanSelectionCard 
+          business={business} 
+          subscription={subscription}
+        />
       </div>
     </Elements>
   );
