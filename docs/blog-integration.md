@@ -48,7 +48,7 @@ ALTER TABLE businesses
 ADD COLUMN blog_provider text,
 ADD COLUMN blog_secret_id uuid REFERENCES vault.secrets(id),
 ADD COLUMN blog_site_url text,
-ADD COLUMN blog_username text,
+ADD COLUMN blog_username text, -- Only used for WordPress
 ADD COLUMN blog_site_name text,
 ADD COLUMN blog_validated_at timestamp with time zone;
 
@@ -56,6 +56,15 @@ ADD COLUMN blog_validated_at timestamp with time zone;
 ALTER TABLE businesses 
 ADD CONSTRAINT businesses_blog_provider_check 
 CHECK (blog_provider IN ('wordpress', 'wix'));
+
+-- Add constraint that username is required for WordPress only
+ALTER TABLE businesses 
+ADD CONSTRAINT businesses_blog_username_check 
+CHECK (
+  (blog_provider = 'wordpress' AND blog_username IS NOT NULL) OR 
+  (blog_provider = 'wix') OR 
+  (blog_provider IS NULL)
+);
 ```
 
 #### Create Supabase Vault RPC Functions:
@@ -108,29 +117,38 @@ const blogSettingsFormSchema = z.object({
   // If no provider is selected, all fields are optional
   if (!data.blog_provider) return true;
   
-  // If provider is selected, username, credential, and URL are required
-  if (data.blog_provider) {
+  // WordPress requires username, credential, and URL
+  if (data.blog_provider === 'wordpress') {
     return data.blog_username && data.blog_credential && data.blog_site_url;
+  }
+  
+  // Wix only requires credential (API key)
+  if (data.blog_provider === 'wix') {
+    return data.blog_credential;
   }
   
   return true;
 }, {
-  message: "Username, credentials, and site URL are required when selecting a blog provider.",
-  path: ["blog_username"]
+  message: "Please provide all required fields for the selected blog provider.",
+  path: ["blog_credential"]
 });
 ```
 
 **Key Features (Following Email Integration Pattern):**
 - Provider dropdown (WordPress, Wix) - similar to email provider selection
 - Dynamic form fields based on selected provider
-- Username field (shown when provider selected)
+- Auto-validation on provider change
+- Loading states for validation
+- Username field (shown when WordPress provider selected)
 - Credential field (hidden when credentials are set, following HeyGen pattern)
-- Site URL field with automatic detection and validation
+- Site URL field with automatic detection and validation (WordPress only)
 - "Remove Credentials" button when connected
 - "Test Connection" functionality with automatic site info retrieval
 - Real-time URL validation and site name detection
 - Connection status indicator showing blog platform and site name
 - Provider-specific documentation links
+- Proper error handling with retry buttons
+- Status indicators with visual feedback
 
 **Component Structure:**
 ```typescript
@@ -140,12 +158,24 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
   
   const selectedProvider = form.watch('blog_provider');
+  const credentialValue = form.watch('blog_credential');
+  
+  // Auto-validation on provider change (following Email integration pattern)
+  useEffect(() => {
+    if (credentialValue && selectedProvider && !isKeySet && credentialValue.length > 10) {
+      const timeoutId = setTimeout(() => {
+        validateCredentials(credentialValue, selectedProvider);
+      }, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [credentialValue, selectedProvider, isKeySet]);
   
   // Form implementation following Email integration pattern
   // Provider-specific field rendering
-  // Auto-validation on URL change
+  // Auto-validation on credential change
   // Credential storage in vault
   // Connection testing functionality
+  // Loading states and error handling
 }
 ```
 
@@ -174,9 +204,9 @@ export async function removeBlogCredentials(businessId: string);
 
 export async function validateBlogConnection(
   provider: 'wordpress' | 'wix',
-  siteUrl?: string, // Only for WordPress
-  username?: string, // Only for WordPress
-  credential: string
+  credential: string,
+  siteUrl?: string, // Required for WordPress only
+  username?: string // Required for WordPress only
 );
 
 // Note: Publishing is handled by n8n workflows
@@ -191,8 +221,10 @@ export async function validateBlogConnection(
 ```typescript
 {
   provider: 'wordpress' | 'wix';
-  siteUrl?: string; // Only required for WordPress
-  username?: string; // Only required for WordPress  
+  // WordPress fields
+  siteUrl?: string; // Required for WordPress only
+  username?: string; // Required for WordPress only
+  // Universal field
   credential: string; // Application Password for WordPress, API Key for Wix
 }
 ```
@@ -490,4 +522,4 @@ When implementing this integration:
 - [ ] Document API endpoints
 - [ ] Create setup video/tutorial
 
-This PRD provides a comprehensive blueprint for implementing WordPress integration that follows existing patterns while providing a robust, user-friendly experience for connecting WordPress sites to the Transformo3 platform. 
+This PRD provides a comprehensive blueprint for implementing blog integration that follows existing patterns while providing a robust, user-friendly experience for connecting blog platforms to the Transformo3 platform. 
