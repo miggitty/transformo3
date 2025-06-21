@@ -36,6 +36,12 @@ export type Database = {
     Tables: {
       businesses: {
         Row: {
+          blog_provider: string | null
+          blog_secret_id: string | null
+          blog_site_name: string | null
+          blog_site_url: string | null
+          blog_username: string | null
+          blog_validated_at: string | null
           booking_link: string | null
           business_name: string
           color_background: string | null
@@ -70,6 +76,12 @@ export type Database = {
           writing_style_guide: string | null
         }
         Insert: {
+          blog_provider?: string | null
+          blog_secret_id?: string | null
+          blog_site_name?: string | null
+          blog_site_url?: string | null
+          blog_username?: string | null
+          blog_validated_at?: string | null
           booking_link?: string | null
           business_name: string
           color_background?: string | null
@@ -104,6 +116,12 @@ export type Database = {
           writing_style_guide?: string | null
         }
         Update: {
+          blog_provider?: string | null
+          blog_secret_id?: string | null
+          blog_site_name?: string | null
+          blog_site_url?: string | null
+          blog_username?: string | null
+          blog_validated_at?: string | null
           booking_link?: string | null
           business_name?: string
           color_background?: string | null
@@ -448,6 +466,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_blog_key: {
+        Args: { p_business_id: string }
+        Returns: undefined
+      }
       delete_email_key: {
         Args: { p_business_id: string }
         Returns: undefined
@@ -456,6 +478,10 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: undefined
       }
+      get_blog_secret: {
+        Args: { p_business_id: string }
+        Returns: string
+      }
       get_business_secret: {
         Args: { p_business_id: string }
         Returns: string
@@ -463,6 +489,10 @@ export type Database = {
       get_email_secret: {
         Args: { p_business_id: string }
         Returns: string
+      }
+      set_blog_key: {
+        Args: { p_business_id: string; p_provider: string; p_new_username: string; p_new_credential: string }
+        Returns: undefined
       }
       set_email_key: {
         Args: { p_business_id: string; p_new_key: string }

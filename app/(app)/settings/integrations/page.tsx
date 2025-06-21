@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/card';
 import { EmailIntegrationForm } from '@/components/shared/settings/email-integration-form';
 import { HeygenSettingsForm } from '@/components/shared/settings/heygen-settings-form';
+import { BlogIntegrationForm } from '@/components/shared/settings/blog-integration-form';
 import { SocialMediaIntegrationWrapper } from '@/components/shared/settings/social-media-integration-wrapper';
 import ErrorBoundary from '@/components/shared/error-boundary';
 
@@ -68,6 +69,16 @@ export default async function IntegrationsPage() {
           </CardDescription>
         </CardHeader>
         <HeygenSettingsForm business={business} />
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Blog Integration</CardTitle>
+          <CardDescription>
+            Connect your blog platform to automatically publish blog posts and content.
+          </CardDescription>
+        </CardHeader>
+        <BlogIntegrationForm business={business} />
       </Card>
     </div>
   );
