@@ -9,7 +9,7 @@ import {
 import { AudioPlayer } from '@/components/shared/audio-player';
 import dynamic from 'next/dynamic';
 import { ContentWithBusiness, ContentAsset } from '@/types';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import ContentAssetsManager from './content-assets-manager';
 import VideoUploadSection from './video-upload-section';
@@ -110,7 +110,7 @@ export default function ContentDetailClientPage({
     });
   };
 
-  const fetchContentAssets = async () => {
+  const fetchContentAssets = useCallback(async () => {
     if (!supabase) {
       setError('Database connection unavailable.');
       return;
@@ -125,10 +125,9 @@ export default function ContentDetailClientPage({
       console.error('Error fetching content assets:', fetchError);
       setError('Failed to load content assets.');
     } else {
-      console.log('Fetched content assets:', data);
       setContentAssets(data);
     }
-  };
+  }, [supabase, content.id]);
 
   const handleVideoUpdate = (videoType: 'long' | 'short', videoUrl: string | null) => {
     setContent(prev => ({
@@ -174,7 +173,7 @@ export default function ContentDetailClientPage({
     };
 
     checkPermissionsAndFetch();
-  }, [content.id, content.business_id, supabase, fetchContentAssets]);
+  }, [content.business_id, supabase, fetchContentAssets]);
 
   return (
     <div className="flex w-full flex-col gap-4 md:gap-8">

@@ -246,8 +246,6 @@ export async function scheduleContentAssets({
   startDate: string; // ISO string of the start date
   businessTimezone: string;
 }) {
-  console.log('scheduleContentAssets called with:', { contentId, startDate, businessTimezone });
-  
   const supabase = await createClient();
 
   // First, get all unscheduled assets for this content
@@ -258,15 +256,12 @@ export async function scheduleContentAssets({
     .is('asset_scheduled_at', null)
     .order('created_at');
 
-  console.log('Fetched assets:', { assets: assets?.length || 0, error: fetchError });
-
   if (fetchError) {
     console.error('Error fetching content assets:', fetchError);
     return { success: false, error: 'Failed to fetch content assets.' };
   }
 
   if (!assets || assets.length === 0) {
-    console.log('No unscheduled assets found');
     return { success: false, error: 'No unscheduled assets found.' };
   }
 
@@ -287,9 +282,6 @@ export async function scheduleContentAssets({
     }
   });
 
-  console.log('Asset types found:', Array.from(assetMap.keys()));
-  console.log('Expected types:', schedulingSequence.flatMap(s => s.types));
-
   // Generate schedule updates
   const updates: { id: string; asset_scheduled_at: string }[] = [];
   const startDateTime = new Date(startDate);
@@ -304,7 +296,6 @@ export async function scheduleContentAssets({
         scheduledDate.setHours(10, 0, 0, 0);
         
         const utcScheduledAt = scheduledDate.toISOString();
-        console.log(`Scheduling ${type} for day ${day}:`, utcScheduledAt);
 
         updates.push({
           id: asset.id,
@@ -314,13 +305,9 @@ export async function scheduleContentAssets({
     }
   }
 
-  console.log('Generated updates:', updates);
-
   // Perform bulk update using individual UPDATE queries instead of upsert
   if (updates.length > 0) {
     try {
-      console.log('About to update database with:', updates.length, 'updates');
-      
       // Update each asset individually to avoid RLS issues with upsert
       let successCount = 0;
       for (const update of updates) {
@@ -336,7 +323,6 @@ export async function scheduleContentAssets({
         successCount++;
       }
 
-      console.log('Successfully scheduled assets:', successCount);
       revalidatePath(`/content/${contentId}`);
       return { success: true, scheduled: successCount };
     } catch (error) {
@@ -345,7 +331,6 @@ export async function scheduleContentAssets({
     }
   }
 
-  console.log('No updates generated');
   return { success: false, error: 'No assets to schedule.' };
 }
 
@@ -424,8 +409,6 @@ export async function resetContentAssetSchedules({
 }: {
   contentId: string;
 }) {
-  console.log('resetContentAssetSchedules called for:', contentId);
-  
   const supabase = await createClient();
 
   // Reset all scheduled dates for this content's assets
@@ -440,7 +423,6 @@ export async function resetContentAssetSchedules({
     return { success: false, error: error.message };
   }
 
-  console.log('Successfully reset asset schedules for content:', contentId);
   revalidatePath(`/content/${contentId}`);
   return { success: true };
 } 

@@ -144,18 +144,7 @@ export default function ContentAssetsManager({
 
   // Get unscheduled assets count
   const unscheduledAssets = useMemo(() => {
-    const filtered = assets.filter(asset => !asset.asset_scheduled_at);
-    console.log('Assets analysis:', {
-      totalAssets: assets.length,
-      unscheduledAssets: filtered.length,
-      allAssets: assets.map(a => ({ 
-        id: a.id, 
-        type: a.content_type, 
-        scheduled: !!a.asset_scheduled_at 
-      })),
-      unscheduledTypes: filtered.map(a => a.content_type)
-    });
-    return filtered;
+    return assets.filter(asset => !asset.asset_scheduled_at);
   }, [assets]);
 
   // Get scheduled assets count
@@ -228,24 +217,10 @@ export default function ContentAssetsManager({
       }));
 
     const allEvents = [...ownedEvents, ...otherEvents];
-    console.log('Calendar events:', {
-      ownedEvents: ownedEvents.length,
-      otherEvents: otherEvents.length,
-      totalEvents: allEvents.length,
-      events: allEvents.map(e => ({ id: e.id, title: e.title, date: e.date }))
-    });
-
     return allEvents;
   }, [assets, businessAssets, content.id]);
 
   const handleScheduleAll = async (startDate?: Date) => {
-    console.log('handleScheduleAll called with:', { 
-      startDate, 
-      unscheduledAssetsCount: unscheduledAssets.length,
-      unscheduledAssets: unscheduledAssets.map(a => ({ id: a.id, type: a.content_type })),
-      businessTimezone 
-    });
-
     if (unscheduledAssets.length === 0) {
       toast.error('No unscheduled assets to schedule.');
       return;
@@ -254,19 +229,11 @@ export default function ContentAssetsManager({
     const scheduleDate = startDate || new Date();
     setIsScheduling(true);
     try {
-      console.log('Calling scheduleContentAssets with:', {
-        contentId: content.id,
-        startDate: scheduleDate.toISOString(),
-        businessTimezone,
-      });
-
       const result = await scheduleContentAssets({
         contentId: content.id,
         startDate: scheduleDate.toISOString(),
         businessTimezone,
       });
-
-      console.log('scheduleContentAssets result:', result);
 
       if (result.success) {
         toast.success(`Scheduled ${result.scheduled} assets successfully!`);
@@ -282,11 +249,6 @@ export default function ContentAssetsManager({
       }
     } catch (error) {
       console.error('Error scheduling assets:', error);
-      console.error('Full error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        error
-      });
       toast.error('An error occurred while scheduling assets.');
     } finally {
       setIsScheduling(false);
