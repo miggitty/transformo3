@@ -179,6 +179,7 @@ DECLARE
     v_integration_id UUID;
     v_secret_id UUID;
     v_secret_name TEXT;
+    v_existing_secret_id UUID;
 BEGIN
     -- Validate provider
     IF p_provider NOT IN ('wordpress', 'wix') THEN
@@ -192,11 +193,26 @@ BEGIN
       AND provider = p_provider
       AND status = 'active';
     
-    -- Create or update secret in vault
+    -- Generate secret name for this business/provider combination
+    v_secret_name := 'blog_' || p_provider || '_key_for_business_' || p_business_id::text;
+    
+    -- Handle secret creation/update with orphaned secret detection
     IF v_secret_id IS NULL THEN
-        v_secret_name := 'blog_' || p_provider || '_key_for_business_' || p_business_id::text;
-        v_secret_id := vault.create_secret(p_credential, v_secret_name, 'Blog platform credential');
+        -- Check if there's an orphaned secret with this name
+        SELECT id INTO v_existing_secret_id
+        FROM vault.secrets
+        WHERE name = v_secret_name;
+        
+        IF v_existing_secret_id IS NOT NULL THEN
+            -- Reuse the orphaned secret
+            v_secret_id := v_existing_secret_id;
+            PERFORM vault.update_secret(v_secret_id, p_credential);
+        ELSE
+            -- Create new secret
+            v_secret_id := vault.create_secret(p_credential, v_secret_name, 'Blog platform credential');
+        END IF;
     ELSE
+        -- Update existing secret
         PERFORM vault.update_secret(v_secret_id, p_credential);
     END IF;
     

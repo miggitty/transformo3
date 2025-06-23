@@ -51,6 +51,15 @@ export default async function IntegrationsPage() {
     .eq('status', 'active')
     .single();
 
+  // Get AI avatar integration data separately
+  const { data: aiAvatarIntegration } = await supabase
+    .from('ai_avatar_integrations')
+    .select('id, provider, avatar_id, voice_id, status, validated_at')
+    .eq('business_id', profile.business_id)
+    .eq('provider', 'heygen')
+    .eq('status', 'active')
+    .single();
+
   // Transform the data for backward compatibility
   const transformedBusiness = {
     ...business,
@@ -62,6 +71,11 @@ export default async function IntegrationsPage() {
     email_selected_group_name: emailIntegration?.selected_group_name || null,
     email_validated_at: emailIntegration?.validated_at || null,
     email_secret_id: emailIntegration?.id ? 'exists' : null, // Indicate if integration exists
+    
+    // Map AI avatar integration fields for component compatibility
+    heygen_avatar_id: aiAvatarIntegration?.avatar_id || null,
+    heygen_voice_id: aiAvatarIntegration?.voice_id || null,
+    heygen_secret_id: aiAvatarIntegration?.id ? 'exists' : null, // Indicate if integration exists
   };
 
   return (
@@ -84,12 +98,12 @@ export default async function IntegrationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>HeyGen AI Video</CardTitle>
+          <CardTitle>AI Avatar Video Generation</CardTitle>
           <CardDescription>
-            Configure your HeyGen integration for AI avatar video generation.
+            Configure your HeyGen integration for AI avatar video generation with custom avatars and voices.
           </CardDescription>
         </CardHeader>
-        <HeygenSettingsForm business={business} />
+        <HeygenSettingsForm business={transformedBusiness} />
       </Card>
 
       <Card>

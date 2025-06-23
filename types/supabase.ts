@@ -17,9 +17,9 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
-          operationName?: string
           variables?: Json
           extensions?: Json
+          operationName?: string
           query?: string
         }
         Returns: Json
@@ -34,6 +34,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_avatar_integrations: {
+        Row: {
+          avatar_id: string | null
+          business_id: string
+          created_at: string | null
+          id: string
+          last_synced_at: string | null
+          provider: string
+          provider_config: Json | null
+          secret_id: string | null
+          status: string | null
+          updated_at: string | null
+          validated_at: string | null
+          voice_id: string | null
+        }
+        Insert: {
+          avatar_id?: string | null
+          business_id: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider: string
+          provider_config?: Json | null
+          secret_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+          voice_id?: string | null
+        }
+        Update: {
+          avatar_id?: string | null
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider?: string
+          provider_config?: Json | null
+          secret_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_avatar_integrations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           blog_provider: string | null
@@ -57,9 +110,6 @@ export type Database = {
           email_name_token: string | null
           email_sign_off: string | null
           first_name: string | null
-          heygen_avatar_id: string | null
-          heygen_secret_id: string | null
-          heygen_voice_id: string | null
           id: string
           last_name: string | null
           social_media_profiles: Json | null
@@ -90,9 +140,6 @@ export type Database = {
           email_name_token?: string | null
           email_sign_off?: string | null
           first_name?: string | null
-          heygen_avatar_id?: string | null
-          heygen_secret_id?: string | null
-          heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
           social_media_profiles?: Json | null
@@ -123,9 +170,6 @@ export type Database = {
           email_name_token?: string | null
           email_sign_off?: string | null
           first_name?: string | null
-          heygen_avatar_id?: string | null
-          heygen_secret_id?: string | null
-          heygen_voice_id?: string | null
           id?: string
           last_name?: string | null
           social_media_profiles?: Json | null
@@ -501,6 +545,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_orphaned_email_secrets: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      delete_ai_avatar_integration: {
+        Args: { p_business_id: string }
+        Returns: undefined
+      }
       delete_blog_key: {
         Args: { p_business_id: string }
         Returns: undefined
@@ -509,9 +561,21 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: undefined
       }
-      delete_heygen_key: {
+      get_ai_avatar_integration: {
         Args: { p_business_id: string }
-        Returns: undefined
+        Returns: {
+          id: string
+          provider: string
+          avatar_id: string
+          voice_id: string
+          provider_config: Json
+          status: string
+          validated_at: string
+        }[]
+      }
+      get_ai_avatar_secret: {
+        Args: { p_business_id: string }
+        Returns: string
       }
       get_blog_secret: {
         Args: { p_business_id: string }
@@ -525,41 +589,48 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: {
           id: string
-          validated_at: string
-          status: string
-          selected_group_name: string
-          selected_group_id: string
-          sender_email: string
-          sender_name: string
           provider: string
+          sender_name: string
+          sender_email: string
+          selected_group_id: string
+          selected_group_name: string
+          status: string
+          validated_at: string
         }[]
       }
       get_email_secret_v2: {
         Args: { p_business_id: string }
         Returns: string
       }
-      set_blog_key: {
+      set_ai_avatar_integration: {
         Args: {
           p_business_id: string
           p_provider: string
-          p_new_username: string
+          p_api_key: string
+          p_avatar_id?: string
+          p_voice_id?: string
+          p_config?: Json
+        }
+        Returns: string
+      }
+      set_blog_key: {
+        Args: {
           p_new_credential: string
+          p_business_id: string
+          p_provider: string
+          p_new_username: string
         }
         Returns: undefined
       }
       set_email_integration: {
         Args: {
+          p_business_id: string
+          p_provider: string
+          p_api_key: string
           p_sender_name?: string
           p_sender_email?: string
-          p_api_key: string
-          p_provider: string
-          p_business_id: string
         }
         Returns: string
-      }
-      set_heygen_key: {
-        Args: { p_new_key: string; p_business_id: string }
-        Returns: undefined
       }
     }
     Enums: {

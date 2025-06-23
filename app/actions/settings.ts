@@ -57,53 +57,65 @@ export async function updateHeygenSettings(
     const firstError = Object.values(errorMessages)[0]?.[0] || 'Invalid form data.';
     return { error: firstError };
   }
+
   const { heygen_api_key, heygen_avatar_id, heygen_voice_id } = parsedData.data;
 
-  // Only update the secret if a new key was provided.
-  if (heygen_api_key) {
-    const { error: rpcError } = await supabase.rpc('set_heygen_key', {
-      p_business_id: businessId,
-      p_new_key: heygen_api_key,
-    });
+  try {
+    // If API key is provided, create/update the integration
+    if (heygen_api_key) {
+      const { error: rpcError } = await supabase.rpc('set_ai_avatar_integration', {
+        p_business_id: businessId,
+        p_provider: 'heygen',
+        p_api_key: heygen_api_key,
+        p_avatar_id: heygen_avatar_id,
+        p_voice_id: heygen_voice_id,
+      });
 
-    if (rpcError) {
-      console.error('Error saving secret to Vault:', rpcError);
-      return { error: `Database error: ${rpcError.message}` };
+      if (rpcError) {
+        console.error('Error saving AI avatar integration:', rpcError);
+        return { error: `Database error: ${rpcError.message}` };
+      }
+    } else {
+      // Update only configuration fields if no API key provided
+      const { error: updateError } = await supabase
+        .from('ai_avatar_integrations')
+        .update({
+          avatar_id: heygen_avatar_id,
+          voice_id: heygen_voice_id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('business_id', businessId)
+        .eq('provider', 'heygen')
+        .eq('status', 'active');
+
+      if (updateError) {
+        console.error('Error updating AI avatar integration:', updateError);
+        return { error: `Could not update settings: ${updateError.message}` };
+      }
     }
+
+    revalidatePath('/settings/integrations');
+    return { success: true };
+  } catch (error) {
+    console.error('Error in updateHeygenSettings:', error);
+    return { error: 'An unexpected error occurred' };
   }
-
-  // Always update the non-sensitive fields.
-  const { error: updateError } = await supabase
-    .from('businesses')
-    .update({
-      heygen_avatar_id: heygen_avatar_id,
-      heygen_voice_id: heygen_voice_id,
-    })
-    .eq('id', businessId);
-
-  if (updateError) {
-    console.error('Error updating business settings:', updateError);
-    return { error: `Could not update settings: ${updateError.message}` };
-  }
-
-  revalidatePath('/settings');
-  return { success: true };
 }
 
 // Action to remove the API key
 export async function removeHeygenApiKey(businessId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc('delete_heygen_key', {
+  const { error } = await supabase.rpc('delete_ai_avatar_integration', {
     p_business_id: businessId,
   });
 
   if (error) {
-    console.error('Error deleting HeyGen API key:', error);
+    console.error('Error deleting AI avatar integration:', error);
     return { error: `Database error: ${error.message}` };
   }
 
-  revalidatePath('/settings');
+  revalidatePath('/settings/integrations');
   return { success: true };
 }
 
@@ -116,6 +128,19 @@ export async function generateHeygenVideo(
   const supabase = await createClient();
 
   try {
+    // Check if AI avatar integration exists
+    const { data: aiAvatarIntegration } = await supabase
+      .from('ai_avatar_integrations')
+      .select('id, avatar_id, voice_id')
+      .eq('business_id', businessId)
+      .eq('provider', 'heygen')
+      .eq('status', 'active')
+      .single();
+
+    if (!aiAvatarIntegration) {
+      return { error: 'HeyGen AI avatar integration not configured. Please set up your HeyGen integration first.' };
+    }
+
     // First, update the content status to 'processing'
     const { error: updateError } = await supabase
       .from('content')

@@ -181,6 +181,7 @@ DECLARE
     v_secret_id UUID;
     v_secret_name TEXT;
     v_integration_id UUID;
+    v_existing_secret_id UUID;
 BEGIN
     -- Validate provider
     IF p_provider NOT IN ('heygen') THEN
@@ -192,11 +193,26 @@ BEGIN
     FROM public.ai_avatar_integrations
     WHERE business_id = p_business_id AND provider = p_provider;
     
-    -- Create or update secret in vault
+    -- Generate secret name for this business/provider combination
+    v_secret_name := 'ai_avatar_' || p_provider || '_key_for_business_' || p_business_id::text;
+    
+    -- Handle secret creation/update with orphaned secret detection
     IF v_secret_id IS NULL THEN
-        v_secret_name := 'ai_avatar_' || p_provider || '_key_for_business_' || p_business_id::text;
-        v_secret_id := vault.create_secret(p_api_key, v_secret_name, 'AI avatar provider API key');
+        -- Check if there's an orphaned secret with this name
+        SELECT id INTO v_existing_secret_id
+        FROM vault.secrets
+        WHERE name = v_secret_name;
+        
+        IF v_existing_secret_id IS NOT NULL THEN
+            -- Reuse the orphaned secret
+            v_secret_id := v_existing_secret_id;
+            PERFORM vault.update_secret(v_secret_id, p_api_key);
+        ELSE
+            -- Create new secret
+            v_secret_id := vault.create_secret(p_api_key, v_secret_name, 'AI avatar provider API key');
+        END IF;
     ELSE
+        -- Update existing secret
         PERFORM vault.update_secret(v_secret_id, p_api_key);
     END IF;
     

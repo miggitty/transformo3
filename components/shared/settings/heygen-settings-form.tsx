@@ -18,7 +18,8 @@ import { toast } from 'sonner';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Tables } from '@/types/supabase';
 import { updateHeygenSettings, removeHeygenApiKey } from '@/app/actions/settings';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 const heygenSettingsFormSchema = z.object({
   heygen_api_key: z.string().optional(),
@@ -33,17 +34,51 @@ interface HeygenSettingsFormProps {
 }
 
 export function HeygenSettingsForm({ business }: HeygenSettingsFormProps) {
-  const [isKeySet, setIsKeySet] = useState(!!business.heygen_secret_id);
+  const [isKeySet, setIsKeySet] = useState(false);
 
   const form = useForm<HeygenSettingsFormValues>({
     resolver: zodResolver(heygenSettingsFormSchema),
     defaultValues: {
       heygen_api_key: '', // Always start empty for security
-      heygen_avatar_id: business.heygen_avatar_id || '',
-      heygen_voice_id: business.heygen_voice_id || '',
+      heygen_avatar_id: '',
+      heygen_voice_id: '',
     },
     mode: 'onChange',
   });
+
+  // Check for existing AI avatar integration
+  useEffect(() => {
+    const checkExistingIntegration = async () => {
+      if (business.id) {
+        try {
+          const supabase = createClient();
+          if (!supabase) return;
+          
+          const { data: integration, error } = await supabase
+            .from('ai_avatar_integrations')
+            .select('id, provider, avatar_id, voice_id')
+            .eq('business_id', business.id)
+            .eq('provider', 'heygen')
+            .eq('status', 'active')
+            .single();
+          
+          if (integration && !error) {
+            setIsKeySet(true);
+            // Update form with existing data
+            form.reset({
+              heygen_api_key: '', // Always keep empty for security
+              heygen_avatar_id: integration.avatar_id || '',
+              heygen_voice_id: integration.voice_id || '',
+            });
+          }
+        } catch (error) {
+          console.error('Error checking existing integration:', error);
+        }
+      }
+    };
+    
+    checkExistingIntegration();
+  }, [business.id, form]);
 
   async function handleRemoveKey() {
     const result = await removeHeygenApiKey(business.id);

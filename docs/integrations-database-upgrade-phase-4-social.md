@@ -127,6 +127,19 @@ GRANT EXECUTE ON FUNCTION public.generate_upload_post_username(TEXT, UUID) TO au
 -- No data migration needed in development environment
 -- Existing upload_post_profiles table structure remains unchanged
 -- New usernames will be generated using the new format going forward
+
+-- Note: This phase doesn't use vault secrets like other integration phases.
+-- If future social integrations require API key storage, use the orphaned 
+-- secret handling pattern from email/AI avatar/blog integrations:
+--
+-- DECLARE v_existing_secret_id UUID;
+-- SELECT id INTO v_existing_secret_id FROM vault.secrets WHERE name = v_secret_name;
+-- IF v_existing_secret_id IS NOT NULL THEN
+--     v_secret_id := v_existing_secret_id;
+--     PERFORM vault.update_secret(v_secret_id, p_api_key);
+-- ELSE
+--     v_secret_id := vault.create_secret(p_api_key, v_secret_name, 'Description');
+-- END IF;
 ```
 
 ### **Phase 4.2: Username Validation Updates**
