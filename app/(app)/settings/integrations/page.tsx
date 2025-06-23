@@ -60,6 +60,14 @@ export default async function IntegrationsPage() {
     .eq('status', 'active')
     .single();
 
+  // Get blog integration data separately
+  const { data: blogIntegration } = await supabase
+    .from('blog_integrations')
+    .select('id, provider, username, site_url, status, validated_at')
+    .eq('business_id', profile.business_id)
+    .eq('status', 'active')
+    .single();
+
   // Transform the data for backward compatibility
   const transformedBusiness = {
     ...business,
@@ -76,6 +84,12 @@ export default async function IntegrationsPage() {
     heygen_avatar_id: aiAvatarIntegration?.avatar_id || null,
     heygen_voice_id: aiAvatarIntegration?.voice_id || null,
     heygen_secret_id: aiAvatarIntegration?.id ? 'exists' : null, // Indicate if integration exists
+
+    // Map blog integration fields for component compatibility
+    blog_provider: blogIntegration?.provider || null,
+    blog_username: blogIntegration?.username || null,
+    blog_site_url: blogIntegration?.site_url || null,
+    blog_secret_id: blogIntegration?.id || null, // Use the actual ID or null
   };
 
   return (
@@ -113,7 +127,7 @@ export default async function IntegrationsPage() {
             Connect your blog platform to automatically publish blog posts and content.
           </CardDescription>
         </CardHeader>
-        <BlogIntegrationForm business={business} />
+        <BlogIntegrationForm business={transformedBusiness} />
       </Card>
     </div>
   );

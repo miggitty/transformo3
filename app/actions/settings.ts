@@ -28,16 +28,18 @@ const blogSettingsFormSchema = z.object({
   // If no provider is selected, all fields are optional
   if (!data.blog_provider) return true;
   
-  // WordPress requires username, credential, and URL
-  if (data.blog_provider === 'wordpress') {
-    return data.blog_username && data.blog_credential && data.blog_site_url;
+  // Allow updates without credential (for when credentials are already set)
+  // Only require credential when it's explicitly provided
+  if (data.blog_credential) {
+    // If credential is provided, validate based on provider requirements
+    if (data.blog_provider === 'wordpress') {
+      return data.blog_username && data.blog_site_url;
+    }
+    // Wix only requires the credential itself
+    return true;
   }
   
-  // Wix only requires credential (API key)
-  if (data.blog_provider === 'wix') {
-    return data.blog_credential;
-  }
-  
+  // If no credential provided, allow other field updates
   return true;
 }, {
   message: "Please provide all required fields for the selected blog provider.",
@@ -311,49 +313,62 @@ export async function updateBlogSettings(
     blog_site_url 
   } = parsedData.data;
 
-  // Only update the secret if a new credential was provided.
-  if (blog_credential && blog_provider) {
-    const { error: rpcError } = await supabase.rpc('set_blog_key', {
-      p_business_id: businessId,
-      p_provider: blog_provider,
-      p_new_username: blog_username || null,
-      p_new_credential: blog_credential,
-    });
+  // Clean up site URL by removing trailing slash
+  const cleanSiteUrl = blog_site_url?.replace(/\/$/, '');
 
-    if (rpcError) {
-      console.error('Error saving blog credential to Vault:', rpcError);
-      return { error: `Database error: ${rpcError.message}` };
+  try {
+    // If credential is provided, create/update the integration
+    if (blog_credential && blog_provider) {
+      const { error: rpcError } = await supabase.rpc('set_blog_integration', {
+        p_business_id: businessId,
+        p_provider: blog_provider,
+        p_credential: blog_credential,
+        p_username: blog_username,
+        p_site_url: cleanSiteUrl,
+      });
+
+      if (rpcError) {
+        console.error('Error saving blog integration:', rpcError);
+        return { error: `Database error: ${rpcError.message}` };
+      }
     }
+
+    // Update additional fields if no credential provided but integration exists
+    if (!blog_credential && (blog_username || cleanSiteUrl)) {
+      const { error: updateError } = await supabase
+        .from('blog_integrations')
+        .update({
+          username: blog_username,
+          site_url: cleanSiteUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('business_id', businessId)
+        .eq('status', 'active');
+
+      if (updateError) {
+        console.error('Error updating blog integration:', updateError);
+        return { error: `Could not update settings: ${updateError.message}` };
+      }
+    }
+
+    revalidatePath('/settings/integrations');
+    return { success: true };
+  } catch (error) {
+    console.error('Error in updateBlogSettings:', error);
+    return { error: 'An unexpected error occurred' };
   }
-
-  // Always update the non-sensitive fields (if not handled by the RPC function).
-  const { error: updateError } = await supabase
-    .from('businesses')
-    .update({
-      blog_site_url: blog_site_url,
-      blog_validated_at: new Date().toISOString(),
-    })
-    .eq('id', businessId);
-
-  if (updateError) {
-    console.error('Error updating business blog settings:', updateError);
-    return { error: `Could not update settings: ${updateError.message}` };
-  }
-
-  revalidatePath('/settings/integrations');
-  return { success: true };
 }
 
 // Action to remove blog credentials
 export async function removeBlogCredentials(businessId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc('delete_blog_key', {
+  const { error } = await supabase.rpc('delete_blog_integration', {
     p_business_id: businessId,
   });
 
   if (error) {
-    console.error('Error deleting blog credentials:', error);
+    console.error('Error deleting blog integration:', error);
     return { error: `Database error: ${error.message}` };
   }
 

@@ -27,30 +27,13 @@ import { Tables } from '@/types/supabase';
 import { updateBlogSettings, removeBlogCredentials } from '@/app/actions/settings';
 import { useState, useEffect } from 'react';
 import { Loader2, Check, X, ExternalLink } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 const blogSettingsFormSchema = z.object({
   blog_provider: z.enum(['wordpress', 'wix']).optional(),
   blog_username: z.string().min(1, 'Username is required').optional(),
   blog_credential: z.string().optional(),
   blog_site_url: z.string().url('Please enter a valid URL').optional(),
-}).refine((data) => {
-  // If no provider is selected, all fields are optional
-  if (!data.blog_provider) return true;
-  
-  // WordPress requires username, credential, and URL
-  if (data.blog_provider === 'wordpress') {
-    return data.blog_username && data.blog_credential && data.blog_site_url;
-  }
-  
-  // Wix only requires credential (API key)
-  if (data.blog_provider === 'wix') {
-    return data.blog_credential;
-  }
-  
-  return true;
-}, {
-  message: "Please provide all required fields for the selected blog provider.",
-  path: ["blog_credential"]
 });
 
 type BlogSettingsFormValues = z.infer<typeof blogSettingsFormSchema>;
@@ -70,7 +53,7 @@ interface BlogIntegrationFormProps {
 }
 
 export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
-  const [isKeySet, setIsKeySet] = useState(!!business.blog_secret_id);
+  const [isKeySet, setIsKeySet] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
   const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
@@ -78,13 +61,49 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
   const form = useForm<BlogSettingsFormValues>({
     resolver: zodResolver(blogSettingsFormSchema),
     defaultValues: {
-      blog_provider: (business.blog_provider as 'wordpress' | 'wix') || undefined,
-      blog_username: business.blog_username || '',
+      blog_provider: undefined,
+      blog_username: '',
       blog_credential: '', // Always start empty for security
-      blog_site_url: business.blog_site_url || '',
+      blog_site_url: '',
     },
     mode: 'onChange',
   });
+
+  // Check for existing blog integration
+  useEffect(() => {
+    const checkExistingIntegration = async () => {
+      if (business.id) {
+        try {
+          const supabase = createClient();
+          if (!supabase) return;
+          
+          const { data: integration, error } = await supabase
+            .from('blog_integrations')
+            .select('id, provider, username, site_url')
+            .eq('business_id', business.id)
+            .eq('status', 'active')
+            .maybeSingle();
+          
+          if (integration && !error) {
+            setIsKeySet(true);
+            // Update form with existing data
+            form.reset({
+              blog_provider: integration.provider as 'wordpress' | 'wix',
+              blog_username: integration.username || '',
+              blog_credential: '', // Always keep empty for security
+              blog_site_url: integration.site_url || '',
+            });
+          } else if (error) {
+            console.error('Error fetching existing integration:', error);
+          }
+        } catch (err) {
+          console.error('Error checking existing integration:', err);
+        }
+      }
+    };
+    
+    checkExistingIntegration();
+  }, [business.id, form]);
 
   const selectedProvider = form.watch('blog_provider');
   const credentialValue = form.watch('blog_credential');
@@ -143,6 +162,7 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
       toast.success('Blog connection validated successfully');
       return true;
     } catch (error) {
+      console.error('Error validating blog credentials:', error);
       setConnectionStatus('invalid');
       toast.error('Validation failed', { description: 'Please check your internet connection and try again.' });
       setSiteInfo(null);
@@ -168,17 +188,46 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
   const handleProviderChange = (value: string) => {
     const provider = value as 'wordpress' | 'wix' | undefined;
     
-    // Only clear settings if switching to a different provider than what's in the database
-    if (provider !== business.blog_provider) {
+    // Check if this matches current integration
+    const currentProvider = form.getValues('blog_provider');
+    
+    if (provider !== currentProvider) {
       setIsKeySet(false);
       setConnectionStatus('idle');
       setSiteInfo(null);
       form.resetField('blog_credential');
       form.resetField('blog_username');
       form.resetField('blog_site_url');
-    } else {
-      // If switching back to the original provider, restore the key state
-      setIsKeySet(!!business.blog_secret_id);
+      
+      // Check if there's an existing integration for this provider
+      if (provider && business.id) {
+        const checkProviderIntegration = async () => {
+          try {
+            const supabase = createClient();
+            if (!supabase) return;
+            
+            const { data: integration, error } = await supabase
+              .from('blog_integrations')
+              .select('id, username, site_url')
+              .eq('business_id', business.id)
+              .eq('provider', provider)
+              .eq('status', 'active')
+              .maybeSingle();
+            
+            if (integration && !error) {
+              setIsKeySet(true);
+              form.setValue('blog_username', integration.username || '');
+              form.setValue('blog_site_url', integration.site_url || '');
+            } else if (error) {
+              console.error('Error fetching provider integration:', error);
+            }
+          } catch (err) {
+            console.error('Error checking provider integration:', err);
+          }
+        };
+        
+        checkProviderIntegration();
+      }
     }
     
     form.setValue('blog_provider', provider);
@@ -195,6 +244,18 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
       // If credential is provided but validation failed, prevent submission
       if (data.blog_credential && connectionStatus === 'invalid') {
         toast.error('Please fix the credential validation errors before saving');
+        return;
+      }
+
+      // Custom validation for required fields when no credential is already set
+      if (data.blog_provider && !isKeySet && !data.blog_credential) {
+        toast.error('Please provide credentials for the selected blog provider');
+        return;
+      }
+
+      // For WordPress, ensure username and site URL are provided
+      if (data.blog_provider === 'wordpress' && (!data.blog_username || !data.blog_site_url)) {
+        toast.error('Please provide username and site URL for WordPress');
         return;
       }
 
@@ -273,7 +334,7 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                 <FormLabel>Blog Provider</FormLabel>
                 <Select 
                   onValueChange={handleProviderChange} 
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>

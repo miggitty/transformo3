@@ -18,9 +18,9 @@ export type Database = {
       graphql: {
         Args: {
           variables?: Json
-          extensions?: Json
-          operationName?: string
           query?: string
+          operationName?: string
+          extensions?: Json
         }
         Returns: Json
       }
@@ -87,14 +87,58 @@ export type Database = {
           },
         ]
       }
+      blog_integrations: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          provider: string
+          provider_config: Json | null
+          secret_id: string | null
+          site_url: string
+          status: string | null
+          updated_at: string | null
+          username: string | null
+          validated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          provider: string
+          provider_config?: Json | null
+          secret_id?: string | null
+          site_url: string
+          status?: string | null
+          updated_at?: string | null
+          username?: string | null
+          validated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          provider?: string
+          provider_config?: Json | null
+          secret_id?: string | null
+          site_url?: string
+          status?: string | null
+          updated_at?: string | null
+          username?: string | null
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_integrations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
-          blog_provider: string | null
-          blog_secret_id: string | null
-          blog_site_name: string | null
-          blog_site_url: string | null
-          blog_username: string | null
-          blog_validated_at: string | null
           booking_link: string | null
           business_name: string
           color_background: string | null
@@ -119,12 +163,6 @@ export type Database = {
           writing_style_guide: string | null
         }
         Insert: {
-          blog_provider?: string | null
-          blog_secret_id?: string | null
-          blog_site_name?: string | null
-          blog_site_url?: string | null
-          blog_username?: string | null
-          blog_validated_at?: string | null
           booking_link?: string | null
           business_name: string
           color_background?: string | null
@@ -149,12 +187,6 @@ export type Database = {
           writing_style_guide?: string | null
         }
         Update: {
-          blog_provider?: string | null
-          blog_secret_id?: string | null
-          blog_site_name?: string | null
-          blog_site_url?: string | null
-          blog_username?: string | null
-          blog_validated_at?: string | null
           booking_link?: string | null
           business_name?: string
           color_background?: string | null
@@ -553,7 +585,7 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: undefined
       }
-      delete_blog_key: {
+      delete_blog_integration: {
         Args: { p_business_id: string }
         Returns: undefined
       }
@@ -577,7 +609,18 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: string
       }
-      get_blog_secret: {
+      get_blog_integration: {
+        Args: { p_business_id: string }
+        Returns: {
+          id: string
+          provider: string
+          username: string
+          site_url: string
+          status: string
+          validated_at: string
+        }[]
+      }
+      get_blog_secret_v2: {
         Args: { p_business_id: string }
         Returns: string
       }
@@ -591,11 +634,11 @@ export type Database = {
           id: string
           provider: string
           sender_name: string
-          sender_email: string
           selected_group_id: string
           selected_group_name: string
           status: string
           validated_at: string
+          sender_email: string
         }[]
       }
       get_email_secret_v2: {
@@ -613,22 +656,23 @@ export type Database = {
         }
         Returns: string
       }
-      set_blog_key: {
+      set_blog_integration: {
         Args: {
-          p_new_credential: string
           p_business_id: string
           p_provider: string
-          p_new_username: string
+          p_credential: string
+          p_site_url?: string
+          p_username?: string
         }
-        Returns: undefined
+        Returns: string
       }
       set_email_integration: {
         Args: {
+          p_sender_email?: string
           p_business_id: string
           p_provider: string
           p_api_key: string
           p_sender_name?: string
-          p_sender_email?: string
         }
         Returns: string
       }
