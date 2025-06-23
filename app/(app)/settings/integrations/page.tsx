@@ -43,6 +43,27 @@ export default async function IntegrationsPage() {
     return <div>Error: Could not load business data.</div>;
   }
 
+  // Get email integration data separately
+  const { data: emailIntegration } = await supabase
+    .from('email_integrations')
+    .select('id, provider, sender_name, sender_email, selected_group_id, selected_group_name, status, validated_at')
+    .eq('business_id', profile.business_id)
+    .eq('status', 'active')
+    .single();
+
+  // Transform the data for backward compatibility
+  const transformedBusiness = {
+    ...business,
+    // Map email integration fields for component compatibility
+    email_provider: emailIntegration?.provider || null,
+    email_sender_name: emailIntegration?.sender_name || null,
+    email_sender_email: emailIntegration?.sender_email || null,
+    email_selected_group_id: emailIntegration?.selected_group_id || null,
+    email_selected_group_name: emailIntegration?.selected_group_name || null,
+    email_validated_at: emailIntegration?.validated_at || null,
+    email_secret_id: emailIntegration?.id ? 'exists' : null, // Indicate if integration exists
+  };
+
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8">
       <h1 className="text-3xl font-bold">Integrations</h1>
@@ -58,7 +79,7 @@ export default async function IntegrationsPage() {
             Connect your email service provider for marketing campaigns.
           </CardDescription>
         </CardHeader>
-        <EmailIntegrationForm business={business} />
+        <EmailIntegrationForm business={transformedBusiness} />
       </Card>
 
       <Card>

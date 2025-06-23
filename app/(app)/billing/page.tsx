@@ -57,11 +57,13 @@ export default async function BillingPage() {
   }
 
   // Get subscription data
-  const { data: subscription } = await supabase
+  const { data: subscription, error: subscriptionError } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('business_id', profile.business_id)
     .single();
+
+
 
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8">

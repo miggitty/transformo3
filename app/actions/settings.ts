@@ -199,60 +199,63 @@ export async function updateEmailSettings(
     return { error: firstError };
   }
 
-  const { 
-    email_api_key, 
-    email_provider, 
-    email_sender_name, 
-    email_sender_email, 
-    email_selected_group_id, 
-    email_selected_group_name 
-  } = parsedData.data;
+  const { email_api_key, email_provider, email_sender_name, email_sender_email, email_selected_group_id, email_selected_group_name } = parsedData.data;
 
-  // Only update the secret if a new key was provided.
-  if (email_api_key) {
-    const { error: rpcError } = await supabase.rpc('set_email_key', {
-      p_business_id: businessId,
-      p_new_key: email_api_key,
-    });
+  try {
+    // If API key is provided, create/update the integration
+    if (email_api_key && email_provider) {
+      const { error: rpcError } = await supabase.rpc('set_email_integration', {
+        p_business_id: businessId,
+        p_provider: email_provider,
+        p_api_key: email_api_key,
+        p_sender_name: email_sender_name,
+        p_sender_email: email_sender_email,
+      });
 
-    if (rpcError) {
-      console.error('Error saving email secret to Vault:', rpcError);
-      return { error: `Database error: ${rpcError.message}` };
+      if (rpcError) {
+        console.error('Error saving email integration:', rpcError);
+        return { error: `Database error: ${rpcError.message}` };
+      }
     }
+
+    // Update additional fields if no API key provided but integration exists
+    if (!email_api_key && (email_sender_name || email_sender_email || email_selected_group_id)) {
+      const { error: updateError } = await supabase
+        .from('email_integrations')
+        .update({
+          sender_name: email_sender_name,
+          sender_email: email_sender_email,
+          selected_group_id: email_selected_group_id,
+          selected_group_name: email_selected_group_name,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('business_id', businessId)
+        .eq('status', 'active');
+
+      if (updateError) {
+        console.error('Error updating email integration:', updateError);
+        return { error: `Could not update settings: ${updateError.message}` };
+      }
+    }
+
+    revalidatePath('/settings/integrations');
+    return { success: true };
+  } catch (error) {
+    console.error('Error in updateEmailSettings:', error);
+    return { error: 'An unexpected error occurred' };
   }
-
-  // Always update the non-sensitive fields.
-  const { error: updateError } = await supabase
-    .from('businesses')
-    .update({
-      email_provider: email_provider,
-      email_sender_name: email_sender_name,
-      email_sender_email: email_sender_email,
-      email_selected_group_id: email_selected_group_id,
-      email_selected_group_name: email_selected_group_name,
-      email_validated_at: new Date().toISOString(),
-    })
-    .eq('id', businessId);
-
-  if (updateError) {
-    console.error('Error updating business email settings:', updateError);
-    return { error: `Could not update settings: ${updateError.message}` };
-  }
-
-  revalidatePath('/settings/integrations');
-  return { success: true };
 }
 
 // Action to remove the email API key
 export async function removeEmailApiKey(businessId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc('delete_email_key', {
+  const { error } = await supabase.rpc('delete_email_integration', {
     p_business_id: businessId,
   });
 
   if (error) {
-    console.error('Error deleting email API key:', error);
+    console.error('Error deleting email integration:', error);
     return { error: `Database error: ${error.message}` };
   }
 

@@ -55,7 +55,17 @@ async function markEventProcessed(eventId: string, eventType: string, eventData?
 
 // Handle checkout.session.completed
 async function handleCheckoutCompleted(session: any): Promise<void> {
+  console.log('🔍 Session object keys:', Object.keys(session));
+  console.log('💳 Customer:', session.customer);
+  console.log('📋 Subscription:', session.subscription);
+  console.log('📊 Metadata:', session.metadata);
+  
   if (!session.subscription || !session.customer) {
+    console.error('❌ Session missing required fields:', {
+      hasSubscription: !!session.subscription,
+      hasCustomer: !!session.customer,
+      sessionId: session.id
+    });
     throw new Error('Invalid checkout session: missing subscription or customer');
   }
 
@@ -72,20 +82,42 @@ async function handleCheckoutCompleted(session: any): Promise<void> {
     throw new Error('Missing business_id in session metadata');
   }
 
+  // Verify business exists
+  const { data: business, error: businessError } = await supabase
+    .from('businesses')
+    .select('id')
+    .eq('id', businessId)
+    .single();
+
+  if (businessError || !business) {
+    console.error('❌ Business not found:', {
+      businessId,
+      error: businessError?.message
+    });
+    throw new Error(`Business not found: ${businessId}`);
+  }
+
+  console.log('✅ Business verified:', businessId);
+
   // Create subscription record
   const subscriptionItem = (subscription as any).items.data[0];
+  
+  const subscriptionData = {
+    business_id: businessId,
+    stripe_subscription_id: subscription.id,
+    stripe_customer_id: subscription.customer as string,
+    status: subscription.status,
+    price_id: subscriptionItem.price.id,
+    current_period_start: new Date(subscriptionItem.current_period_start * 1000).toISOString(),
+    current_period_end: new Date(subscriptionItem.current_period_end * 1000).toISOString(),
+    trial_end: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000).toISOString() : null,
+  };
+  
+  console.log('📝 Creating subscription with data:', subscriptionData);
+  
   const { error } = await supabase
     .from('subscriptions')
-    .insert({
-      business_id: businessId,
-      stripe_subscription_id: subscription.id,
-      stripe_customer_id: subscription.customer as string,
-      status: subscription.status,
-      price_id: subscriptionItem.price.id,
-      current_period_start: new Date(subscriptionItem.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscriptionItem.current_period_end * 1000).toISOString(),
-      trial_end: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000).toISOString() : null,
-    });
+    .insert(subscriptionData);
 
   if (error) {
     throw new Error(`Failed to create subscription record: ${error.message}`);
@@ -193,10 +225,16 @@ async function handleSubscriptionDeleted(subscription: any): Promise<void> {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🔥 Webhook received!', new Date().toISOString());
+  
   try {
     const body = await request.text();
     const headersList = await headers();
     const signature = headersList.get('stripe-signature');
+    
+    console.log('📦 Webhook body length:', body.length);
+    console.log('🔑 Signature present:', !!signature);
+    console.log('🌍 Webhook secret configured:', !!process.env.STRIPE_WEBHOOK_SIGNING_SECRET);
 
     if (!signature) {
       console.error('Missing Stripe signature');
@@ -222,8 +260,11 @@ export async function POST(request: NextRequest) {
         signature,
         process.env.STRIPE_WEBHOOK_SIGNING_SECRET
       );
+      console.log('✅ Signature verified successfully');
+      console.log('📨 Event type:', event.type);
+      console.log('📊 Event ID:', event.id);
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+      console.error('❌ Webhook signature verification failed:', err);
       return NextResponse.json(
         { error: 'Invalid signature' },
         { status: 400 }

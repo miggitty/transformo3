@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
-          extensions?: Json
           operationName?: string
-          query?: string
           variables?: Json
+          extensions?: Json
+          query?: string
         }
         Returns: Json
       }
@@ -55,14 +55,7 @@ export type Database = {
           cta_social_short: string | null
           cta_youtube: string | null
           email_name_token: string | null
-          email_provider: string | null
-          email_secret_id: string | null
-          email_selected_group_id: string | null
-          email_selected_group_name: string | null
-          email_sender_email: string | null
-          email_sender_name: string | null
           email_sign_off: string | null
-          email_validated_at: string | null
           first_name: string | null
           heygen_avatar_id: string | null
           heygen_secret_id: string | null
@@ -95,14 +88,7 @@ export type Database = {
           cta_social_short?: string | null
           cta_youtube?: string | null
           email_name_token?: string | null
-          email_provider?: string | null
-          email_secret_id?: string | null
-          email_selected_group_id?: string | null
-          email_selected_group_name?: string | null
-          email_sender_email?: string | null
-          email_sender_name?: string | null
           email_sign_off?: string | null
-          email_validated_at?: string | null
           first_name?: string | null
           heygen_avatar_id?: string | null
           heygen_secret_id?: string | null
@@ -135,14 +121,7 @@ export type Database = {
           cta_social_short?: string | null
           cta_youtube?: string | null
           email_name_token?: string | null
-          email_provider?: string | null
-          email_secret_id?: string | null
-          email_selected_group_id?: string | null
-          email_selected_group_name?: string | null
-          email_sender_email?: string | null
-          email_sender_name?: string | null
           email_sign_off?: string | null
-          email_validated_at?: string | null
           first_name?: string | null
           heygen_avatar_id?: string | null
           heygen_secret_id?: string | null
@@ -295,6 +274,62 @@ export type Database = {
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_integrations: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          last_synced_at: string | null
+          provider: string
+          secret_id: string | null
+          selected_group_id: string | null
+          selected_group_name: string | null
+          sender_email: string | null
+          sender_name: string | null
+          status: string | null
+          updated_at: string | null
+          validated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider: string
+          secret_id?: string | null
+          selected_group_id?: string | null
+          selected_group_name?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          provider?: string
+          secret_id?: string | null
+          selected_group_id?: string | null
+          selected_group_name?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_integrations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -470,7 +505,7 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: undefined
       }
-      delete_email_key: {
+      delete_email_integration: {
         Args: { p_business_id: string }
         Returns: undefined
       }
@@ -486,20 +521,44 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: string
       }
-      get_email_secret: {
+      get_email_integration: {
+        Args: { p_business_id: string }
+        Returns: {
+          id: string
+          validated_at: string
+          status: string
+          selected_group_name: string
+          selected_group_id: string
+          sender_email: string
+          sender_name: string
+          provider: string
+        }[]
+      }
+      get_email_secret_v2: {
         Args: { p_business_id: string }
         Returns: string
       }
       set_blog_key: {
-        Args: { p_business_id: string; p_provider: string; p_new_username: string; p_new_credential: string }
+        Args: {
+          p_business_id: string
+          p_provider: string
+          p_new_username: string
+          p_new_credential: string
+        }
         Returns: undefined
       }
-      set_email_key: {
-        Args: { p_business_id: string; p_new_key: string }
-        Returns: undefined
+      set_email_integration: {
+        Args: {
+          p_sender_name?: string
+          p_sender_email?: string
+          p_api_key: string
+          p_provider: string
+          p_business_id: string
+        }
+        Returns: string
       }
       set_heygen_key: {
-        Args: { p_business_id: string; p_new_key: string }
+        Args: { p_new_key: string; p_business_id: string }
         Returns: undefined
       }
     }
