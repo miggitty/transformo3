@@ -538,6 +538,7 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string | null
+          facebook_page_id: string | null
           id: string
           last_synced_at: string | null
           social_accounts: Json | null
@@ -547,6 +548,7 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string | null
+          facebook_page_id?: string | null
           id?: string
           last_synced_at?: string | null
           social_accounts?: Json | null
@@ -556,6 +558,7 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string | null
+          facebook_page_id?: string | null
           id?: string
           last_synced_at?: string | null
           social_accounts?: Json | null

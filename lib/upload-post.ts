@@ -167,6 +167,18 @@ interface GenerateJWTResponse {
   access_url: string;
 }
 
+interface FacebookPage {
+  id: string;
+  name: string;
+  account_id: string;
+  picture?: string;
+}
+
+interface FacebookPagesResponse {
+  pages: FacebookPage[];
+  success: boolean;
+}
+
 /**
  * Get the API key from environment variables
  */
@@ -481,4 +493,49 @@ export function generateUploadPostUsername(businessName: string, businessId: str
   }
   
   return username;
+}
+
+/**
+ * Fetch Facebook Page ID for a given upload-post username
+ * Returns the first page ID if available, null otherwise
+ */
+export async function fetchFacebookPageId(username: string): Promise<string | null> {
+  try {
+    // Validate username before making API call
+    const validatedUsername = validateUsername(username);
+    
+    console.log(`📡 Fetching Facebook pages for profile: ${validatedUsername}`);
+    
+    const response = await fetch(
+      `${UPLOAD_POST_API_URL}/facebook/pages?profile=${encodeURIComponent(validatedUsername)}`,
+      {
+        method: 'GET',
+        headers: createHeaders(),
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+      }
+    );
+
+    console.log(`📡 Facebook Pages API response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.warn(`❌ Failed to fetch Facebook pages for ${username}: ${response.status} - ${errorText}`);
+      return null;
+    }
+
+    const data: FacebookPagesResponse = await response.json();
+    console.log(`📡 Facebook Pages API response:`, JSON.stringify(data, null, 2));
+    
+    // Return the first page ID if available
+    if (data.success && data.pages && data.pages.length > 0) {
+      console.log(`✅ Found ${data.pages.length} Facebook page(s), using first: ${data.pages[0].id}`);
+      return data.pages[0].id;
+    }
+    
+    console.log(`⚠️ No Facebook pages found in response`);
+    return null;
+  } catch (error) {
+    console.error('❌ Error fetching Facebook Page ID:', error);
+    return null;
+  }
 } 
