@@ -6,14 +6,13 @@
 import { z } from 'zod';
 
 // Base validation schemas
-export const usernameSchema = z
+const usernameSchema = z
   .string()
-  .min(3, 'Username must be at least 3 characters')
-  .max(50, 'Username must not exceed 50 characters')
-  .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens')
+  .min(5, 'Username must be at least 5 characters')
+  .regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores')
   .refine(
-    (value) => value.startsWith('transformo_'),
-    'Username must start with "transformo_" for Transformo integration'
+    (value) => value.includes('_') && value.split('_').length >= 2,
+    'Username must contain business identifier format (businessname_id)'
   );
 
 export const businessIdSchema = z

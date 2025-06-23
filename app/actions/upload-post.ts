@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { createUserProfile, findProfileByUsername, generateJWTUrl, testConnection } from '@/lib/upload-post';
+import { createUserProfile, findProfileByUsername, generateJWTUrl, testConnection, generateUploadPostUsername } from '@/lib/upload-post';
 
 /**
  * Test the upload-post API connection
@@ -83,6 +83,17 @@ export async function createUploadPostProfile() {
       return { error: 'Business profile not found' };
     }
 
+    // Get business details for username generation
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('business_name')
+      .eq('id', profile.business_id)
+      .single();
+
+    if (!business || !business.business_name) {
+      return { error: 'Business details not found' };
+    }
+
     // Check if profile already exists
     const { data: existingProfile } = await supabase
       .from('upload_post_profiles')
@@ -94,8 +105,8 @@ export async function createUploadPostProfile() {
       return { error: 'Upload-post profile already exists for this business' };
     }
 
-    // Generate username using business_id
-    const uploadPostUsername = `transformo_${profile.business_id}`;
+    // Generate username using business name and business_id
+    const uploadPostUsername = generateUploadPostUsername(business.business_name, profile.business_id);
 
     // Create profile on upload-post platform
     const uploadPostResponse = await createUserProfile(uploadPostUsername);

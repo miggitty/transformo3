@@ -456,4 +456,29 @@ export function validateJWTRedirect(searchParams: URLSearchParams): {
       error: 'Invalid redirect parameters' 
     };
   }
+}
+
+/**
+ * Generate upload-post username from business name and business ID
+ * Format: {sanitized_business_name}_{last_8_digits_of_business_id}
+ */
+export function generateUploadPostUsername(businessName: string, businessId: string): string {
+  // Sanitize business name for username
+  const sanitizedBusinessName = businessName
+    .toLowerCase()
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .replace(/[^a-z0-9_]/g, ''); // Remove any remaining non-alphanumeric characters except underscores
+  
+  // Get last 8 characters of business ID for uniqueness
+  const businessIdSuffix = businessId.replace(/-/g, '').slice(-8);
+  
+  // Combine sanitized business name with business ID suffix
+  const username = `${sanitizedBusinessName}_${businessIdSuffix}`;
+  
+  // Ensure we have a valid username (minimum length check only)
+  if (sanitizedBusinessName.length === 0) {
+    return `business_${businessIdSuffix}`;
+  }
+  
+  return username;
 } 
