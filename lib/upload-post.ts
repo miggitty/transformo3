@@ -47,9 +47,9 @@ export function validateUsername(username: string): string {
     throw new UploadPostValidationError('Username must be between 3 and 50 characters');
   }
   
-  // Ensure it matches our expected format for Transformo usernames
-  if (!sanitized.startsWith('transformo_')) {
-    throw new UploadPostValidationError('Invalid username format for Transformo integration');
+  // Ensure it contains underscore (business_name_id format)
+  if (!sanitized.includes('_')) {
+    throw new UploadPostValidationError('Invalid username format for business integration');
   }
   
   return sanitized;

@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
-          variables?: Json
           query?: string
-          operationName?: string
           extensions?: Json
+          operationName?: string
+          variables?: Json
         }
         Returns: Json
       }
@@ -593,6 +593,10 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: undefined
       }
+      generate_upload_post_username: {
+        Args: { p_business_id: string; p_business_name: string }
+        Returns: string
+      }
       get_ai_avatar_integration: {
         Args: { p_business_id: string }
         Returns: {
@@ -612,12 +616,12 @@ export type Database = {
       get_blog_integration: {
         Args: { p_business_id: string }
         Returns: {
+          username: string
           id: string
           provider: string
-          username: string
-          site_url: string
-          status: string
           validated_at: string
+          status: string
+          site_url: string
         }[]
       }
       get_blog_secret_v2: {
@@ -634,11 +638,11 @@ export type Database = {
           id: string
           provider: string
           sender_name: string
+          sender_email: string
           selected_group_id: string
           selected_group_name: string
           status: string
           validated_at: string
-          sender_email: string
         }[]
       }
       get_email_secret_v2: {
@@ -647,19 +651,19 @@ export type Database = {
       }
       set_ai_avatar_integration: {
         Args: {
-          p_business_id: string
           p_provider: string
           p_api_key: string
           p_avatar_id?: string
           p_voice_id?: string
           p_config?: Json
+          p_business_id: string
         }
         Returns: string
       }
       set_blog_integration: {
         Args: {
-          p_business_id: string
           p_provider: string
+          p_business_id: string
           p_credential: string
           p_site_url?: string
           p_username?: string
@@ -668,11 +672,11 @@ export type Database = {
       }
       set_email_integration: {
         Args: {
-          p_sender_email?: string
           p_business_id: string
           p_provider: string
           p_api_key: string
           p_sender_name?: string
+          p_sender_email?: string
         }
         Returns: string
       }
