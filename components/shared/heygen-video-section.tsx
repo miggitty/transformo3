@@ -48,18 +48,23 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
     };
   }, [content.id, content.heygen_status, onContentUpdate, supabase]);
 
+  // Get HeyGen integration data
+  const heygenIntegration = content.businesses?.ai_avatar_integrations?.find(
+    integration => integration.provider === 'heygen' && integration.status === 'active'
+  );
+
   const handleGenerateVideo = async () => {
     if (!content.video_script) {
       toast.error('Video script is required to generate an AI avatar video.');
       return;
     }
 
-    if (!content.businesses?.heygen_secret_id) {
+    if (!heygenIntegration?.secret_id) {
       toast.error('HeyGen API key is not configured. Please set it up in Settings.');
       return;
     }
 
-    if (!content.businesses?.heygen_avatar_id || !content.businesses?.heygen_voice_id) {
+    if (!heygenIntegration?.avatar_id || !heygenIntegration?.voice_id) {
       toast.error('HeyGen avatar and voice IDs are required. Please configure them in Settings.');
       return;
     }
@@ -127,9 +132,9 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
   };
 
   const canGenerate = content.video_script && 
-                     content.businesses?.heygen_secret_id && 
-                     content.businesses?.heygen_avatar_id && 
-                     content.businesses?.heygen_voice_id &&
+                     heygenIntegration?.secret_id && 
+                     heygenIntegration?.avatar_id && 
+                     heygenIntegration?.voice_id &&
                      content.heygen_status !== 'processing';
 
   return (
@@ -154,20 +159,20 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span>HeyGen API Key:</span>
-            <Badge variant={content.businesses?.heygen_secret_id ? "default" : "secondary"}>
-              {content.businesses?.heygen_secret_id ? "Configured" : "Not Set"}
+            <Badge variant={heygenIntegration?.secret_id ? "default" : "secondary"}>
+              {heygenIntegration?.secret_id ? "Configured" : "Not Set"}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span>Avatar ID:</span>
-            <Badge variant={content.businesses?.heygen_avatar_id ? "default" : "secondary"}>
-              {content.businesses?.heygen_avatar_id ? "Set" : "Not Set"}
+            <Badge variant={heygenIntegration?.avatar_id ? "default" : "secondary"}>
+              {heygenIntegration?.avatar_id ? "Set" : "Not Set"}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span>Voice ID:</span>
-            <Badge variant={content.businesses?.heygen_voice_id ? "default" : "secondary"}>
-              {content.businesses?.heygen_voice_id ? "Set" : "Not Set"}
+            <Badge variant={heygenIntegration?.voice_id ? "default" : "secondary"}>
+              {heygenIntegration?.voice_id ? "Set" : "Not Set"}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">

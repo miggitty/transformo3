@@ -16,7 +16,20 @@ export default async function ContentDetailPage(props: ContentDetailPageProps) {
 
   const { data: content } = await supabase
     .from('content')
-    .select('*, businesses(*)')
+    .select(`
+      *, 
+      businesses(
+        *, 
+        ai_avatar_integrations(
+          id,
+          secret_id,
+          avatar_id,
+          voice_id,
+          status,
+          provider
+        )
+      )
+    `)
     .eq('id', id)
     .single();
 
