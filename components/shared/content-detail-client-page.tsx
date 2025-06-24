@@ -8,14 +8,11 @@ import {
 } from '@/components/ui/accordion';
 
 import { ContentWithBusiness, ContentAsset } from '@/types';
-import { useEffect, useState, useTransition, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import ContentAssetsManager from './content-assets-manager';
 import VideoUploadSection from './video-upload-section';
 import { HeygenVideoSection } from './heygen-video-section';
-import {
-  generateContent,
-} from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 
 interface ContentDetailClientPageProps {
@@ -34,51 +31,6 @@ export default function ContentDetailClientPage({
   
   // Create stable supabase reference to avoid useEffect re-runs
   const supabase = createClient();
-
-  const [isGenerating, startGeneratingTransition] = useTransition();
-
-  const handleGenerateContent = () => {
-    startGeneratingTransition(async () => {
-      if (!content.businesses) {
-        toast.error('Business information is missing.');
-        return;
-      }
-
-      const { success, error } = await generateContent({
-        contentId: content.id,
-        content_title: content.content_title,
-        transcript: content.transcript,
-        research: content.research || '', // Use the existing research from database
-        video_script: content.video_script,
-        keyword: content.keyword,
-        business_name: content.businesses.business_name,
-        website_url: content.businesses.website_url,
-        social_media_profiles: content.businesses.social_media_profiles,
-        social_media_integrations: {}, // Field was removed from businesses table, pass empty object
-        writing_style_guide: content.businesses.writing_style_guide,
-        cta_youtube: content.businesses.cta_youtube,
-        cta_email: content.businesses.cta_email,
-        first_name: content.businesses.first_name,
-        last_name: content.businesses.last_name,
-        cta_social_long: content.businesses.cta_social_long,
-        cta_social_short: content.businesses.cta_social_short,
-        booking_link: content.businesses.booking_link,
-        email_name_token: content.businesses.email_name_token,
-        email_sign_off: content.businesses.email_sign_off,
-        color_primary: content.businesses.color_primary,
-        color_secondary: content.businesses.color_secondary,
-        color_background: content.businesses.color_background,
-        color_highlight: content.businesses.color_highlight,
-      });
-
-      if (success) {
-        toast.success('Content generation started successfully!');
-        setIsContentGenerating(true);
-      } else {
-        toast.error(error || 'Failed to start content generation.');
-      }
-    });
-  };
 
   const fetchContentAssets = useCallback(async () => {
     if (!supabase) {
@@ -306,8 +258,6 @@ export default function ContentDetailClientPage({
             content={content}
             isLoading={isLoading}
             error={error}
-            onGenerate={handleGenerateContent}
-            isGenerating={isGenerating}
             onRefresh={fetchContentAssets}
             onAssetUpdate={(updatedAsset: ContentAsset) => {
               setContentAssets(prev => 
@@ -316,7 +266,6 @@ export default function ContentDetailClientPage({
                 )
               );
             }}
-            disabled={isContentGenerating}
           />
         )}
       </div>

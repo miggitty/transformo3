@@ -55,11 +55,8 @@ interface ContentAssetsManagerProps {
   content: ContentWithBusiness;
   isLoading: boolean;
   error: string | null;
-  onGenerate: () => void;
-  isGenerating: boolean;
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
-  disabled?: boolean;
 }
 
 interface CalendarEvent {
@@ -93,11 +90,8 @@ export default function ContentAssetsManager({
   content,
   isLoading,
   error,
-  onGenerate,
-  isGenerating,
   onRefresh,
   onAssetUpdate,
-  disabled,
 }: ContentAssetsManagerProps) {
   const router = useRouter();
   const [activeView, setActiveView] = useState('list');
@@ -127,11 +121,6 @@ export default function ContentAssetsManager({
     contentTitle: '',
   });
   
-  // Add state for regenerate confirmation dialog
-  const [regenerateModal, setRegenerateModal] = useState({
-    open: false,
-  });
-
   const businessTimezone = content.businesses?.timezone || 'UTC';
 
   // Helper function for asset display names
@@ -494,37 +483,24 @@ export default function ContentAssetsManager({
     }
   };
 
-  const handleRegenerateClick = () => {
-    setRegenerateModal({ open: true });
-  };
-
-  const handleRegenerateConfirm = () => {
-    setRegenerateModal({ open: false });
-    onGenerate();
-  };
-
-  const handleRegenerateCancel = () => {
-    setRegenerateModal({ open: false });
-  };
-
   const renderAssetForm = (asset: ContentAsset) => {
     switch (asset.content_type) {
       case 'youtube_video':
-        return <YouTubeVideoForm asset={asset} content={content} disabled={disabled} />;
+        return <YouTubeVideoForm asset={asset} content={content} />;
       case 'email':
-        return <EmailForm asset={asset} disabled={disabled} />;
+        return <EmailForm asset={asset} />;
       case 'blog_post':
-        return <BlogPostForm asset={asset} disabled={disabled} />;
+        return <BlogPostForm asset={asset} />;
       case 'social_rant_post':
-        return <SocialRantPostForm asset={asset} disabled={disabled} />;
+        return <SocialRantPostForm asset={asset} />;
       case 'social_blog_post':
-        return <SocialBlogPostForm asset={asset} disabled={disabled} />;
+        return <SocialBlogPostForm asset={asset} />;
       case 'social_long_video':
-        return <SocialLongVideoForm asset={asset} content={content} disabled={disabled} />;
+        return <SocialLongVideoForm asset={asset} content={content} />;
       case 'social_short_video':
-        return <SocialShortVideoForm asset={asset} content={content} disabled={disabled} />;
+        return <SocialShortVideoForm asset={asset} content={content} />;
       case 'social_quote_card':
-        return <SocialQuoteCardForm asset={asset} disabled={disabled} />;
+        return <SocialQuoteCardForm asset={asset} />;
       default:
         return (
           <Card>
@@ -687,101 +663,14 @@ export default function ContentAssetsManager({
           </TooltipProvider>
         </CardContent>
       </Card>
-
-      {/* Time Edit Modal */}
-      <Dialog open={timeEditModal.open} onOpenChange={(open) => 
-        setTimeEditModal(prev => ({ ...prev, open }))
-      }>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Schedule Time</DialogTitle>
-            <DialogDescription>
-              Update the scheduled time for {timeEditModal.assetTitle}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="time" className="text-right">
-                Time
-              </Label>
-              <Input
-                id="time"
-                type="time"
-                value={timeEditModal.currentTime}
-                onChange={(e) => 
-                  setTimeEditModal(prev => ({ ...prev, currentTime: e.target.value }))
-                }
-                className="col-span-3"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Time will be scheduled in your business timezone: {businessTimezone}
-            </p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setTimeEditModal({ open: false, assetId: '', currentTime: '', assetTitle: '' })}
-            >
-              Cancel
-            </Button>
-            <Button onClick={() => handleTimeEdit(timeEditModal.currentTime)}>
-              Update Time
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Navigation Confirmation Dialog */}
-      <AlertDialog open={navigationModal.open} onOpenChange={(open) => 
-        setNavigationModal(prev => ({ ...prev, open }))
-      }>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Navigate to Content?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to navigate to &quot;{navigationModal.contentTitle}&quot;. 
-              Any unsaved changes on this page will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => 
-              setNavigationModal({ open: false, contentId: '', contentTitle: '' })
-            }>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleNavigationConfirm}>
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 
   return (
     <>
-      {/* Loading Overlay */}
-      {isGenerating && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-background rounded-lg p-8 shadow-lg border flex flex-col items-center gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">Regenerating Content</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Please wait while we generate your content assets...
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Content Assets</h2>
-          <Button onClick={handleRegenerateClick} disabled={isGenerating || disabled}>
-            {isGenerating ? 'Regenerating...' : 'Regenerate Content'}
-          </Button>
         </div>
 
         <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
@@ -799,33 +688,6 @@ export default function ContentAssetsManager({
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Regenerate Confirmation Dialog */}
-      <AlertDialog open={regenerateModal.open} onOpenChange={(open) => 
-        setRegenerateModal({ open })
-      }>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>⚠️ Warning: Regenerate Content</AlertDialogTitle>
-            <AlertDialogDescription>
-              <p>
-                <strong>Warning:</strong> If you regenerate content, your existing content and images will be lost. Do you want to regenerate content now?
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleRegenerateCancel}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleRegenerateConfirm}
-              className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
-            >
-              OK - Regenerate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Time Edit Modal */}
       <Dialog open={timeEditModal.open} onOpenChange={(open) => 
