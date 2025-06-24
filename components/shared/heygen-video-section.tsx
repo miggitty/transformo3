@@ -225,17 +225,26 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
         </div>
 
         {/* Video Player */}
-        {content.heygen_status === 'completed' && content.video_long_url && (
+        {content.heygen_status === 'completed' && (content.heygen_url || content.video_long_url) && (
           <div className="space-y-2">
             <h4 className="font-medium">Generated Video:</h4>
             <div className="aspect-video rounded-lg overflow-hidden bg-black">
               <video
                 controls
                 className="w-full h-full"
-                src={content.video_long_url}
+                src={content.heygen_url || content.video_long_url || undefined}
+                onError={(e) => {
+                  console.error('Video failed to load:', e);
+                  toast.error('Video failed to load. Please check the URL.');
+                }}
+                onLoadStart={() => console.log('Video loading started')}
+                onLoadedData={() => console.log('Video data loaded')}
               >
                 Your browser does not support the video tag.
               </video>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Video URL: {content.heygen_url || content.video_long_url}
             </div>
           </div>
         )}
