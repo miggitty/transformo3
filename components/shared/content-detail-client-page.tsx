@@ -6,8 +6,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { AudioPlayer } from '@/components/shared/audio-player';
-import dynamic from 'next/dynamic';
+
+
 import { ContentWithBusiness, ContentAsset } from '@/types';
 import { useEffect, useState, useTransition, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -15,22 +15,9 @@ import ContentAssetsManager from './content-assets-manager';
 import VideoUploadSection from './video-upload-section';
 import { HeygenVideoSection } from './heygen-video-section';
 import {
-  updateContentField,
   generateContent,
 } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
-import TurndownService from 'turndown';
-import { Button } from '@/components/ui/button';
-
-const ResearchEditor = dynamic(
-  () => import('@/components/shared/research-editor'),
-  {
-    ssr: false,
-    loading: () => <p>Loading editor...</p>,
-  }
-);
-
-const turndownService = new TurndownService();
 
 interface ContentDetailClientPageProps {
   content: ContentWithBusiness;
@@ -46,26 +33,7 @@ export default function ContentDetailClientPage({
   const [permissionError, setPermissionError] = useState(false);
   const supabase = createClient();
 
-  const [researchHtml, setResearchHtml] = useState('');
-  const [isSaving, startSaveTransition] = useTransition();
   const [isGenerating, startGeneratingTransition] = useTransition();
-
-  const handleSaveResearch = () => {
-    startSaveTransition(async () => {
-      const markdown = turndownService.turndown(researchHtml);
-      const { success, error } = await updateContentField({
-        contentId: content.id,
-        fieldName: 'research',
-        newValue: markdown,
-      });
-
-      if (success) {
-        toast.success('Research has been updated.');
-      } else {
-        toast.error(error || 'An unknown error occurred.');
-      }
-    });
-  };
 
   const handleGenerateContent = () => {
     startGeneratingTransition(async () => {
@@ -74,12 +42,11 @@ export default function ContentDetailClientPage({
         return;
       }
 
-      const researchMarkdown = turndownService.turndown(researchHtml);
       const { success, error } = await generateContent({
         contentId: content.id,
         content_title: content.content_title,
         transcript: content.transcript,
-        research: researchMarkdown,
+        research: content.research || '', // Use the existing research from database
         video_script: content.video_script,
         keyword: content.keyword,
         business_name: content.businesses.business_name,
@@ -193,40 +160,6 @@ export default function ContentDetailClientPage({
         </div>
       )}
 
-      {content.audio_url && (
-        <Accordion type="single" collapsible className="w-full rounded-lg border">
-          <AccordionItem value="audio" className="border-b-0">
-            <AccordionTrigger className="px-4 text-lg font-semibold">
-              Original Audio
-            </AccordionTrigger>
-            <AccordionContent className="px-4">
-              <div className="flex items-center gap-4 pt-4">
-                <AudioPlayer src={content.audio_url} />
-                <span className="text-sm text-muted-foreground">
-                  Click to play the original recording.
-                </span>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
-
-      <Accordion type="single" collapsible className="w-full rounded-lg border">
-        <AccordionItem value="item-1" className="border-b-0">
-          <AccordionTrigger className="px-4 text-lg font-semibold">
-            Transcript
-          </AccordionTrigger>
-          <AccordionContent className="px-4">
-            <div
-              className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: content.transcript || '<p>No transcript available.</p>',
-              }}
-            />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
       <Accordion type="single" collapsible className="w-full rounded-lg border">
         <AccordionItem value="video-script" className="border-b-0">
           <AccordionTrigger className="px-4 text-lg font-semibold">
@@ -251,25 +184,6 @@ export default function ContentDetailClientPage({
           onContentUpdate={handleContentUpdate}
         />
       )}
-
-      <Accordion type="single" collapsible className="w-full rounded-lg border">
-        <AccordionItem value="research" className="border-b-0">
-          <AccordionTrigger className="px-4 text-lg font-semibold">
-            Research
-          </AccordionTrigger>
-          <AccordionContent className="px-4">
-            <ResearchEditor
-              initialMarkdown={content.research || ''}
-              onContentChange={setResearchHtml}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleSaveResearch} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Research'}
-              </Button>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
 
       {!permissionError && (
         <div className="space-y-4">
