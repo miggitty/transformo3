@@ -214,10 +214,12 @@ export type Database = {
       }
       content: {
         Row: {
+          audio_duration: number | null
           audio_url: string | null
-          business_id: string | null
+          business_id: string
+          content_generation_status: string | null
           content_title: string | null
-          created_at: string | null
+          created_at: string
           error_message: string | null
           heygen_status: string | null
           heygen_url: string | null
@@ -235,10 +237,12 @@ export type Database = {
           video_short_url: string | null
         }
         Insert: {
+          audio_duration?: number | null
           audio_url?: string | null
-          business_id?: string | null
+          business_id?: string
+          content_generation_status?: string | null
           content_title?: string | null
-          created_at?: string | null
+          created_at?: string
           error_message?: string | null
           heygen_status?: string | null
           heygen_url?: string | null
@@ -256,10 +260,12 @@ export type Database = {
           video_short_url?: string | null
         }
         Update: {
+          audio_duration?: number | null
           audio_url?: string | null
-          business_id?: string | null
+          business_id?: string
+          content_generation_status?: string | null
           content_title?: string | null
-          created_at?: string | null
+          created_at?: string
           error_message?: string | null
           heygen_status?: string | null
           heygen_url?: string | null

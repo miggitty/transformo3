@@ -11,14 +11,18 @@ import Image from 'next/image';
 
 interface SocialQuoteCardFormProps {
   asset: ContentAsset;
+  disabled?: boolean;
 }
 
 export default function SocialQuoteCardForm({
   asset,
+  disabled,
 }: SocialQuoteCardFormProps) {
   const [content, setContent] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
+    if (disabled) return; // Prevent saving when disabled
+    
     const { success, error } = await updateContentAsset(asset.id, {
       [field]: value,
     });
@@ -33,6 +37,11 @@ export default function SocialQuoteCardForm({
     <Card>
       <CardHeader>
         <CardTitle>Social Quote Card</CardTitle>
+        {disabled && (
+          <p className="text-sm text-muted-foreground">
+            Content is being regenerated. Editing is temporarily disabled.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {asset.image_url && (
@@ -44,7 +53,6 @@ export default function SocialQuoteCardForm({
               width={320}
               height={320}
               className="rounded-lg object-cover"
-
             />
           </div>
         )}
@@ -56,6 +64,7 @@ export default function SocialQuoteCardForm({
             onChange={e => setContent(e.target.value)}
             onBlur={e => handleSave('content', e.target.value)}
             rows={5}
+            disabled={disabled}
           />
         </div>
       </CardContent>

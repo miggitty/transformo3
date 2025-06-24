@@ -12,12 +12,15 @@ import Image from 'next/image';
 
 interface SocialBlogPostFormProps {
   asset: ContentAsset;
+  disabled?: boolean;
 }
 
-export default function SocialBlogPostForm({ asset }: SocialBlogPostFormProps) {
+export default function SocialBlogPostForm({ asset, disabled }: SocialBlogPostFormProps) {
   const [content, setContent] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
+    if (disabled) return; // Prevent saving when disabled
+    
     const { success, error } = await updateContentAsset(asset.id, {
       [field]: value,
     });
@@ -32,6 +35,11 @@ export default function SocialBlogPostForm({ asset }: SocialBlogPostFormProps) {
     <Card>
       <CardHeader>
         <CardTitle>Social Blog Post</CardTitle>
+        {disabled && (
+          <p className="text-sm text-muted-foreground">
+            Content is being regenerated. Editing is temporarily disabled.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {asset.image_url && (
@@ -43,7 +51,6 @@ export default function SocialBlogPostForm({ asset }: SocialBlogPostFormProps) {
               width={320}
               height={180}
               className="rounded-lg"
-
             />
           </div>
         )}
@@ -54,6 +61,7 @@ export default function SocialBlogPostForm({ asset }: SocialBlogPostFormProps) {
             value={content}
             onChange={e => setContent(e.target.value)}
             onBlur={e => handleSave('content', e.target.value)}
+            disabled={disabled}
           />
         </div>
       </CardContent>

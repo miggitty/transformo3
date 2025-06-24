@@ -14,9 +14,10 @@ import Image from 'next/image';
 
 interface BlogPostFormProps {
   asset: ContentAsset;
+  disabled?: boolean;
 }
 
-export default function BlogPostForm({ asset }: BlogPostFormProps) {
+export default function BlogPostForm({ asset, disabled }: BlogPostFormProps) {
   const [headline, setHeadline] = useState(asset.headline || '');
   const [metaDescription, setMetaDescription] = useState(
     asset.blog_meta_description || ''
@@ -25,6 +26,8 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
   const [content, setContent] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
+    if (disabled) return; // Prevent saving when disabled
+    
     const { success, error } = await updateContentAsset(asset.id, {
       [field]: value,
     });
@@ -36,6 +39,8 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
   };
 
   const handleContentUpdate = (newContent: string) => {
+    if (disabled) return; // Prevent updates when disabled
+    
     setContent(newContent);
     handleSave('content', newContent);
   };
@@ -44,6 +49,11 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
     <Card>
       <CardHeader>
         <CardTitle>Blog Post</CardTitle>
+        {disabled && (
+          <p className="text-sm text-muted-foreground">
+            Content is being regenerated. Editing is temporarily disabled.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -53,6 +63,7 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
             value={headline}
             onChange={e => setHeadline(e.target.value)}
             onBlur={e => handleSave('headline', e.target.value)}
+            disabled={disabled}
           />
         </div>
         <div className="space-y-2">
@@ -62,6 +73,7 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
             value={metaDescription}
             onChange={e => setMetaDescription(e.target.value)}
             onBlur={e => handleSave('blog_meta_description', e.target.value)}
+            disabled={disabled}
           />
         </div>
         <div className="space-y-2">
@@ -71,6 +83,7 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
             value={blogUrl}
             onChange={e => setBlogUrl(e.target.value)}
             onBlur={e => handleSave('blog_url', e.target.value)}
+            disabled={disabled}
           />
         </div>
         <div className="space-y-2">
@@ -82,7 +95,6 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
               width={320}
               height={180}
               className="rounded-lg"
-
             />
           )}
         </div>
@@ -91,6 +103,7 @@ export default function BlogPostForm({ asset }: BlogPostFormProps) {
           <RichTextEditor
             initialContent={content}
             onUpdate={handleContentUpdate}
+            disabled={disabled}
           />
         </div>
       </CardContent>
