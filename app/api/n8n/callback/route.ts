@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { content_id, transcript, content_title, research, success, error, environment } = body;
+    const { content_id, transcript, content_title, video_script, success, error, environment } = body;
 
     // Log the callback for debugging (following documented pattern)
     console.log(`N8N callback received from ${environment || 'unknown'}:`, {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       error: error || 'none',
       hasTranscript: !!transcript,
       hasTitle: !!content_title,
-      hasResearch: !!research
+      hasVideoScript: !!video_script
     });
 
     if (!content_id) {
@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
       updateData.status = 'completed';
       updateData.transcript = transcript;
       updateData.content_title = content_title;
-      if (research) {
-        updateData.research = research;
+      if (video_script) {
+        updateData.video_script = video_script;
       }
       // Clear any previous error
       updateData.error_message = null;
