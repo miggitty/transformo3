@@ -141,6 +141,21 @@ export async function generateContent(payload: {
   }
 
   try {
+    // First, update the content status to 'generating'
+    const supabase = await createClient();
+    const { error: statusUpdateError } = await supabase
+      .from('content')
+      .update({ content_generation_status: 'generating' })
+      .eq('id', payload.contentId);
+
+    if (statusUpdateError) {
+      console.error('Error updating content generation status:', statusUpdateError);
+      return {
+        success: false,
+        error: 'Failed to update content status.',
+      };
+    }
+
     // Helper function to safely escape and clean text for JSON
     const sanitizeText = (text: string | null): string => {
       if (!text) return '';
@@ -178,6 +193,10 @@ export async function generateContent(payload: {
       // Handle JSON fields - convert null to empty object
       social_media_profiles: payload.social_media_profiles || {},
       social_media_integrations: payload.social_media_integrations || {},
+      // Add callback information for N8N
+      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+      callbackSecret: process.env.N8N_CALLBACK_SECRET,
+      environment: process.env.NODE_ENV,
     };
 
     // Debug: Log the cleaned payload
@@ -197,15 +216,36 @@ export async function generateContent(payload: {
         `Webhook call failed with status ${response.status}:`,
         errorBody
       );
+      
+      // Revert the status update if webhook fails
+      await supabase
+        .from('content')
+        .update({ content_generation_status: null })
+        .eq('id', payload.contentId);
+        
       return {
         success: false,
         error: `Webhook call failed: ${response.statusText}`,
       };
     }
 
+    console.log('Content generation webhook triggered successfully');
+    revalidatePath(`/content/${payload.contentId}`);
     return { success: true, error: null };
   } catch (error) {
     console.error('Error calling webhook:', error);
+    
+    // Revert the status update if there's an error
+    try {
+      const supabase = await createClient();
+      await supabase
+        .from('content')
+        .update({ content_generation_status: null })
+        .eq('id', payload.contentId);
+    } catch (revertError) {
+      console.error('Error reverting status:', revertError);
+    }
+    
     if (error instanceof Error) {
       return { success: false, error: `An error occurred: ${error.message}` };
     }
