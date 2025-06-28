@@ -168,6 +168,16 @@ export default function ContentTestClientPage({
 
   return (
     <div className="min-h-screen bg-white px-4 md:px-6 lg:px-8 py-8">
+      <style jsx>{`
+        .consistent-text {
+          font-size: 15px !important;
+          line-height: 24px !important;
+        }
+        .consistent-text * {
+          font-size: 15px !important;
+          line-height: 24px !important;
+        }
+      `}</style>
       {/* Page Title */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
@@ -232,7 +242,7 @@ export default function ContentTestClientPage({
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 ml-6 max-w-6xl mx-auto">
+        <div className="flex-1 ml-6">
           {permissionError && (
             <div className="rounded-lg border border-destructive bg-destructive/10 p-4 mb-6">
               <h3 className="font-semibold text-destructive">Permission Denied</h3>
@@ -249,13 +259,16 @@ export default function ContentTestClientPage({
               {activeStep === 'video-script' && (
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Video Script</h2>
-                                     <RichTextEditor
-                     initialContent={content.video_script || '<p>No video script has been generated yet.</p>'}
-                     onUpdate={(newContent: string) => {
-                       handleContentUpdate({ video_script: newContent });
-                     }}
-                     disabled={false}
-                   />
+                  <div className="max-w-4xl">
+                    {content.video_script ? (
+                      <div 
+                        className="text-gray-900 consistent-text"
+                        dangerouslySetInnerHTML={{ __html: content.video_script }}
+                      />
+                    ) : (
+                      <p className="text-gray-500">No video script has been generated yet.</p>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -310,7 +323,7 @@ export default function ContentTestClientPage({
                         {/* Blog Post Content */}
                         {blogAsset.content && (
                           <div 
-                            className="prose prose-lg max-w-none mb-8 text-gray-700 leading-relaxed"
+                            className="prose prose-lg max-w-none mb-8 text-gray-700 consistent-text"
                             dangerouslySetInnerHTML={{ __html: blogAsset.content }}
                           />
                         )}
@@ -371,7 +384,7 @@ export default function ContentTestClientPage({
                         {/* Post Content */}
                         {socialAsset.content && (
                           <div className="px-4 pb-3">
-                            <p className="text-gray-900 whitespace-pre-wrap">{socialAsset.content}</p>
+                            <p className="text-gray-900 whitespace-pre-wrap" style={{ fontSize: '15px', lineHeight: '24px' }}>{socialAsset.content}</p>
                           </div>
                         )}
 
@@ -380,7 +393,7 @@ export default function ContentTestClientPage({
                           <div className="relative">
                             {content.video_long_url ? (
                               <video 
-                                src={content.video_long_url as string}
+                                src={content.video_long_url!}
                                 className="w-full object-cover"
                                 controls
                                 poster={socialAsset.image_url ?? undefined}
@@ -474,7 +487,7 @@ export default function ContentTestClientPage({
                         {/* Post Content */}
                         {socialAsset.content && (
                           <div className="px-4 pb-3">
-                            <p className="text-gray-900 whitespace-pre-wrap">{socialAsset.content}</p>
+                            <p className="text-gray-900 whitespace-pre-wrap" style={{ fontSize: '15px', lineHeight: '24px' }}>{socialAsset.content}</p>
                           </div>
                         )}
 
@@ -577,7 +590,7 @@ export default function ContentTestClientPage({
                         {/* Post Content */}
                         {socialAsset.content && (
                           <div className="px-4 pb-3">
-                            <p className="text-gray-900 whitespace-pre-wrap">{socialAsset.content}</p>
+                            <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
                           </div>
                         )}
 
@@ -656,7 +669,7 @@ export default function ContentTestClientPage({
                         {/* Post Content */}
                         {socialAsset.content && (
                           <div className="px-4 pb-3">
-                            <p className="text-gray-900 whitespace-pre-wrap">{socialAsset.content}</p>
+                            <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
                           </div>
                         )}
 
@@ -735,7 +748,7 @@ export default function ContentTestClientPage({
                         {/* Post Content */}
                         {socialAsset.content && (
                           <div className="px-4 pb-3">
-                            <p className="text-gray-900 whitespace-pre-wrap">{socialAsset.content}</p>
+                            <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
                           </div>
                         )}
 
@@ -845,7 +858,7 @@ export default function ContentTestClientPage({
                         {/* Video Description */}
                         {youtubeAsset.content && (
                           <div className="bg-gray-50 rounded-lg p-4">
-                            <div className="whitespace-pre-wrap text-gray-900 text-sm leading-relaxed">
+                            <div className="whitespace-pre-wrap text-gray-900 consistent-text">
                               {youtubeAsset.content}
                             </div>
                           </div>
@@ -909,7 +922,7 @@ export default function ContentTestClientPage({
                         <div className="px-6 py-6">
                           {emailAsset.content && (
                             <div 
-                              className="text-gray-900 leading-relaxed whitespace-pre-wrap"
+                              className="text-gray-900 whitespace-pre-wrap consistent-text"
                               dangerouslySetInnerHTML={{ __html: emailAsset.content }}
                             />
                           )}
@@ -932,88 +945,21 @@ export default function ContentTestClientPage({
               {activeStep === 'schedule' && (
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Schedule Content</h2>
-                  
-                  {/* Schedule Management Card */}
-                  {(contentAssets.length > 0) && (
-                    <div className="mb-6 p-6 border border-gray-200 rounded-lg">
-                      <h3 className="text-lg font-semibold mb-4">Schedule Management</h3>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-gray-600">
-                            All assets are scheduled. You can reset the schedule to reschedule them.
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button className="bg-blue-600 hover:bg-blue-700">
-                            Schedule All Content
-                          </Button>
-                          <Button variant="outline">
-                            Reset Schedule
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Content Calendar */}
-                  <div className="border border-gray-200 rounded-lg">
-                    <div className="p-6 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold">Content Calendar</h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Blue events are your content assets (draggable). Gray events are from other content. 
-                        Click on your events to edit the time.
-                      </p>
-                    </div>
-                    <div className="p-6">
-                      <div className="bg-white border rounded-lg overflow-hidden">
-                        {/* Calendar Header */}
-                        <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
-                          <button className="p-2 hover:bg-gray-200 rounded">←</button>
-                          <h4 className="text-lg font-medium">June 2025</h4>
-                          <div className="flex gap-2">
-                            <button className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded">today</button>
-                            <button className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded">month</button>
-                            <button className="p-2 hover:bg-gray-200 rounded">→</button>
-                          </div>
-                        </div>
-                        
-                        {/* Calendar Grid */}
-                        <div className="grid grid-cols-7 text-center text-sm font-medium text-gray-600 bg-gray-50 border-b">
-                          <div className="p-3">Sun</div>
-                          <div className="p-3">Mon</div>
-                          <div className="p-3">Tue</div>
-                          <div className="p-3">Wed</div>
-                          <div className="p-3">Thu</div>
-                          <div className="p-3">Fri</div>
-                          <div className="p-3">Sat</div>
-                        </div>
-                        
-                        {/* Calendar Days */}
-                        <div className="grid grid-cols-7">
-                          {[...Array(35)].map((_, i) => {
-                            const day = i < 7 ? i + 25 : i - 6; // Mock calendar dates
-                            const isCurrentMonth = i >= 7;
-                            return (
-                              <div 
-                                key={i} 
-                                className={`min-h-24 p-2 border-r border-b last:border-r-0 hover:bg-gray-50 ${
-                                  !isCurrentMonth ? 'text-gray-400 bg-gray-50' : ''
-                                }`}
-                              >
-                                <div className="text-sm font-medium mb-1">{day}</div>
-                                {/* Sample events */}
-                                {(i === 10 || i === 15 || i === 22) && (
-                                  <div className="text-xs bg-blue-500 text-white rounded px-1 py-0.5 mb-1 truncate">
-                                    {i === 10 ? 'Blog Post' : i === 15 ? 'Email' : 'Social Post'}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <ContentAssetsManager
+                    assets={contentAssets}
+                    content={content}
+                    isLoading={isLoading}
+                    error={error}
+                    onRefresh={fetchContentAssets}
+                    onAssetUpdate={(updatedAsset) => {
+                      setContentAssets(prev => 
+                        prev.map(asset => 
+                          asset.id === updatedAsset.id ? updatedAsset : asset
+                        )
+                      );
+                    }}
+                    defaultView="calendar"
+                  />
                 </div>
               )}
 

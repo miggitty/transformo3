@@ -57,6 +57,7 @@ interface ContentAssetsManagerProps {
   error: string | null;
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
+  defaultView?: 'list' | 'calendar';
 }
 
 interface CalendarEvent {
@@ -92,9 +93,10 @@ export default function ContentAssetsManager({
   error,
   onRefresh,
   onAssetUpdate,
+  defaultView = 'list',
 }: ContentAssetsManagerProps) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState('list');
+  const [activeView, setActiveView] = useState(defaultView);
   const [isScheduling, setIsScheduling] = useState(false);
   const [businessAssets, setBusinessAssets] = useState<BusinessAsset[]>([]);
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -673,7 +675,7 @@ export default function ContentAssetsManager({
           <h2 className="text-xl font-semibold">Content Assets</h2>
         </div>
 
-        {renderListView()}
+        {activeView === 'calendar' ? renderCalendarView() : renderListView()}
       </div>
 
       {/* Time Edit Modal */}
