@@ -69,7 +69,7 @@ export function ContentTable({
             content.map((item) => (
               <TableRow
                 key={item.id}
-                onDoubleClick={() => router.push(`/content/${item.id}`)}
+                onDoubleClick={() => router.push(`/content-test/${item.id}`)}
                 className="cursor-pointer"
               >
                 <TableCell className="font-medium">

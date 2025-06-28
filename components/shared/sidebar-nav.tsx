@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Building2,
   Plug,
-  CreditCard
+  CreditCard,
+  TestTube
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,11 @@ const navigationItems = [
     href: '/new',
     label: 'New Content',
     icon: PlusCircle,
+  },
+  {
+    href: '/content-test',
+    label: 'Content Test',
+    icon: TestTube,
   },
   {
     href: '/billing',

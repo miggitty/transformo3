@@ -673,20 +673,7 @@ export default function ContentAssetsManager({
           <h2 className="text-xl font-semibold">Content Assets</h2>
         </div>
 
-        <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="list">List View</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="list" className="mt-6">
-            {renderListView()}
-          </TabsContent>
-          
-          <TabsContent value="calendar" className="mt-6">
-            {renderCalendarView()}
-          </TabsContent>
-        </Tabs>
+        {renderListView()}
       </div>
 
       {/* Time Edit Modal */}

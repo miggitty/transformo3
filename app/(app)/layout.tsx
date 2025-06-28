@@ -99,7 +99,6 @@ export default async function AppLayout({
           user={userWithProfile as Tables<'profiles'> & { email: string }}
         />
         <div className="flex flex-col overflow-hidden">
-          <GlobalSubscriptionBanner />
           <div className="flex-1 overflow-auto p-4 lg:p-6">
             <main className="mx-auto max-w-4xl flex-1">{children}</main>
           </div>

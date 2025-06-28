@@ -268,6 +268,55 @@ export default function ContentDetailClientPage({
             }}
           />
         )}
+
+        {!permissionError && (
+          <div className="rounded-lg border p-6">
+            <h2 className="text-xl font-semibold mb-6">Schedule Content</h2>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Schedule Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    defaultValue={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Schedule Time
+                  </label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    defaultValue="09:00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Platform
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>All Platforms</option>
+                    <option>Social Media Only</option>
+                    <option>Blog Only</option>
+                    <option>Email Only</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-6 flex gap-4">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                  Schedule All Content
+                </button>
+                <button className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                  Schedule Selected Content
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
