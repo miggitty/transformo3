@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
-import ContentTestClientPage from '@/components/shared/content-test-client-page';
+import ContentClientPage from '@/components/shared/content-client-page';
 
 // Define props with an interface for clarity
 interface ContentDetailPageProps {
@@ -44,5 +44,5 @@ export default async function ContentDetailPage(props: ContentDetailPageProps) {
     notFound();
   }
 
-  return <ContentTestClientPage content={content} />;
+  return <ContentClientPage content={content} />;
 } 

@@ -11,13 +11,13 @@ import { ContentWithBusiness, ContentAsset } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
 
-interface ContentTestClientPageProps {
+interface ContentClientPageProps {
   content: ContentWithBusiness;
 }
 
-export default function ContentTestClientPage({
+export default function ContentClientPage({
   content: initialContent,
-}: ContentTestClientPageProps) {
+}: ContentClientPageProps) {
   const [content, setContent] = useState<ContentWithBusiness>(initialContent);
   const [contentAssets, setContentAssets] = useState<ContentAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
