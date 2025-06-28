@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
-import ContentDetailClientPage from '@/components/shared/content-detail-client-page';
+import ContentTestClientPage from '@/components/shared/content-test-client-page';
 
 // Define props with an interface for clarity
 interface ContentDetailPageProps {
@@ -27,6 +27,13 @@ export default async function ContentDetailPage(props: ContentDetailPageProps) {
           voice_id,
           status,
           provider
+        ),
+        email_integrations(
+          id,
+          sender_name,
+          sender_email,
+          status,
+          provider
         )
       )
     `)
@@ -37,5 +44,5 @@ export default async function ContentDetailPage(props: ContentDetailPageProps) {
     notFound();
   }
 
-  return <ContentDetailClientPage content={content} />;
+  return <ContentTestClientPage content={content} />;
 } 
