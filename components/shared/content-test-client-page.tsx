@@ -259,7 +259,7 @@ export default function ContentClientPage({
               {activeStep === 'video-script' && (
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Video Script</h2>
-                  <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                  <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                     {content.video_script ? (
                       <div 
                         className="text-gray-900 consistent-text"
@@ -301,7 +301,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                         {/* Blog Post Image */}
                         {blogAsset.image_url && (
                           <div className="mb-6">
@@ -360,7 +360,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-xl bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <div className="max-w-xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm">
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -463,7 +463,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-xl bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <div className="max-w-xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm">
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -566,7 +566,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-xl bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <div className="max-w-xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm">
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -645,7 +645,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-xl bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <div className="max-w-xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm">
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -724,7 +724,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-xl bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <div className="max-w-xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm">
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
@@ -803,7 +803,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                         {/* Video Player Area */}
                         <div className="relative bg-black rounded-lg overflow-hidden mb-4">
                           {youtubeAsset.image_url ? (
@@ -880,7 +880,7 @@ export default function ContentClientPage({
                     }
                     
                     return (
-                      <div className="max-w-4xl bg-white border border-gray-300 rounded-lg shadow-sm">
+                      <div className="max-w-4xl mx-auto bg-white border border-gray-300 rounded-lg shadow-sm">
                         {/* Email Header */}
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 rounded-t-lg">
                           <div className="space-y-2">
