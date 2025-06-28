@@ -259,7 +259,7 @@ export default function ContentTestClientPage({
               {activeStep === 'video-script' && (
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Video Script</h2>
-                  <div className="max-w-4xl">
+                  <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                     {content.video_script ? (
                       <div 
                         className="text-gray-900 consistent-text"
@@ -301,7 +301,7 @@ export default function ContentTestClientPage({
                     }
                     
                     return (
-                      <div className="max-w-4xl">
+                      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                         {/* Blog Post Image */}
                         {blogAsset.image_url && (
                           <div className="mb-6">
@@ -803,7 +803,7 @@ export default function ContentTestClientPage({
                     }
                     
                     return (
-                      <div className="max-w-4xl mx-auto bg-white">
+                      <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                         {/* Video Player Area */}
                         <div className="relative bg-black rounded-lg overflow-hidden mb-4">
                           {youtubeAsset.image_url ? (
