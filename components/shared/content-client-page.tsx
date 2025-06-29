@@ -10,6 +10,7 @@ import ContentAssetsManager from '@/components/shared/content-assets-manager';
 import { ContentWithBusiness, ContentAsset } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
+import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 
 interface ContentClientPageProps {
   content: ContentWithBusiness;
@@ -305,11 +306,16 @@ export default function ContentClientPage({
                         {/* Blog Post Image */}
                         {blogAsset.image_url && (
                           <div className="mb-6">
-                            <img 
-                              src={blogAsset.image_url} 
-                              alt={blogAsset.headline || 'Blog post image'}
-                              className="w-full object-cover rounded-lg"
-                            />
+                            <ImageWithRegeneration 
+                              contentAsset={blogAsset as any}
+                              className="block w-full"
+                            >
+                              <img 
+                                src={blogAsset.image_url} 
+                                alt={blogAsset.headline || 'Blog post image'}
+                                className="w-full object-cover rounded-lg"
+                              />
+                            </ImageWithRegeneration>
                           </div>
                         )}
                         
@@ -597,11 +603,16 @@ export default function ContentClientPage({
                         {/* Image Content (if available) */}
                         {socialAsset.image_url && (
                           <div className="px-4 pb-3">
-                            <img 
-                              src={socialAsset.image_url} 
-                              alt="Social post content"
-                              className="w-full object-cover rounded-lg"
-                            />
+                            <ImageWithRegeneration 
+                              contentAsset={socialAsset}
+                              className="block w-full"
+                            >
+                              <img 
+                                src={socialAsset.image_url} 
+                                alt="Social post content"
+                                className="w-full object-cover rounded-lg"
+                              />
+                            </ImageWithRegeneration>
                           </div>
                         )}
 
@@ -676,11 +687,16 @@ export default function ContentClientPage({
                         {/* Image Content (if available) */}
                         {socialAsset.image_url && (
                           <div className="px-4 pb-3">
-                            <img 
-                              src={socialAsset.image_url} 
-                              alt="Social post content"
-                              className="w-full object-cover rounded-lg"
-                            />
+                            <ImageWithRegeneration 
+                              contentAsset={socialAsset as any}
+                              className="block w-full"
+                            >
+                              <img 
+                                src={socialAsset.image_url} 
+                                alt="Social post content"
+                                className="w-full object-cover rounded-lg"
+                              />
+                            </ImageWithRegeneration>
                           </div>
                         )}
 
@@ -755,11 +771,16 @@ export default function ContentClientPage({
                         {/* Image Content (if available) */}
                         {socialAsset.image_url && (
                           <div className="px-4 pb-3">
-                            <img 
-                              src={socialAsset.image_url} 
-                              alt="Quote card visual"
-                              className="w-full object-cover rounded-lg"
-                            />
+                            <ImageWithRegeneration 
+                              contentAsset={socialAsset}
+                              className="block w-full"
+                            >
+                              <img 
+                                src={socialAsset.image_url} 
+                                alt="Quote card visual"
+                                className="w-full object-cover rounded-lg"
+                              />
+                            </ImageWithRegeneration>
                           </div>
                         )}
 
@@ -807,19 +828,24 @@ export default function ContentClientPage({
                         {/* Video Player Area */}
                         <div className="relative bg-black rounded-lg overflow-hidden mb-4">
                           {youtubeAsset.image_url ? (
-                            <div className="relative">
-                              <img 
-                                src={youtubeAsset.image_url} 
-                                alt="YouTube video thumbnail"
-                                className="w-full object-cover"
-                              />
-                              {/* YouTube Play Button */}
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-20 h-14 bg-red-600 bg-opacity-90 hover:bg-opacity-100 transition-all duration-200 flex items-center justify-center cursor-pointer" style={{clipPath: 'polygon(0 0, 100% 50%, 0 100%)'}}>
-                                  <div className="w-0 h-0 border-l-8 border-l-white border-t-6 border-b-6 border-t-transparent border-b-transparent ml-1"></div>
+                            <ImageWithRegeneration 
+                              contentAsset={youtubeAsset as any}
+                              className="block w-full"
+                            >
+                              <div className="relative">
+                                <img 
+                                  src={youtubeAsset.image_url} 
+                                  alt="YouTube video thumbnail"
+                                  className="w-full object-cover"
+                                />
+                                {/* YouTube Play Button */}
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="w-20 h-14 bg-red-600 bg-opacity-90 hover:bg-opacity-100 transition-all duration-200 flex items-center justify-center cursor-pointer" style={{clipPath: 'polygon(0 0, 100% 50%, 0 100%)'}}>
+                                    <div className="w-0 h-0 border-l-8 border-l-white border-t-6 border-b-6 border-t-transparent border-b-transparent ml-1"></div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            </ImageWithRegeneration>
                           ) : (
                             <div className="w-full h-96 bg-gray-900 flex items-center justify-center">
                               <div className="text-white text-lg">Video Player</div>

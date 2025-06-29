@@ -33,32 +33,40 @@ export async function POST(request: NextRequest) {
     const { 
       content_id, 
       contentId, // Handle both formats for backward compatibility
+      content_asset_id, // For image regeneration
       transcript, 
       content_title, 
       video_script, 
       success, 
       error, 
       environment,
-      workflow_type // New field to distinguish workflow types
+      workflow_type, // New field to distinguish workflow types
+      new_image_url, // For image regeneration results
+      image_url // Alternative field name for image regeneration
     } = body;
 
     // Use either content_id or contentId for backward compatibility
     const finalContentId = content_id || contentId;
 
+    // Detect image regeneration callback by presence of image_url field without transcript/content_title
+    const isImageRegenerationCallback = (image_url || new_image_url) && !transcript && !content_title;
+
     // Log the callback for debugging (following documented pattern)
     console.log(`N8N callback received from ${environment || 'unknown'}:`, {
       content_id: finalContentId,
-      workflow_type: workflow_type || 'unknown',
+      workflow_type: workflow_type || (isImageRegenerationCallback ? 'image_regeneration' : 'unknown'),
       success,
       error: error || 'none',
       hasTranscript: !!transcript,
       hasTitle: !!content_title,
-      hasVideoScript: !!video_script
+      hasVideoScript: !!video_script,
+      hasImageUrl: !!(image_url || new_image_url)
     });
 
-    if (!finalContentId) {
-      console.error('Missing content_id/contentId in callback');
-      return NextResponse.json({ error: 'Missing content_id' }, { status: 400 });
+    // For image regeneration, content_id is optional if we have content_asset_id
+    if (!finalContentId && !content_asset_id) {
+      console.error('Missing content_id/contentId and content_asset_id in callback');
+      return NextResponse.json({ error: 'Missing content_id or content_asset_id' }, { status: 400 });
     }
 
     // Handle different workflow types
@@ -103,6 +111,100 @@ export async function POST(request: NextRequest) {
 
       console.log(`Successfully updated content generation status for ${finalContentId} to: ${updateData.content_generation_status}`);
       return NextResponse.json({ success: true, updated: data });
+      
+    } else if (workflow_type === 'image_regeneration' || isImageRegenerationCallback) {
+      // Image regeneration workflow completed
+      console.log('Processing image regeneration workflow completion callback');
+      
+      const imageUrl = new_image_url || image_url;
+      
+      if (!imageUrl) {
+        console.error('Missing image_url in image regeneration callback');
+        return NextResponse.json({ error: 'Missing image_url' }, { status: 400 });
+      }
+
+      // Use provided content_asset_id or find it using content_id
+      let targetContentAssetId = content_asset_id;
+      
+      if (!targetContentAssetId && finalContentId) {
+        // Find the content asset that was being regenerated for this content
+        // Look for content assets with images, prioritizing those being used in forms/displays
+        const { data: contentAssets, error: findError } = await supabase
+          .from('content_assets')
+          .select('id, content_type, image_url, image_prompt')
+          .eq('content_id', finalContentId)
+          .not('image_url', 'is', null)
+          .order('created_at', { ascending: false });
+          
+        if (findError || !contentAssets || contentAssets.length === 0) {
+          console.error('Could not find content asset for image regeneration:', findError);
+          return NextResponse.json({ error: 'Could not find content asset to update' }, { status: 404 });
+        }
+        
+        // Prefer content assets with existing image_prompt (recently used for regeneration)
+        // or fall back to the most recent one with an image
+        let selectedAsset = contentAssets.find(asset => asset.image_prompt) || contentAssets[0];
+        
+        targetContentAssetId = selectedAsset.id;
+        console.log('Found content asset for image regeneration:', {
+          id: targetContentAssetId,
+          content_type: selectedAsset.content_type,
+          has_prompt: !!selectedAsset.image_prompt,
+          total_assets: contentAssets.length
+        });
+      }
+
+      if (!targetContentAssetId) {
+        console.error('Could not determine content_asset_id for image regeneration callback');
+        return NextResponse.json({ error: 'Could not determine content_asset_id for image regeneration' }, { status: 400 });
+      }
+      
+      if (content_asset_id) {
+        console.log('Using provided content_asset_id:', content_asset_id);
+      }
+
+      if (success !== false && imageUrl) {
+        // Success case - store new image URL in temporary_image_url field
+        // User must explicitly save to move it to the main image_url field
+        
+        const { data: assetData, error: assetUpdateError } = await supabase
+          .from('content_assets')
+          .update({ temporary_image_url: imageUrl })
+          .eq('id', targetContentAssetId)
+          .select('id, temporary_image_url')
+          .single();
+
+        if (assetUpdateError) {
+          console.error('Error storing temporary image:', assetUpdateError);
+          return NextResponse.json({ 
+            error: 'Failed to store temporary image', 
+            details: assetUpdateError.message 
+          }, { status: 500 });
+        }
+
+        if (!assetData) {
+          console.error('No content asset found with ID:', targetContentAssetId);
+          return NextResponse.json({ error: 'Content asset not found' }, { status: 404 });
+        }
+        
+        console.log(`Image regeneration completed successfully - stored temporary image for ${targetContentAssetId}:`, imageUrl);
+        console.log('Temporary image stored in database, waiting for user approval');
+        
+        return NextResponse.json({ 
+          success: true, 
+          content_asset_id: targetContentAssetId,
+          temporary_image_url: imageUrl,
+          message: 'Image regeneration completed - pending user approval'
+        });
+      } else {
+        // Error case - don't store anything
+        console.log('Image regeneration failed:', error);
+        return NextResponse.json({ 
+          success: false, 
+          error: error || 'Image regeneration failed',
+          content_asset_id: targetContentAssetId 
+        });
+      }
       
     } else {
       // Audio processing workflow (existing logic)

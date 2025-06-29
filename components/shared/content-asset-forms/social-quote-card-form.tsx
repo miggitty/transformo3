@@ -8,6 +8,7 @@ import { ContentAsset } from '@/types';
 import { updateContentAsset } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 
 interface SocialQuoteCardFormProps {
   asset: ContentAsset;
@@ -47,13 +48,19 @@ export default function SocialQuoteCardForm({
         {asset.image_url && (
           <div className="space-y-2">
             <Label>Image</Label>
-            <Image
-              src={asset.image_url}
-              alt="Social Quote Card Image"
-              width={320}
-              height={320}
-              className="rounded-lg object-cover"
-            />
+            <ImageWithRegeneration 
+              contentAsset={asset}
+              disabled={disabled}
+              className="inline-block"
+            >
+              <Image
+                src={asset.image_url}
+                alt="Social Quote Card Image"
+                width={320}
+                height={320}
+                className="rounded-lg object-cover"
+              />
+            </ImageWithRegeneration>
           </div>
         )}
         <div className="space-y-2">

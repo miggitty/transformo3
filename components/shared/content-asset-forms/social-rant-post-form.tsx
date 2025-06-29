@@ -9,6 +9,7 @@ import { ContentAsset } from '@/types';
 import { updateContentAsset } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 
 interface SocialRantPostFormProps {
   asset: ContentAsset;
@@ -45,13 +46,19 @@ export default function SocialRantPostForm({ asset, disabled }: SocialRantPostFo
         <div className="space-y-2">
           <Label>Post Image</Label>
           {asset.image_url && (
-            <Image
-              src={asset.image_url}
-              alt="Social Rant Post Image"
-              width={320}
-              height={180}
-              className="rounded-lg"
-            />
+            <ImageWithRegeneration 
+              contentAsset={asset}
+              disabled={disabled}
+              className="inline-block"
+            >
+              <Image
+                src={asset.image_url}
+                alt="Social Rant Post Image"
+                width={320}
+                height={180}
+                className="rounded-lg"
+              />
+            </ImageWithRegeneration>
           )}
         </div>
         <div className="space-y-2">

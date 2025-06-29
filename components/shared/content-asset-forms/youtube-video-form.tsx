@@ -11,6 +11,7 @@ import { updateContentAsset } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { VideoPlayer } from '@/components/shared/video-player';
+import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 
 interface YouTubeVideoFormProps {
   asset: ContentAsset;
@@ -73,13 +74,19 @@ export default function YouTubeVideoForm({
         {asset.image_url && (
           <div className="space-y-2">
             <Label>Thumbnail</Label>
-            <Image
-              src={asset.image_url}
-              alt="YouTube Thumbnail"
-              width={320}
-              height={180}
-              className="rounded-lg"
-            />
+            <ImageWithRegeneration 
+              contentAsset={asset}
+              disabled={disabled}
+              className="inline-block"
+            >
+              <Image
+                src={asset.image_url}
+                alt="YouTube Thumbnail"
+                width={320}
+                height={180}
+                className="rounded-lg"
+              />
+            </ImageWithRegeneration>
           </div>
         )}
         {content.video_long_url && (

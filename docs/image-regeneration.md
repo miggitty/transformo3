@@ -78,9 +78,9 @@ Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
 
 ## 🏗️ Implementation Plan
 
-### **[ ] Phase 1: Core Components**
+### **[✅] Phase 1: Core Components**
 
-#### **[ ] 1.1 Create ImageWithRegeneration Wrapper Component**
+#### **[✅] 1.1 Create ImageWithRegeneration Wrapper Component**
 - **File**: `components/shared/image-with-regeneration.tsx`
 - **Purpose**: High-level reusable wrapper that handles all regeneration logic
 - **Props**: 
@@ -98,7 +98,7 @@ Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
   - Manages modal state
   - Works in both forms and read-only displays
 
-#### **[ ] 1.2 Create ImageRegenerationModal Component**
+#### **[✅] 1.2 Create ImageRegenerationModal Component**
 - **File**: `components/shared/image-regeneration-modal.tsx`
 - **Purpose**: Main popup for image regeneration workflow
 - **Features**:
@@ -110,10 +110,10 @@ Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
   - Save/Cancel/Regenerate actions
   - Focus management and accessibility features
 
-### **[ ] Phase 2: API Integration**
+### **[✅] Phase 2: API Integration**
 
-#### **[ ] 2.1 Create N8N Trigger API Route**
-- **File**: `app/api/n8n/image-regeneration/route.ts`
+#### **[✅] 2.1 Create N8N Trigger API Route**
+- **File**: `app/api/image-regeneration/route.ts` *(Created at this path instead)*
 - **Purpose**: Trigger N8N image regeneration workflow
 - **Method**: POST
 - **Features**:
@@ -123,7 +123,7 @@ Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
   - Structured error logging
 - **Response**: Success/error status with detailed error codes
 
-#### **[ ] 2.2 Update N8N Callback Handler**
+#### **[✅] 2.2 Update N8N Callback Handler**
 - **File**: `app/api/n8n/callback/route.ts` (existing)
 - **Purpose**: Handle image regeneration completion
 - **New workflow type**: `image_regeneration`
@@ -143,29 +143,35 @@ Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
   }
   ```
 
-#### **[ ] 2.3 Create Server Actions**
+#### **[➕] 2.3 Additional API Created**
+- **File**: `app/api/content-assets/[id]/route.ts` *(Created for polling status)*
+- **Purpose**: GET endpoint for checking image regeneration status
+- **Method**: GET/PATCH
+- **Features**: Real-time polling support for modal updates
+
+#### **[🔄] 2.4 Create Server Actions** *(Implemented via direct API calls instead)*
 - **File**: `app/(app)/content/[id]/actions.ts` (existing file)
 - **New Actions**:
   - `triggerImageRegeneration(contentAssetId, imagePrompt)` - With retry logic
   - `updateContentAssetImage(contentAssetId, imageUrl, imagePrompt)` - Atomic updates
   - `validateUserPermissions(userId, contentAssetId)` - Permission checks
 
-### **[ ] Phase 3: Security & Validation**
+### **[✅] Phase 3: Security & Validation**
 
-#### **[ ] 3.1 Input Sanitization & Validation**
+#### **[✅] 3.1 Input Sanitization & Validation**
 - Sanitize image prompts to prevent XSS
 - Validate N8N response URLs against allowed domains
 - Implement CSRF protection for API routes
 - Add request rate limiting per user (5 requests per 10 minutes)
 
-#### **[ ] 3.2 Permission & Access Control**
+#### **[✅] 3.2 Permission & Access Control**
 - Verify user can edit the content asset
 - Check business subscription status for feature access
 - Implement basic audit logging for regeneration attempts
 
-### **[ ] Phase 4: UI Integration**
+### **[✅] Phase 4: UI Integration**
 
-#### **[ ] 4.1 Wrap Images with Regeneration Component**
+#### **[✅] 4.1 Wrap Images with Regeneration Component**
 - **Strategy**: Use the new `ImageWithRegeneration` wrapper
 - **Files to update**:
   - `components/shared/content-asset-forms/blog-post-form.tsx`
@@ -175,7 +181,7 @@ Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
   - `components/shared/content-asset-forms/youtube-video-form.tsx`
   - `components/shared/content-client-page.tsx` (multiple sections)
 
-#### **[ ] 4.2 Button Styling & Accessibility**
+#### **[✅] 4.2 Button Styling & Accessibility**
 - High contrast button design for visibility on all backgrounds
 - Proper ARIA labels and descriptions
 - Keyboard navigation support
@@ -228,7 +234,10 @@ Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
 # Add to .env.local
 N8N_WEBHOOK_IMAGE_REGENERATION=https://transformo-dev-u48163.vm.elestio.app/webhook-test/image-regeneration
 
-# Security & Rate Limiting
+# Rate Limiting Control (set to 'false' for testing, 'true' for production)
+ENABLE_IMAGE_REGENERATION_RATE_LIMIT=false
+
+# Security & Rate Limiting (when enabled)
 REGENERATION_RATE_LIMIT_WINDOW=600000    # 10 minutes
 REGENERATION_RATE_LIMIT_MAX=5            # Max 5 requests per 10 minutes
 
@@ -240,7 +249,8 @@ IMAGE_PRELOAD_TIMEOUT=10000              # 10 second timeout for image preloadin
 - `content_assets.id` - Asset identifier
 - `content_assets.content_id` - Parent content ID
 - `content_assets.content_type` - Type of content asset
-- `content_assets.image_url` - Current image URL
+- `content_assets.image_url` - Current image URL (permanent)
+- `content_assets.temporary_image_url` - Temporary image URL (pending user approval) **[NEW]**
 - `content_assets.image_prompt` - AI generation prompt
 - `content_assets.headline` - Content headline (context)
 - `content_assets.content` - Content body (context)
@@ -386,4 +396,74 @@ const userRequestHistory = new Map<string, number[]>();
 - Advanced UX features and performance optimizations
 - Usage analytics and monitoring capabilities
 
-This plan delivers solid core functionality first, with a clear path for future enhancements. 
+This plan delivers solid core functionality first, with a clear path for future enhancements.
+
+## ✅ Implementation Status
+
+### **COMPLETED (Phases 1-4)**
+- ✅ **ImageWithRegeneration Wrapper Component** - Created and integrated across all content types
+- ✅ **ImageRegenerationModal Component** - Full 3-step workflow with responsive design
+- ✅ **N8N API Integration** - Trigger endpoint with rate limiting (5 per 10 minutes)
+- ✅ **N8N Callback Handler** - Updated to handle image regeneration responses
+- ✅ **Content Assets Polling API** - Real-time status checking endpoint
+- ✅ **Security & Validation** - Input sanitization, rate limiting, permission checks
+- ✅ **UI Integration** - All content forms and preview pages wrapped with regeneration functionality
+- ✅ **Accessibility** - ARIA labels, keyboard navigation, focus management
+- ✅ **Responsive Design** - Side-by-side desktop, stacked mobile layouts
+
+### **ALTERNATIVE IMPLEMENTATION**
+- 🔄 **Server Actions** - Implemented via direct API calls instead of server actions pattern
+
+### **PENDING (Future Phases 5-6)**
+- ⏳ **Advanced UX Features** - Multi-step progress, optimistic updates, retry logic
+- ⏳ **Performance Optimizations** - Image preloading, lazy loading, caching
+- ⏳ **Monitoring & Analytics** - Usage tracking, error monitoring, success metrics
+
+### **FILES CREATED/MODIFIED**
+- ✅ `components/shared/image-with-regeneration.tsx` - New wrapper component
+- ✅ `components/shared/image-regeneration-modal.tsx` - New modal component *(Updated for database approach)*
+- ✅ `components/ui/radio-group.tsx` - Added ShadCN component
+- ✅ `app/api/image-regeneration/route.ts` - New N8N trigger endpoint
+- ✅ `app/api/content-assets/[id]/route.ts` - New polling endpoint *(Updated for database approach)*
+- ✅ `app/api/n8n/callback/route.ts` - Updated for image regeneration handling *(Updated for database approach)*
+- ✅ `supabase/migrations/20250630074527_add-temporary-image-url.sql` - **New migration for temporary image field**
+- ✅ All content asset forms - Wrapped images with regeneration functionality
+- ✅ `components/shared/content-client-page.tsx` - Added regeneration to preview pages
+
+**Current Status**: ✅ **FULLY FUNCTIONAL** - Feature is live and working across all supported content types!
+
+### **RECENT MAJOR UPDATE: Database Field Approach (Approach B)**
+
+**Date**: 2025-06-30
+
+The feature has been updated to use a more reliable database field approach instead of the previous cache-based system:
+
+#### **Key Changes Made**:
+1. **Added Database Field**: New `temporary_image_url` column in `content_assets` table stores regenerated images before user approval
+2. **N8N Callback Updated**: Now stores new image in `temporary_image_url` field instead of cache
+3. **Modal Polling Updated**: Checks for `temporary_image_url` instead of changes to `image_url`
+4. **Save Logic Updated**: Uses `use_temporary_image: true` flag to move temp image to permanent
+5. **Cancel Logic Added**: Clears `temporary_image_url` when user cancels or keeps current image
+
+#### **Benefits of Database Approach**:
+- ✅ **Reliability**: No cache expiration or memory issues
+- ✅ **Simplicity**: Standard database operations, no complex cache management
+- ✅ **Consistency**: Works across server restarts and deployments
+- ✅ **Debugging**: Clear database state visible via SQL queries
+- ✅ **Best Practice**: Standard pattern for temporary data storage
+
+#### **User Experience Flow (Updated)**:
+1. User clicks AI regeneration button
+2. N8N generates new image and stores URL in `temporary_image_url` field
+3. Modal shows comparison between current (`image_url`) and new (`temporary_image_url`) images
+4. **Save**: Moves `temporary_image_url` → `image_url`, clears temporary field
+5. **Cancel**: Clears `temporary_image_url`, keeps original image unchanged
+
+#### **Database Schema Addition**:
+```sql
+-- Migration: 20250630074527_add-temporary-image-url.sql
+ALTER TABLE content_assets 
+ADD COLUMN temporary_image_url TEXT;
+
+COMMENT ON COLUMN content_assets.temporary_image_url IS 'Temporary storage for regenerated images before user approval. Cleared on save/cancel.';
+``` 
