@@ -95,12 +95,12 @@ export async function PATCH(
     const { image_url, image_prompt, use_temporary_image, cancel_temporary_image } = body;
     const updateData: Record<string, unknown> = {};
 
-    // Handle using temporary image (move from temporary_image_url to image_url)
+    // Handle using temporary image (download from temporary URL and store to Supabase)
     if (use_temporary_image) {
-      // First, get the temporary image URL
+      // First, get the current asset data
       const { data: currentAsset, error: fetchError } = await supabase
         .from('content_assets')
-        .select('temporary_image_url')
+        .select('id, content_type, temporary_image_url')
         .eq('id', id)
         .single();
 
@@ -116,11 +116,85 @@ export async function PATCH(
         }, { status: 400 });
       }
 
-      // Move temporary image to permanent image_url and clear temporary
-      updateData.image_url = currentAsset.temporary_image_url;
-      updateData.temporary_image_url = null;
+      // Download the image from the temporary URL
+      console.log(`Downloading image from temporary URL: ${currentAsset.temporary_image_url}`);
       
-      console.log(`Moving temporary image to permanent for content asset ${id}:`, currentAsset.temporary_image_url);
+      try {
+        const imageResponse = await fetch(currentAsset.temporary_image_url);
+        
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
+        }
+
+        const imageBuffer = await imageResponse.arrayBuffer();
+        
+        // Determine file extension from URL or content type
+        let fileExtension = 'jpg'; // default
+        try {
+          const url = new URL(currentAsset.temporary_image_url);
+          const pathExtension = url.pathname.split('.').pop()?.toLowerCase();
+          if (pathExtension && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(pathExtension)) {
+            fileExtension = pathExtension;
+          }
+        } catch {
+          // If URL parsing fails, try content type
+          const contentType = imageResponse.headers.get('content-type');
+          if (contentType?.includes('png')) fileExtension = 'png';
+          else if (contentType?.includes('webp')) fileExtension = 'webp';
+          else if (contentType?.includes('gif')) fileExtension = 'gif';
+        }
+
+        // Generate filename: {content_asset_id}_{content_type}.{extension}
+        const filename = `${currentAsset.id}_${currentAsset.content_type}.${fileExtension}`;
+        
+        console.log(`Storing image to Supabase storage: ${filename}`);
+
+        // Upload to Supabase storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(filename, imageBuffer, {
+            contentType: imageResponse.headers.get('content-type') || `image/${fileExtension}`,
+            upsert: true // Overwrite existing file with same name
+          });
+
+        if (uploadError) {
+          console.error('Error uploading image to Supabase storage:', uploadError);
+          return NextResponse.json({ 
+            error: 'Failed to store image to storage', 
+            details: uploadError.message 
+          }, { status: 500 });
+        }
+
+        // Get the public URL for the stored image
+        const { data: { publicUrl: localPublicUrl } } = supabase.storage
+          .from('images')
+          .getPublicUrl(filename);
+
+        // In local development, convert local Supabase URLs to external Supabase URLs for external services access
+        let publicUrl = localPublicUrl;
+        if (process.env.NODE_ENV === 'development' && 
+            (localPublicUrl.includes('127.0.0.1:54321') || localPublicUrl.includes('127.0.0.1:54323')) && 
+            process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+          // Extract the path from the local Supabase URL and construct external Supabase URL
+          const urlPath = localPublicUrl.replace(/http:\/\/127\.0\.0\.1:543(21|23)/, '');
+          publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+          console.log(`Converted local URL to external URL: ${localPublicUrl} -> ${publicUrl}`);
+        }
+
+        // Update database with permanent image URL and clear temporary
+        updateData.image_url = publicUrl;
+        updateData.temporary_image_url = null;
+        
+        console.log(`Successfully stored image and updated database for content asset ${id}`);
+        console.log(`Permanent URL: ${publicUrl}`);
+        
+      } catch (imageError) {
+        console.error('Error downloading/storing image:', imageError);
+        return NextResponse.json({ 
+          error: 'Failed to download and store image', 
+          details: imageError instanceof Error ? imageError.message : 'Unknown error' 
+        }, { status: 500 });
+      }
     } 
     // Handle canceling temporary image (just clear it)
     else if (cancel_temporary_image) {

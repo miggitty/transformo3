@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, Bot, Image as ImageIcon } from 'lucide-react';
+
+import { Loader2, Bot, Image as ImageIcon, Check } from 'lucide-react';
 import { ContentAsset } from '@/types';
 import { toast } from 'sonner';
 
@@ -20,6 +20,7 @@ interface ImageRegenerationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contentAsset: ContentAsset;
+  onImageUpdated?: () => void; // Callback to refresh content assets
 }
 
 type RegenerationStep = 'edit-prompt' | 'generating' | 'compare-images';
@@ -29,6 +30,7 @@ export default function ImageRegenerationModal({
   open,
   onOpenChange,
   contentAsset,
+  onImageUpdated,
 }: ImageRegenerationModalProps) {
   const [step, setStep] = useState<RegenerationStep>('edit-prompt');
   const [imagePrompt, setImagePrompt] = useState(contentAsset.image_prompt || '');
@@ -88,6 +90,7 @@ export default function ImageRegenerationModal({
               if (updatedAsset.temporary_image_url) {
                 clearInterval(pollInterval);
                 setNewImageUrl(updatedAsset.temporary_image_url);
+                setIsRegenerating(false); // Reset regenerating state
                 setStep('compare-images');
                 toast.success('New image generated successfully!');
               }
@@ -104,6 +107,7 @@ export default function ImageRegenerationModal({
           clearInterval(pollInterval);
           if (step === 'generating') {
             setStep('edit-prompt');
+            setIsRegenerating(false); // Reset regenerating state
             toast.error('Image generation timed out. Please try again.');
           }
         }, 300000); // 5 minutes
@@ -142,8 +146,10 @@ export default function ImageRegenerationModal({
 
         toast.success('Image updated successfully!');
         
-        // Trigger a page refresh to show the new image
-        window.location.reload();
+        // Refresh content assets data without page reload
+        if (onImageUpdated) {
+          onImageUpdated();
+        }
         
       } catch (error) {
         console.error('Error saving image:', error);
@@ -224,7 +230,7 @@ export default function ImageRegenerationModal({
             <img
               src={contentAsset.image_url}
               alt="Current image"
-              className="w-full h-48 object-cover rounded-lg border"
+              className="w-full aspect-video object-cover rounded-lg border"
             />
           </div>
         </div>
@@ -281,69 +287,94 @@ export default function ImageRegenerationModal({
       <div className="text-center">
         <h3 className="text-lg font-semibold mb-2">Choose your preferred image</h3>
         <p className="text-muted-foreground">
-          Select which image you'd like to use and click Save to apply your choice.
+          Select which image you'd like to use, or edit the prompt below to generate another version.
         </p>
       </div>
 
-              <RadioGroup 
-          value={selectedImage} 
-          onValueChange={(value: string) => setSelectedImage(value as ImageSelection)}
-        >
-        {/* Responsive Image Comparison Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Current Image */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="current" id="current-image" />
-              <Label htmlFor="current-image" className="font-medium">
-                Keep Current Image
-              </Label>
+      {/* Responsive Image Comparison Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Current Image */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-center">Keep Current Image</h4>
+          {contentAsset.image_url && (
+            <div 
+              className={`relative cursor-pointer transition-all duration-200 ${
+                selectedImage === 'current' 
+                  ? 'ring-4 ring-blue-500 ring-offset-2' 
+                  : 'hover:ring-2 hover:ring-blue-300 hover:ring-offset-1'
+              }`}
+              onClick={() => setSelectedImage('current')}
+            >
+              <img
+                src={contentAsset.image_url}
+                alt="Current image"
+                className="w-full aspect-video object-cover rounded-lg border"
+              />
+              {selectedImage === 'current' && (
+                <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5 shadow-lg">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
             </div>
-            {contentAsset.image_url && (
-              <div className="relative">
-                <img
-                  src={contentAsset.image_url}
-                  alt="Current image"
-                  className="w-full h-48 object-cover rounded-lg border"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* New Image */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="new" id="new-image" />
-              <Label htmlFor="new-image" className="font-medium">
-                Use New Image
-              </Label>
-            </div>
-            {newImageUrl ? (
-              <div className="relative">
-                <img
-                  src={newImageUrl}
-                  alt="New generated image"
-                  className="w-full h-48 object-cover rounded-lg border"
-                />
-              </div>
-            ) : (
-              <div className="w-full h-48 bg-muted rounded-lg border flex items-center justify-center">
-                <ImageIcon className="h-8 w-8 text-muted-foreground" />
-              </div>
-            )}
-          </div>
+          )}
         </div>
-      </RadioGroup>
+
+        {/* New Image */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-center">Use New Image</h4>
+          {newImageUrl ? (
+            <div 
+              className={`relative cursor-pointer transition-all duration-200 ${
+                selectedImage === 'new' 
+                  ? 'ring-4 ring-blue-500 ring-offset-2' 
+                  : 'hover:ring-2 hover:ring-blue-300 hover:ring-offset-1'
+              }`}
+              onClick={() => setSelectedImage('new')}
+            >
+              <img
+                src={newImageUrl}
+                alt="New generated image"
+                className="w-full aspect-video object-cover rounded-lg border"
+              />
+              {selectedImage === 'new' && (
+                <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5 shadow-lg">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full aspect-video bg-muted rounded-lg border flex items-center justify-center">
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Prompt Editor for Regenerating */}
+      <div className="space-y-2 border-t pt-6">
+        <Label htmlFor="compare-prompt">Edit Prompt to Generate Another Version</Label>
+        <Textarea
+          id="compare-prompt"
+          value={imagePrompt}
+          onChange={(e) => setImagePrompt(e.target.value)}
+          placeholder="Describe the image you want to generate..."
+          className="min-h-[100px]"
+          maxLength={1000}
+        />
+        <p className="text-xs text-muted-foreground">
+          Edit the prompt above and click "Regenerate" to create another version for comparison.
+        </p>
+      </div>
 
       {/* Action Buttons */}
       <div className="flex gap-3 justify-between">
         <Button 
           variant="outline" 
-          onClick={() => setStep('edit-prompt')}
-          disabled={isRegenerating}
+          onClick={handleRegenerateImage}
+          disabled={!imagePrompt.trim() || isRegenerating}
         >
           <Bot className="h-4 w-4 mr-2" />
-          Regenerate Again
+          {isRegenerating ? 'Regenerating...' : 'Regenerate Again'}
         </Button>
         <div className="flex gap-3">
           <Button variant="outline" onClick={handleCancel}>

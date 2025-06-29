@@ -309,6 +309,7 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={blogAsset as any}
                               className="block w-full"
+                              onImageUpdated={fetchContentAssets}
                             >
                               <img 
                                 src={blogAsset.image_url} 

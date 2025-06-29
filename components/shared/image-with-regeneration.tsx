@@ -11,6 +11,7 @@ interface ImageWithRegenerationProps {
   children: React.ReactNode;
   disabled?: boolean;
   className?: string;
+  onImageUpdated?: () => void; // Callback to refresh content assets
 }
 
 export default function ImageWithRegeneration({
@@ -18,6 +19,7 @@ export default function ImageWithRegeneration({
   children,
   disabled = false,
   className = '',
+  onImageUpdated,
 }: ImageWithRegenerationProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -54,6 +56,7 @@ export default function ImageWithRegeneration({
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         contentAsset={contentAsset}
+        onImageUpdated={onImageUpdated}
       />
     </div>
   );

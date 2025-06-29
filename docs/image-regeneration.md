@@ -20,9 +20,11 @@ Provide users with the ability to easily regenerate and replace images in their 
 ### **File Storage Pattern**
 Images are stored in Supabase storage with the naming convention:
 ```
-{contentId}_{contentType}.{extension}
+{content_asset_id}_{content_type}.{extension}
 ```
-Example: `c3fe5b3f-76b1-4005-b31e-59b276ba4dbc_blog.jpg`
+Example: `f3d2c8b1-7e92-4a33-8f1e-2b5c9a8d7e6f_blog_post.jpg`
+
+**Note**: This uses the `content_asset_id` (not `content_id`) and does NOT include `business_id`.
 
 ### **N8N Integration**
 - **Webhook URL**: `N8N_WEBHOOK_IMAGE_REGENERATION`
@@ -258,7 +260,7 @@ IMAGE_PRELOAD_TIMEOUT=10000              # 10 second timeout for image preloadin
 ### **Supabase Storage**
 - **Bucket**: `images`
 - **Permissions**: Service role for uploads/overwrites
-- **File naming**: `{contentId}_{contentType}.{extension}`
+- **File naming**: `{content_asset_id}_{content_type}.{extension}`
 - **Overwrite strategy**: Same filename replacement with cache busting
 - **Cache Control**: `max-age=31536000, public` with timestamp queries
 
@@ -466,4 +468,16 @@ ALTER TABLE content_assets
 ADD COLUMN temporary_image_url TEXT;
 
 COMMENT ON COLUMN content_assets.temporary_image_url IS 'Temporary storage for regenerated images before user approval. Cleared on save/cancel.';
-``` 
+```
+
+### **Image Regeneration Workflow**
+1. **N8N Callback**: Stores temporary image URL in `temporary_image_url` field (does NOT download/store to Supabase yet)
+2. **User Comparison**: Modal shows current image (from `image_url`) vs new image (from `temporary_image_url`)
+3. **User Saves + Selects New**: **ONLY THEN** do we:
+   - Download image from temporary URL (e.g., Replicate)
+   - Store to Supabase storage as `{content_asset_id}_{content_type}.{extension}`
+   - Update `image_url` with permanent Supabase storage URL
+   - Clear `temporary_image_url`
+4. **User Cancels**: Simply clear `temporary_image_url`, no download/storage occurs
+
+This ensures no unnecessary storage operations and follows user-decision-driven patterns. 
