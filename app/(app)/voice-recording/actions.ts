@@ -3,9 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-// Action 1: Create an initial content record
+// Action 1: Create an initial content record with voice_recording project type
 export async function createContentRecord() {
-  console.log('Action: createContentRecord started');
+  console.log('Action: createContentRecord started (voice_recording)');
   const supabase = await createSupabaseServerClient();
   console.log('Action: Supabase client created.');
 
@@ -41,8 +41,9 @@ export async function createContentRecord() {
       .from('content')
       .insert({ 
         business_id: profile.business_id,
-        content_title: `New Recording - ${new Date().toISOString()}`,
-        status: 'creating' 
+        content_title: `Voice Recording - ${new Date().toISOString()}`,
+        status: 'creating',
+        project_type: 'voice_recording' // Set project type for voice recording projects
       })
       .select('id, business_id')
       .single();
@@ -51,7 +52,7 @@ export async function createContentRecord() {
       console.error('Action Error: Failed to insert content.', contentError);
       return { error: 'Failed to insert content record' };
     }
-    console.log('Action: Content record inserted successfully.', {
+    console.log('Action: Voice recording content record inserted successfully.', {
       data: contentData,
     });
     return { data: contentData };

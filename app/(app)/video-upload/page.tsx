@@ -5,10 +5,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AudioRecorder } from '@/components/shared/audio-recorder';
 import { AccessGate } from '@/components/shared/access-gate';
+import { VideoUploadClient } from './video-upload-client';
 
-export default function NewContentPage() {
+export default function VideoUploadPage() {
   return (
     <AccessGate 
       feature="content creation"
@@ -22,13 +22,13 @@ export default function NewContentPage() {
     >
       <Card>
         <CardHeader>
-          <CardTitle>Create New Content</CardTitle>
+          <CardTitle>Video Upload Project</CardTitle>
           <CardDescription>
-            Record an audio clip to start the content creation process.
+            Upload a video file to start the content creation process. Your video will be transcribed and used to generate social media content.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AudioRecorder />
+          <VideoUploadClient />
         </CardContent>
       </Card>
     </AccessGate>

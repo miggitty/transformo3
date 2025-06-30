@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, CheckCircle, Calendar, ArrowLeft } from 'lucide-react';
+import { Check, CheckCircle, Calendar, ArrowLeft, Mic, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
 import { EnhancedContentAssetsManager } from '@/components/shared/enhanced-content-assets-manager';
-import { ContentWithBusiness, ContentAsset } from '@/types';
+import { ContentWithBusiness, ContentAsset, PROJECT_TYPES, ProjectType } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 import EditButton from '@/components/shared/edit-button';
@@ -349,6 +349,25 @@ export default function ContentClientPage({
           })()}
         </div>
         
+        {/* Project Type Display */}
+        <div className="mb-4">
+          <span className="text-sm text-gray-600 block mb-1">Project Type</span>
+          <div className="flex items-center gap-2">
+            {(() => {
+              const projectType = content.project_type as ProjectType;
+              const Icon = projectType === 'video_upload' ? Video : Mic;
+              const label = PROJECT_TYPES[projectType] || projectType || 'Voice Recording';
+              
+              return (
+                <>
+                  <Icon className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">{label}</span>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+
         {/* Content Title */}
         <div>
           <span className="text-sm text-gray-600 block mb-1">Content Title</span>
@@ -369,6 +388,52 @@ export default function ContentClientPage({
             />
           </div>
         </div>
+
+        {/* Transcript Section - Only show for voice recording projects */}
+        {content.project_type === 'voice_recording' && content.transcript && (
+          <div className="mt-4">
+            <span className="text-sm text-gray-600 block mb-1">Transcript</span>
+            <div className="bg-gray-50 rounded-lg p-4 relative group">
+              <div className="whitespace-pre-wrap text-gray-900 text-sm max-h-32 overflow-y-auto">
+                {content.transcript}
+              </div>
+                             <EditButton
+                 fieldConfig={{
+                   label: 'Transcript',
+                   value: content.transcript ?? '',
+                   fieldKey: 'transcript',
+                   inputType: 'textarea',
+                   placeholder: 'Enter transcript...',
+                 }}
+                 onEdit={handleEdit}
+                 disabled={isContentGenerating}
+               />
+            </div>
+          </div>
+        )}
+
+        {/* Research Section */}
+        {content.research && (
+          <div className="mt-4">
+            <span className="text-sm text-gray-600 block mb-1">Research Notes</span>
+            <div className="bg-gray-50 rounded-lg p-4 relative group">
+              <div className="whitespace-pre-wrap text-gray-900 text-sm max-h-32 overflow-y-auto">
+                {content.research}
+              </div>
+                             <EditButton
+                 fieldConfig={{
+                   label: 'Research Notes',
+                   value: content.research ?? '',
+                   fieldKey: 'research',
+                   inputType: 'textarea',
+                   placeholder: 'Enter research notes...',
+                 }}
+                 onEdit={handleEdit}
+                 disabled={isContentGenerating}
+               />
+            </div>
+          </div>
+        )}
         
         {isContentGenerating && (
           <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mt-3">

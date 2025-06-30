@@ -207,8 +207,8 @@ export async function POST(request: NextRequest) {
       }
       
     } else {
-      // Audio processing workflow (existing logic)
-      console.log('Processing audio processing workflow completion callback');
+      // Audio processing workflow OR Video transcription workflow
+      console.log('Processing audio/video transcription workflow completion callback');
       
       // Handle both success and error cases
       // If success field is not provided but we have transcript and title, assume success
@@ -257,9 +257,9 @@ export async function POST(request: NextRequest) {
 
       console.log(`Successfully updated content ${finalContentId} - Status: ${updateData.status}`);
 
-      // If audio processing was successful, automatically trigger content creation workflow
+      // If audio/video transcription was successful, automatically trigger content creation workflow
       if (isSuccess && transcript && content_title) {
-        console.log('Audio processing successful - triggering content creation workflow...');
+        console.log('Audio/video transcription successful - triggering content creation workflow...');
         
         const contentCreationWebhookUrl = process.env.N8N_WEBHOOK_URL_CONTENT_CREATION;
         

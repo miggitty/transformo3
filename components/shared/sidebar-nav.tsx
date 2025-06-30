@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { 
   Settings, 
   LayoutGrid, 
-  PlusCircle, 
   ChevronDown, 
   ChevronRight,
   Building2,
@@ -18,14 +17,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const navigationItems = [
-  {
-    href: '/new',
-    label: 'New Content',
-    icon: PlusCircle,
-  },
-];
+import { NewContentButton } from '@/components/shared/new-content-button';
 
 const contentItems = [
   {
@@ -82,27 +74,13 @@ export function SidebarNav() {
 
   return (
     <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-      {/* Main navigation items */}
-      {navigationItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = pathname === item.href;
-        
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
-              isActive 
-                ? "bg-muted text-primary" 
-                : "text-muted-foreground"
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {item.label}
-          </Link>
-        );
-      })}
+      {/* New Content Button with Dropdown */}
+      <div className="mb-2">
+        <NewContentButton 
+          variant="ghost" 
+          className="w-full justify-start text-muted-foreground hover:text-primary"
+        />
+      </div>
 
       {/* Content collapsible section */}
       <div>

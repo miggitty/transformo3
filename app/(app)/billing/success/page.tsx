@@ -37,7 +37,7 @@ export default async function BillingSuccessPage() {
             
             <div className="flex flex-col gap-2">
               <Button asChild className="w-full">
-                <Link href="/new">
+                <Link href="/voice-recording">
                   Start Creating Content
                 </Link>
               </Button>

@@ -1,4 +1,5 @@
 import { Tables } from '@/types/supabase';
+import { ProjectType } from '@/types/index';
 
 export type ContentStatus = 
   | 'processing' 
@@ -15,12 +16,14 @@ export type ContentWithAssets = {
 
 /**
  * Determines the status of content based on content record and its assets
+ * Works uniformly for both voice_recording and video_upload project types
  */
 export function determineContentStatus(
   content: Tables<'content'>, 
   assets: Tables<'content_assets'>[]
 ): ContentStatus {
-  // Processing: Audio still being processed or content generation in progress
+  // Processing: Audio/Video still being processed or content generation in progress
+  // Both project types follow the same processing workflow
   if (content.status === 'processing' || content.content_generation_status === 'generating') {
     return 'processing';
   }
@@ -31,7 +34,7 @@ export function determineContentStatus(
     return 'failed';
   }
   
-  // Asset-based status determination
+  // Asset-based status determination (same for both project types)
   const scheduledAssets = assets.filter(asset => asset.asset_scheduled_at);
   const sentAssets = assets.filter(asset => asset.asset_status === 'Sent');
   
@@ -52,6 +55,22 @@ export function determineContentStatus(
   
   // Draft: Content is complete but no assets scheduled
   return 'draft';
+}
+
+/**
+ * Get project type display name for UI
+ */
+export function getProjectTypeLabel(projectType: string | null): string {
+  if (!projectType) return 'Voice Recording'; // Default for backward compatibility
+  
+  switch (projectType as ProjectType) {
+    case 'voice_recording':
+      return 'Voice Recording';
+    case 'video_upload':
+      return 'Video Upload';
+    default:
+      return 'Voice Recording';
+  }
 }
 
 /**

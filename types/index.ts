@@ -1,5 +1,13 @@
 import { Database, Tables } from './supabase';
 
+// Project Type System
+export type ProjectType = 'voice_recording' | 'video_upload';
+
+export const PROJECT_TYPES: Record<ProjectType, string> = {
+  voice_recording: 'Voice Recording',
+  video_upload: 'Video Upload'
+} as const;
+
 export type ContentAsset = Database['public']['Tables']['content_assets']['Row'];
 
 export type ContentWithBusiness = Tables<'content'> & {

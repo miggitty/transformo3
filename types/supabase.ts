@@ -225,6 +225,7 @@ export type Database = {
           heygen_video_id: string | null
           id: string
           keyword: string | null
+          project_type: string | null
           published_at: string | null
           research: string | null
           scheduled_at: string | null
@@ -247,6 +248,7 @@ export type Database = {
           heygen_video_id?: string | null
           id?: string
           keyword?: string | null
+          project_type?: string | null
           published_at?: string | null
           research?: string | null
           scheduled_at?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           heygen_video_id?: string | null
           id?: string
           keyword?: string | null
+          project_type?: string | null
           published_at?: string | null
           research?: string | null
           scheduled_at?: string | null

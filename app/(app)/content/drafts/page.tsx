@@ -5,9 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
+import { NewContentButton } from '@/components/shared/new-content-button';
 import { createClient } from '@/utils/supabase/server';
 import { EnhancedContentTable } from '@/components/shared/enhanced-content-table';
 import { AccessGate } from '@/components/shared/access-gate';
@@ -110,12 +108,7 @@ export default async function DraftsPage() {
               Review and approve your content before scheduling. Processing and failed content also appears here.
             </CardDescription>
           </div>
-          <Link href="/new">
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Content
-            </Button>
-          </Link>
+          <NewContentButton />
         </CardHeader>
         <CardContent>
           <EnhancedContentTable

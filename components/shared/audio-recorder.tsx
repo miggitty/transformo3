@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import {
   createContentRecord,
   finalizeContentRecord,
-} from '@/app/(app)/new/actions';
+} from '@/app/(app)/voice-recording/actions';
 
 type RecordingStatus = 'idle' | 'recording' | 'processing' | 'uploading';
 

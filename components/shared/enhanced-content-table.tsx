@@ -15,6 +15,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PROJECT_TYPES, ProjectType } from '@/types/index';
+import { Mic, Video } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -51,6 +53,21 @@ import {
 } from '@/lib/content-status';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/use-debounce';
+
+// Project type display helper
+function getProjectTypeDisplay(projectType: ProjectType | null) {
+  if (!projectType) return null;
+  
+  const Icon = projectType === 'video_upload' ? Video : Mic;
+  const label = PROJECT_TYPES[projectType] || projectType;
+  
+  return (
+    <div className="flex items-center gap-1">
+      <Icon className="h-3 w-3" />
+      <span className="text-xs">{label}</span>
+    </div>
+  );
+}
 
 export interface ContentTableProps {
   serverContent: Tables<'content'>[];
@@ -346,6 +363,7 @@ export function EnhancedContentTable({
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="hidden md:table-cell">Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -367,7 +385,7 @@ export function EnhancedContentTable({
                     <div className="space-y-1">
                       <div>
                         {item.status === 'processing'
-                          ? 'Currently Processing Audio...'
+                          ? (item.project_type === 'video_upload' ? 'Processing Video...' : 'Processing Audio...')
                           : item.content_title || 'Untitled'}
                       </div>
                       {item.status === 'failed' && (
@@ -383,6 +401,9 @@ export function EnhancedContentTable({
                         </div>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {getProjectTypeDisplay(item.project_type as ProjectType)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(item.status)}>
@@ -408,7 +429,7 @@ export function EnhancedContentTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={5} className="h-24 text-center">
                   <div className="space-y-2">
                     <p className="text-muted-foreground">
                       {debouncedSearchQuery 
@@ -419,7 +440,7 @@ export function EnhancedContentTable({
                     {variant === 'drafts' && !debouncedSearchQuery && (
                       <Button
                         variant="outline"
-                        onClick={() => router.push('/new')}
+                        onClick={() => router.push('/voice-recording')}
                       >
                         Create Your First Content
                       </Button>
