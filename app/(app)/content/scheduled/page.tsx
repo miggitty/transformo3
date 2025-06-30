@@ -77,16 +77,14 @@ export default async function ScheduledPage() {
         </div>
       }
     >
-      <Suspense fallback={null}>
-        <TrialSuccessBanner />
-      </Suspense>
-      
-      {/* Page Heading */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Content Schedule</h1>
-      </div>
-      
-      <Card>
+      <div className="flex-1 space-y-8 p-4 md:p-8">
+        <Suspense fallback={null}>
+          <TrialSuccessBanner />
+        </Suspense>
+        
+        <h1 className="text-3xl font-bold">Content Schedule</h1>
+        
+        <Card>
         <CardHeader>
           <CardTitle>Scheduled Content</CardTitle>
           <CardDescription>
@@ -107,6 +105,7 @@ export default async function ScheduledPage() {
           />
         </CardContent>
       </Card>
+      </div>
     </AccessGate>
   );
 } 

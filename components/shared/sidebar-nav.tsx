@@ -25,11 +25,6 @@ const navigationItems = [
     label: 'New Content',
     icon: PlusCircle,
   },
-  {
-    href: '/billing',
-    label: 'Billing',
-    icon: CreditCard,
-  },
 ];
 
 const contentItems = [
@@ -66,18 +61,23 @@ const settingsItems = [
     label: 'Integrations',
     icon: Plug,
   },
+  {
+    href: '/billing',
+    label: 'Billing',
+    icon: CreditCard,
+  },
 ];
 
 export function SidebarNav() {
   const pathname = usePathname();
   const [isSettingsOpen, setIsSettingsOpen] = useState(() => {
-    return pathname.startsWith('/settings');
+    return pathname.startsWith('/settings') || pathname === '/billing';
   });
   const [isContentOpen, setIsContentOpen] = useState(() => {
     return pathname.startsWith('/content');
   });
 
-  const isSettingsActive = pathname.startsWith('/settings');
+  const isSettingsActive = pathname.startsWith('/settings') || pathname === '/billing';
   const isContentActive = pathname.startsWith('/content');
 
   return (

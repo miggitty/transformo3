@@ -75,16 +75,14 @@ export default async function CompletedPage() {
         </div>
       }
     >
-      <Suspense fallback={null}>
-        <TrialSuccessBanner />
-      </Suspense>
-      
-      {/* Page Heading */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Completed</h1>
-      </div>
-      
-      <Card>
+      <div className="flex-1 space-y-8 p-4 md:p-8">
+        <Suspense fallback={null}>
+          <TrialSuccessBanner />
+        </Suspense>
+        
+        <h1 className="text-3xl font-bold">Completed</h1>
+        
+        <Card>
         <CardHeader>
           <CardTitle>Completed Content</CardTitle>
           <CardDescription>
@@ -101,6 +99,7 @@ export default async function CompletedPage() {
           />
         </CardContent>
       </Card>
+      </div>
     </AccessGate>
   );
 } 
