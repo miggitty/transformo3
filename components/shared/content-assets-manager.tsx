@@ -43,7 +43,8 @@ import {
   scheduleContentAssets,
   updateAssetSchedule,
   getBusinessAssets,
-  resetContentAssetSchedules
+  resetContentAssetSchedules,
+  saveBatchScheduleChanges
 } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
@@ -123,6 +124,12 @@ export default function ContentAssetsManager({
     contentTitle: '',
   });
   
+  // FEATURE: Batch Scheduling State Management
+  const [pendingChanges, setPendingChanges] = useState<Map<string, ContentAsset>>(new Map());
+  const [originalAssets, setOriginalAssets] = useState<Map<string, ContentAsset>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const businessTimezone = content.businesses?.timezone || 'UTC';
 
   // Helper function for asset display names
@@ -175,25 +182,76 @@ export default function ContentAssetsManager({
     }
   }, [activeView, calendarDate, content.businesses?.id, fetchBusinessAssets]);
 
-  // Convert assets to calendar events
+  // FEATURE: Initialize original assets map when assets change (for batch scheduling)
+  useEffect(() => {
+    const originalMap = new Map();
+    assets.forEach(asset => {
+      if (asset.asset_scheduled_at) {
+        originalMap.set(asset.id, asset);
+      }
+    });
+    setOriginalAssets(originalMap);
+    
+    // Clear pending changes if assets are refreshed from server
+    if (assets.length > 0) {
+      setPendingChanges(new Map());
+      setHasUnsavedChanges(false);
+    }
+  }, [assets]);
+
+  // FEATURE: Navigation Guard - warn about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Convert assets to calendar events (including pending changes)
   const calendarEvents: CalendarEvent[] = useMemo(() => {
-    // Own content assets
-    const ownedEvents: CalendarEvent[] = assets
+    // Create a map of current assets (original + pending changes)
+    const mergedAssets = new Map<string, ContentAsset>();
+    
+    // Start with original assets
+    assets.forEach(asset => {
+      if (asset.asset_scheduled_at) {
+        mergedAssets.set(asset.id, asset);
+      }
+    });
+    
+    // Apply pending changes
+    pendingChanges.forEach((pendingAsset, assetId) => {
+      mergedAssets.set(assetId, pendingAsset);
+    });
+    
+    // Own content assets with visual indicators for pending vs saved
+    const ownedEvents: CalendarEvent[] = Array.from(mergedAssets.values())
       .filter(asset => asset.asset_scheduled_at !== null)
-      .map(asset => ({
-        id: asset.id,
-        title: getAssetDisplayName(asset.content_type || ''),
-        date: asset.asset_scheduled_at as string,
-        backgroundColor: '#2563eb',
-        borderColor: '#1d4ed8',
-        textColor: '#2563eb',
-        extendedProps: {
-          assetType: asset.content_type || '',
-          isOwned: true,
-          contentId: content.id,
-          assetId: asset.id,
-        },
-      }));
+      .map(asset => {
+        const isPending = pendingChanges.has(asset.id);
+        return {
+          id: asset.id,
+          title: getAssetDisplayName(asset.content_type || ''),
+          date: asset.asset_scheduled_at as string,
+          // Visual indicators: pending changes have different styling
+          backgroundColor: isPending ? '#f59e0b' : '#2563eb', // Orange for pending, blue for saved
+          borderColor: isPending ? '#d97706' : '#1d4ed8',
+          textColor: isPending ? '#92400e' : '#2563eb',
+          extendedProps: {
+            assetType: asset.content_type || '',
+            isOwned: true,
+            contentId: content.id,
+            assetId: asset.id,
+            isPending: isPending,
+          },
+        };
+      });
 
     // Other business assets
     const otherEvents: CalendarEvent[] = businessAssets
@@ -216,7 +274,7 @@ export default function ContentAssetsManager({
 
     const allEvents = [...ownedEvents, ...otherEvents];
     return allEvents;
-  }, [assets, businessAssets, content.id]);
+  }, [assets, businessAssets, content.id, pendingChanges]);
 
   const handleScheduleAll = async (startDate?: Date) => {
     if (unscheduledAssets.length === 0) {
@@ -365,6 +423,22 @@ export default function ContentAssetsManager({
       return;
     }
 
+    // FEATURE: Past Date Prevention - validate date before any processing
+    const newDate = new Date(event.start);
+    const today = new Date();
+    const todayInBusinessTZ = toZonedTime(today, businessTimezone);
+    const newDateInBusinessTZ = toZonedTime(newDate, businessTimezone);
+    
+    // Compare dates only (ignore time) to check if dropping to past date
+    const todayDateOnly = new Date(todayInBusinessTZ.getFullYear(), todayInBusinessTZ.getMonth(), todayInBusinessTZ.getDate());
+    const newDateOnly = new Date(newDateInBusinessTZ.getFullYear(), newDateInBusinessTZ.getMonth(), newDateInBusinessTZ.getDate());
+    
+    if (newDateOnly < todayDateOnly) {
+      info.revert();
+      toast.error('Cannot schedule content to a date in the past');
+      return;
+    }
+
     try {
       // Keep the same time, just change the date
       const originalAsset = assets.find(a => a.id === event.extendedProps.assetId);
@@ -403,32 +477,17 @@ export default function ContentAssetsManager({
 
       const finalDateTime = finalDate.toISOString();
 
-      // Optimistic update - update local state immediately
-      if (onAssetUpdate && originalAsset) {
-        const updatedAsset = {
-          ...originalAsset,
-          asset_scheduled_at: finalDateTime,
-        };
-        onAssetUpdate(updatedAsset);
-      }
-
-      toast.success('Asset rescheduled successfully!');
-
-      // Update on server in background
-      const result = await updateAssetSchedule({
-        assetId: event.extendedProps.assetId,
-        newDateTime: finalDateTime,
-      });
-
-      console.log('Update asset schedule result:', result);
-
-      if (!result.success) {
-        // If server update fails, revert the optimistic update
-        if (onAssetUpdate && originalAsset) {
-          onAssetUpdate(originalAsset); // Revert to original
-        }
-        toast.error(result.error || 'Failed to update schedule.');
-      }
+      // FEATURE: Batch Scheduling - store change locally (don't save to DB yet)
+      const updatedAsset = {
+        ...originalAsset,
+        asset_scheduled_at: finalDateTime,
+      };
+      
+      // Add to pending changes
+      setPendingChanges(prev => new Map(prev.set(originalAsset.id, updatedAsset)));
+      setHasUnsavedChanges(true);
+      
+      toast.success('Asset moved (not saved yet - click Schedule to save changes)');
     } catch (error) {
       console.error('Drag drop error:', error);
       info.revert();
@@ -482,6 +541,72 @@ export default function ContentAssetsManager({
     } catch (error) {
       console.error('Time edit error:', error);
       toast.error('An error occurred while updating the time.');
+    }
+  };
+
+  // FEATURE: Batch Scheduling - Reset Changes Handler
+  const handleResetChanges = () => {
+    setPendingChanges(new Map());
+    setHasUnsavedChanges(false);
+    toast.success('Changes reset to saved state');
+  };
+
+  // FEATURE: Batch Scheduling - Schedule Changes Handler with error handling and rollback
+  const handleScheduleChanges = async () => {
+    if (pendingChanges.size === 0) return;
+    
+    setIsSaving(true);
+    
+    // Store current pending changes for potential rollback
+    const currentPendingChanges = new Map(pendingChanges);
+    
+    try {
+      // Prepare changes array for server action
+      const changes = Array.from(pendingChanges.values()).map(asset => ({
+        assetId: asset.id,
+        newDateTime: asset.asset_scheduled_at!,
+      }));
+
+      // Optimistic update - apply changes immediately
+      if (onRefresh) {
+        // Clear pending changes optimistically
+        setPendingChanges(new Map());
+        setHasUnsavedChanges(false);
+      }
+
+      // Save to server
+      const result = await saveBatchScheduleChanges({
+        changes,
+        contentId: content.id,
+      });
+
+      if (result.success) {
+        if (result.warning) {
+          // Partial success
+          toast.warning(result.warning);
+        } else {
+          // Full success
+          toast.success(`Scheduled ${result.scheduled} change${result.scheduled !== 1 ? 's' : ''} successfully!`);
+        }
+        
+        // Refresh data from server to ensure consistency
+        if (onRefresh) {
+          await onRefresh();
+        }
+      } else {
+        // All failed - rollback optimistic updates
+        setPendingChanges(currentPendingChanges);
+        setHasUnsavedChanges(true);
+        toast.error(result.error || 'Failed to save changes');
+      }
+    } catch (error) {
+      // Network or unexpected error - rollback optimistic updates
+      console.error('Error saving changes:', error);
+      setPendingChanges(currentPendingChanges);
+      setHasUnsavedChanges(true);
+      toast.error('An error occurred while saving changes');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -667,6 +792,31 @@ export default function ContentAssetsManager({
           </TooltipProvider>
         </CardContent>
       </Card>
+
+      {/* FEATURE: Batch Scheduling - Schedule & Reset Buttons */}
+      {hasUnsavedChanges && (
+        <div className="flex justify-end gap-2 mt-4">
+          <Button
+            onClick={handleResetChanges}
+            variant="outline"
+            size="sm"
+            disabled={isSaving}
+          >
+            Reset Changes
+          </Button>
+          <Button
+            onClick={handleScheduleChanges}
+            disabled={pendingChanges.size === 0 || isSaving}
+            size="sm"
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            {isSaving 
+              ? 'Scheduling...' 
+              : `Schedule (${pendingChanges.size} change${pendingChanges.size !== 1 ? 's' : ''})`
+            }
+          </Button>
+        </div>
+      )}
     </div>
   );
 

@@ -465,4 +465,89 @@ export async function resetContentAssetSchedules({
 
   revalidatePath(`/content/${contentId}`);
   return { success: true };
+}
+
+// FEATURE: Batch Scheduling - Save multiple pending changes at once
+export async function saveBatchScheduleChanges({
+  changes,
+  contentId,
+}: {
+  changes: Array<{ assetId: string; newDateTime: string }>;
+  contentId: string;
+}) {
+  const supabase = await createClient();
+
+  if (changes.length === 0) {
+    return { success: false, error: 'No changes to save.' };
+  }
+
+  const results = [];
+  let successCount = 0;
+  let hasErrors = false;
+  const errors: Array<{ assetId: string; error: string }> = [];
+
+  // Process each change individually for granular error handling
+  for (const change of changes) {
+    try {
+      const { data, error } = await supabase
+        .from('content_assets')
+        .update({ asset_scheduled_at: change.newDateTime })
+        .eq('id', change.assetId)
+        .select('content_id')
+        .single();
+
+      if (error) {
+        console.error('Error updating asset schedule:', change.assetId, error);
+        hasErrors = true;
+        errors.push({ 
+          assetId: change.assetId, 
+          error: error.message 
+        });
+        results.push({ assetId: change.assetId, success: false, error: error.message });
+      } else {
+        successCount++;
+        results.push({ assetId: change.assetId, success: true });
+      }
+    } catch (error) {
+      console.error('Unexpected error updating asset:', change.assetId, error);
+      hasErrors = true;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      errors.push({ 
+        assetId: change.assetId, 
+        error: errorMessage 
+      });
+      results.push({ assetId: change.assetId, success: false, error: errorMessage });
+    }
+  }
+
+  // Revalidate the page regardless of errors (for successful updates)
+  if (successCount > 0) {
+    revalidatePath(`/content/${contentId}`);
+  }
+
+  if (hasErrors && successCount === 0) {
+    // All updates failed
+    return { 
+      success: false, 
+      error: `Failed to update all ${changes.length} assets.`,
+      results,
+      errors
+    };
+  } else if (hasErrors) {
+    // Partial success
+    return { 
+      success: true, 
+      scheduled: successCount,
+      warning: `${successCount} of ${changes.length} assets updated successfully. ${errors.length} failed.`,
+      results,
+      errors
+    };
+  } else {
+    // All successful
+    return { 
+      success: true, 
+      scheduled: successCount,
+      results
+    };
+  }
 } 
