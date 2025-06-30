@@ -277,6 +277,90 @@ export async function updateContentAsset(
   return { success: true };
 }
 
+export async function toggleAssetApproval({
+  assetId,
+  approved,
+}: {
+  assetId: string;
+  approved: boolean;
+}) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'You must be logged in to update approval status.' };
+  }
+
+  const { data, error } = await supabase
+    .from('content_assets')
+    .update({ approved })
+    .eq('id', assetId)
+    .select('content_id')
+    .single();
+
+  if (error) {
+    console.error('Error updating asset approval:', error);
+    return {
+      success: false,
+      error: 'Failed to update approval status. Please try again.',
+    };
+  }
+
+  // Revalidate the content detail page
+  if (data?.content_id) {
+    revalidatePath(`/content/${data.content_id}`);
+  }
+
+  return { success: true, error: null };
+}
+
+export async function bulkApproveAssets({
+  assetIds,
+  approved,
+}: {
+  assetIds: string[];
+  approved: boolean;
+}) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'You must be logged in to update approval status.' };
+  }
+
+  const { data, error } = await supabase
+    .from('content_assets')
+    .update({ approved })
+    .in('id', assetIds)
+    .select('content_id');
+
+  if (error) {
+    console.error('Error bulk updating asset approvals:', error);
+    return {
+      success: false,
+      error: 'Failed to update approval statuses. Please try again.',
+    };
+  }
+
+  // Revalidate content detail pages for all affected content
+  const contentIds = [...new Set(data?.map(item => item.content_id).filter(Boolean))];
+  contentIds.forEach(contentId => {
+    revalidatePath(`/content/${contentId}`);
+  });
+
+  return { 
+    success: true, 
+    error: null,
+    updatedCount: assetIds.length 
+  };
+}
+
 export async function scheduleContentAssets({
   contentId,
   startDate,
@@ -548,6 +632,238 @@ export async function saveBatchScheduleChanges({
       success: true, 
       scheduled: successCount,
       results
+    };
+  }
+}
+
+export async function deleteContent({
+  contentId,
+  businessId,
+}: {
+  contentId: string;
+  businessId: string;
+}) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'You must be logged in to delete content.' };
+  }
+
+  try {
+    // Step 1: Delete files from storage buckets
+    const filePatterns = [`${contentId}_`, `${businessId}_${contentId}_`];
+    
+    // Delete images
+    const { data: imageFiles } = await supabase.storage
+      .from('images')
+      .list('', { search: contentId });
+    
+    if (imageFiles && imageFiles.length > 0) {
+      const imagePaths = imageFiles
+        .filter(file => filePatterns.some(pattern => file.name.includes(pattern)))
+        .map(file => file.name);
+      
+      if (imagePaths.length > 0) {
+        await supabase.storage.from('images').remove(imagePaths);
+      }
+    }
+
+    // Delete videos  
+    const { data: videoFiles } = await supabase.storage
+      .from('videos')
+      .list('', { search: contentId });
+    
+    if (videoFiles && videoFiles.length > 0) {
+      const videoPaths = videoFiles
+        .filter(file => filePatterns.some(pattern => file.name.includes(pattern)))
+        .map(file => file.name);
+      
+      if (videoPaths.length > 0) {
+        await supabase.storage.from('videos').remove(videoPaths);
+      }
+    }
+
+    // Delete audio files
+    const { data: audioFiles } = await supabase.storage
+      .from('audio')
+      .list('', { search: contentId });
+    
+    if (audioFiles && audioFiles.length > 0) {
+      const audioPaths = audioFiles
+        .filter(file => filePatterns.some(pattern => file.name.includes(pattern)))
+        .map(file => file.name);
+      
+      if (audioPaths.length > 0) {
+        await supabase.storage.from('audio').remove(audioPaths);
+      }
+    }
+
+    // Step 2: Delete content assets records
+    const { error: assetsError } = await supabase
+      .from('content_assets')
+      .delete()
+      .eq('content_id', contentId);
+
+    if (assetsError) {
+      console.error('Error deleting content assets:', assetsError);
+      return {
+        success: false,
+        error: 'Failed to delete content assets. Please try again.',
+      };
+    }
+
+    // Step 3: Delete content record
+    const { error: contentError } = await supabase
+      .from('content')
+      .delete()
+      .eq('id', contentId);
+
+    if (contentError) {
+      console.error('Error deleting content:', contentError);
+      return {
+        success: false,
+        error: 'Failed to delete content. Please try again.',
+      };
+    }
+
+    // Revalidate all content pages
+    revalidatePath('/content/drafts');
+    revalidatePath('/content/scheduled');
+    revalidatePath('/content/partially-published');
+    revalidatePath('/content/completed');
+    
+    return { success: true, error: null };
+
+  } catch (error) {
+    console.error('Error deleting content:', error);
+    return {
+      success: false,
+      error: 'Failed to delete content. Please try again.',
+    };
+  }
+}
+
+export async function retryContentProcessing({
+  contentId,
+}: {
+  contentId: string;
+}) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'You must be logged in to retry content.' };
+  }
+
+  try {
+    // Get the content record first to prepare for retry
+    const { data: content, error: fetchError } = await supabase
+      .from('content')
+      .select(`
+        *,
+        businesses(*)
+      `)
+      .eq('id', contentId)
+      .single();
+
+    if (fetchError || !content) {
+      console.error('Error fetching content for retry:', fetchError);
+      return {
+        success: false,
+        error: 'Content not found.',
+      };
+    }
+
+    // Reset content generation status to generating
+    const { error: statusError } = await supabase
+      .from('content')
+      .update({ 
+        content_generation_status: 'generating',
+        error_message: null 
+      })
+      .eq('id', contentId);
+
+    if (statusError) {
+      console.error('Error updating content status for retry:', statusError);
+      return {
+        success: false,
+        error: 'Failed to reset content status.',
+      };
+    }
+
+    // Trigger N8N workflow again (using existing generateContent logic)
+    const webhookUrl = process.env.N8N_WEBHOOK_URL_CONTENT_CREATION;
+    
+    if (!webhookUrl) {
+      console.error('N8N_WEBHOOK_URL_CONTENT_CREATION is not set.');
+      return {
+        success: false,
+        error: 'Webhook URL is not configured.',
+      };
+    }
+
+    const business = content.businesses;
+    if (!business) {
+      return {
+        success: false,
+        error: 'Business information not found.',
+      };
+    }
+
+    // Prepare payload for N8N (simplified version)
+    const payload = {
+      contentId: content.id,
+      content_title: content.content_title,
+      transcript: content.transcript,
+      research: content.research,
+      video_script: content.video_script,
+      keyword: content.keyword,
+      business_name: business.name,
+      website_url: business.website_url,
+      social_media_profiles: business.social_media_profiles,
+      social_media_integrations: business.social_media_integrations,
+      writing_style_guide: business.writing_style_guide,
+      cta_youtube: business.cta_youtube,
+      cta_email: business.cta_email,
+      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+      callbackSecret: process.env.N8N_CALLBACK_SECRET,
+      environment: process.env.NODE_ENV,
+    };
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to trigger N8N workflow:', response.statusText);
+      return {
+        success: false,
+        error: 'Failed to restart content generation.',
+      };
+    }
+
+    // Revalidate content pages
+    revalidatePath('/content/drafts');
+    revalidatePath(`/content/${contentId}`);
+    
+    return { success: true, error: null };
+
+  } catch (error) {
+    console.error('Error retrying content processing:', error);
+    return {
+      success: false,
+      error: 'Failed to retry content processing. Please try again.',
     };
   }
 } 

@@ -5,14 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
-import ContentAssetsManager from '@/components/shared/content-assets-manager';
+import { EnhancedContentAssetsManager } from '@/components/shared/enhanced-content-assets-manager';
 import { ContentWithBusiness, ContentAsset } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 import EditButton from '@/components/shared/edit-button';
 import ContentEditModal from '@/components/shared/content-edit-modal';
 import { FieldConfig } from '@/types';
-import { updateContentField, updateContentAsset } from '@/app/(app)/content/[id]/actions';
+import { updateContentField, updateContentAsset, toggleAssetApproval } from '@/app/(app)/content/[id]/actions';
+import { toast } from 'sonner';
 
 interface ContentClientPageProps {
   content: ContentWithBusiness;
@@ -28,7 +29,6 @@ export default function ContentClientPage({
   const [permissionError, setPermissionError] = useState(false);
   const [isContentGenerating, setIsContentGenerating] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [approvedSteps, setApprovedSteps] = useState<Set<string>>(new Set());
   const [activeStep, setActiveStep] = useState('video-script');
   
   // Edit modal state
@@ -107,8 +107,48 @@ export default function ContentClientPage({
     }
   };
 
-  const handleApprove = (stepId: string) => {
-    setApprovedSteps(prev => new Set([...prev, stepId]));
+  // Map step IDs to content asset types
+  const stepToContentType: Record<string, string> = {
+    'blog': 'blog_post',
+    'email': 'email',
+    'youtube': 'youtube_video',
+    'social-long-video': 'social_long_video',
+    'social-short-video': 'social_short_video',
+    'social-quote-card': 'social_quote_card',
+    'social-rant-post': 'social_rant_post',
+    'social-blog-post': 'social_blog_post',
+  };
+
+  // Check if a step is approved based on content assets
+  const isStepApproved = (stepId: string): boolean => {
+    const contentType = stepToContentType[stepId];
+    if (!contentType) {
+      // For steps without content assets (video-script, create-video, schedule)
+      return false;
+    }
+    
+    const asset = contentAssets.find(asset => asset.content_type === contentType);
+    return asset?.approved || false;
+  };
+
+  // Handle approval toggle for a specific asset
+  const handleApprovalToggle = async (contentType: string, approved: boolean) => {
+    const asset = contentAssets.find(asset => asset.content_type === contentType);
+    if (!asset) return;
+
+    try {
+      const result = await toggleAssetApproval({ assetId: asset.id, approved });
+      if (result.success) {
+        // Refresh content assets to get updated approval status
+        await fetchContentAssets();
+        toast.success(approved ? 'Asset approved' : 'Asset unapproved');
+      } else {
+        toast.error(result.error || 'Failed to update approval');
+      }
+    } catch (error) {
+      toast.error('Failed to update approval');
+      console.error('Approval toggle error:', error);
+    }
   };
 
   // Edit handlers
@@ -295,13 +335,13 @@ export default function ContentClientPage({
                 {/* Circle */}
                 <div className="relative z-10">
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                    approvedSteps.has(step.id)
+                    isStepApproved(step.id)
                       ? 'bg-green-600 border-green-600'
                       : activeStep === step.id
                       ? 'bg-white border-blue-600'
                       : 'bg-white border-gray-300'
                   }`}>
-                    {approvedSteps.has(step.id) ? (
+                    {isStepApproved(step.id) ? (
                       <Check className="w-3 h-3 text-white" />
                     ) : activeStep === step.id ? (
                       <div className="w-2 h-2 rounded-full bg-blue-600"></div>
@@ -319,7 +359,7 @@ export default function ContentClientPage({
                   <div className={`text-sm transition-colors ${
                     activeStep === step.id
                       ? 'text-blue-600 font-medium'
-                      : approvedSteps.has(step.id)
+                      : isStepApproved(step.id)
                       ? 'text-green-600 font-medium'
                       : 'text-gray-600 group-hover:text-gray-800'
                   }`}>
@@ -1233,20 +1273,20 @@ export default function ContentClientPage({
               {activeStep === 'schedule' && (
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Schedule Content</h2>
-                  <ContentAssetsManager
+                  <EnhancedContentAssetsManager
                     assets={contentAssets}
                     content={content}
                     isLoading={isLoading}
                     error={error}
                     onRefresh={fetchContentAssets}
-                    onAssetUpdate={(updatedAsset) => {
+                    onAssetUpdate={(updatedAsset: ContentAsset) => {
                       setContentAssets(prev => 
                         prev.map(asset => 
                           asset.id === updatedAsset.id ? updatedAsset : asset
                         )
                       );
                     }}
-                    defaultView="calendar"
+                    defaultView="overview"
                   />
                 </div>
               )}
@@ -1261,13 +1301,32 @@ export default function ContentClientPage({
                   Previous
                 </Button>
 
-                <Button
-                  onClick={() => handleApprove(activeStep)}
-                  disabled={approvedSteps.has(activeStep)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {approvedSteps.has(activeStep) ? 'Approved' : 'Approve'}
-                </Button>
+                {(() => {
+                  const contentType = stepToContentType[activeStep];
+                  const isApproved = isStepApproved(activeStep);
+                  const canToggleApproval = contentType && contentAssets.find(asset => asset.content_type === contentType);
+                  
+                  if (!canToggleApproval) {
+                    return (
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="text-gray-500"
+                      >
+                        No approval needed
+                      </Button>
+                    );
+                  }
+                  
+                  return (
+                    <Button
+                      onClick={() => handleApprovalToggle(contentType, !isApproved)}
+                      className={isApproved ? "bg-gray-600 hover:bg-gray-700" : "bg-green-600 hover:bg-green-700"}
+                    >
+                      {isApproved ? 'Unapprove' : 'Approve'}
+                    </Button>
+                  );
+                })()}
 
                 <Button
                   onClick={goToNext}

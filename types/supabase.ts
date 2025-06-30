@@ -214,12 +214,11 @@ export type Database = {
       }
       content: {
         Row: {
-          audio_duration: number | null
           audio_url: string | null
-          business_id: string
+          business_id: string | null
           content_generation_status: string | null
           content_title: string | null
-          created_at: string
+          created_at: string | null
           error_message: string | null
           heygen_status: string | null
           heygen_url: string | null
@@ -237,12 +236,11 @@ export type Database = {
           video_short_url: string | null
         }
         Insert: {
-          audio_duration?: number | null
           audio_url?: string | null
-          business_id?: string
+          business_id?: string | null
           content_generation_status?: string | null
           content_title?: string | null
-          created_at?: string
+          created_at?: string | null
           error_message?: string | null
           heygen_status?: string | null
           heygen_url?: string | null
@@ -260,12 +258,11 @@ export type Database = {
           video_short_url?: string | null
         }
         Update: {
-          audio_duration?: number | null
           audio_url?: string | null
-          business_id?: string
+          business_id?: string | null
           content_generation_status?: string | null
           content_title?: string | null
-          created_at?: string
+          created_at?: string | null
           error_message?: string | null
           heygen_status?: string | null
           heygen_url?: string | null
@@ -294,6 +291,7 @@ export type Database = {
       }
       content_assets: {
         Row: {
+          approved: boolean | null
           asset_published_at: string | null
           asset_scheduled_at: string | null
           asset_status: string | null
@@ -311,8 +309,10 @@ export type Database = {
           image_prompt: string | null
           image_url: string | null
           name: string | null
+          temporary_image_url: string | null
         }
         Insert: {
+          approved?: boolean | null
           asset_published_at?: string | null
           asset_scheduled_at?: string | null
           asset_status?: string | null
@@ -330,8 +330,10 @@ export type Database = {
           image_prompt?: string | null
           image_url?: string | null
           name?: string | null
+          temporary_image_url?: string | null
         }
         Update: {
+          approved?: boolean | null
           asset_published_at?: string | null
           asset_scheduled_at?: string | null
           asset_status?: string | null
@@ -349,6 +351,7 @@ export type Database = {
           image_prompt?: string | null
           image_url?: string | null
           name?: string | null
+          temporary_image_url?: string | null
         }
         Relationships: [
           {
@@ -660,12 +663,12 @@ export type Database = {
       }
       set_ai_avatar_integration: {
         Args: {
+          p_business_id: string
           p_provider: string
           p_api_key: string
           p_avatar_id?: string
           p_voice_id?: string
           p_config?: Json
-          p_business_id: string
         }
         Returns: string
       }
