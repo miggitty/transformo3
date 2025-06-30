@@ -352,7 +352,7 @@ export default function ContentClientPage({
                   <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative group">
                     {content.video_script ? (
                       <div 
-                        className="text-gray-900 consistent-text"
+                        className="content-display text-gray-900"
                         dangerouslySetInnerHTML={{ __html: content.video_script }}
                       />
                     ) : (
@@ -445,7 +445,7 @@ export default function ContentClientPage({
                         {blogAsset.content && (
                           <div className="relative group mb-8">
                             <div 
-                              className="prose prose-lg max-w-none text-gray-700 consistent-text"
+                              className="content-display text-gray-700"
                               dangerouslySetInnerHTML={{ __html: blogAsset.content }}
                             />
                             <EditButton
@@ -1201,7 +1201,7 @@ export default function ContentClientPage({
                         <div className="px-6 py-6 relative group">
                           {emailAsset.content && (
                             <div 
-                              className="text-gray-900 whitespace-pre-wrap consistent-text"
+                              className="content-display text-gray-900"
                               dangerouslySetInnerHTML={{ __html: emailAsset.content }}
                             />
                           )}
