@@ -3,14 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
-import { RichTextEditor } from '@/components/shared/rich-text-editor';
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
 import ContentAssetsManager from '@/components/shared/content-assets-manager';
 import { ContentWithBusiness, ContentAsset } from '@/types';
 import { createClient } from '@/utils/supabase/client';
-import { toast } from 'sonner';
 import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
+import EditButton from '@/components/shared/edit-button';
+import ContentEditModal from '@/components/shared/content-edit-modal';
+import { FieldConfig } from '@/types';
+import { updateContentField, updateContentAsset } from '@/app/(app)/content/[id]/actions';
 
 interface ContentClientPageProps {
   content: ContentWithBusiness;
@@ -28,6 +30,10 @@ export default function ContentClientPage({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [approvedSteps, setApprovedSteps] = useState<Set<string>>(new Set());
   const [activeStep, setActiveStep] = useState('video-script');
+  
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentEditField, setCurrentEditField] = useState<FieldConfig | null>(null);
   
   const supabase = createClient();
 
@@ -105,6 +111,81 @@ export default function ContentClientPage({
     setApprovedSteps(prev => new Set([...prev, stepId]));
   };
 
+  // Edit handlers
+  const handleEdit = (fieldConfig: FieldConfig) => {
+    setCurrentEditField(fieldConfig);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (value: string) => {
+    if (!currentEditField) return;
+
+    try {
+      // Determine if this is a content field or content asset field
+      if (currentEditField.fieldKey === 'content_title' || 
+          currentEditField.fieldKey === 'video_script' ||
+          currentEditField.fieldKey === 'transcript' ||
+          currentEditField.fieldKey === 'research') {
+        // Content table field
+        const result = await updateContentField({
+          contentId: content.id,
+          fieldName: currentEditField.fieldKey as 'content_title' | 'video_script' | 'transcript' | 'research',
+          newValue: value,
+        });
+        
+        if (result.success) {
+          setContent(prev => ({
+            ...prev,
+            [currentEditField.fieldKey]: value,
+          }));
+        } else {
+          throw new Error(result.error || 'Failed to update field');
+        }
+      } else {
+        // Content asset field - use the assetType from the field config
+        const assetType = currentEditField.assetType;
+
+        if (!assetType) {
+          throw new Error('Asset type not specified in field configuration');
+        }
+
+        const asset = contentAssets.find(a => a.content_type === assetType);
+        if (!asset) {
+          throw new Error('Content asset not found');
+        }
+
+        // Map field key to actual database column
+        const fieldMap: Record<string, string> = {
+          'headline': 'headline',
+          'content': 'content',
+          'blog_meta_description': 'blog_meta_description',
+          'blog_url': 'blog_url',
+        };
+
+        const dbField = fieldMap[currentEditField.fieldKey] || currentEditField.fieldKey;
+        
+        const result = await updateContentAsset(asset.id, {
+          [dbField]: value,
+        });
+        
+        if (result.success) {
+          setContentAssets(prev => 
+            prev.map(a => 
+              a.id === asset.id 
+                ? { ...a, [dbField]: value }
+                : a
+            )
+          );
+        } else {
+          throw new Error(result.error || 'Failed to update asset');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving edit:', error);
+      throw error; // Re-throw to let the modal handle the error display
+    }
+  };
+
   useEffect(() => {
     const checkPermissionsAndFetch = async () => {
       if (!supabase) {
@@ -162,11 +243,6 @@ export default function ContentClientPage({
     checkPermissionsAndFetch();
   }, []);
 
-  // Helper function to get content asset by type
-  const getAssetByType = (type: string) => {
-    return contentAssets.find(asset => asset.content_type === type);
-  };
-
   return (
     <div className="min-h-screen bg-white px-4 md:px-6 lg:px-8 py-8">
       <style jsx>{`
@@ -181,9 +257,22 @@ export default function ContentClientPage({
       `}</style>
       {/* Page Title */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          {content.content_title}
-        </h1>
+        <div className="relative group">
+          <h1 className="text-3xl font-bold text-gray-900">
+            {content.content_title}
+          </h1>
+          <EditButton
+            fieldConfig={{
+              label: 'Page Title',
+              value: content.content_title || '',
+              fieldKey: 'content_title',
+              inputType: 'text',
+              placeholder: 'Enter page title...',
+            }}
+            onEdit={handleEdit}
+            disabled={isContentGenerating}
+          />
+        </div>
         {isContentGenerating && (
           <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mt-2">
             <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-800"></div>
@@ -260,7 +349,7 @@ export default function ContentClientPage({
               {activeStep === 'video-script' && (
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Video Script</h2>
-                  <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                  <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative group">
                     {content.video_script ? (
                       <div 
                         className="text-gray-900 consistent-text"
@@ -269,6 +358,17 @@ export default function ContentClientPage({
                     ) : (
                       <p className="text-gray-500">No video script has been generated yet.</p>
                     )}
+                    <EditButton
+                      fieldConfig={{
+                        label: 'Video Script',
+                        value: content.video_script || '',
+                        fieldKey: 'video_script',
+                        inputType: 'html',
+                        placeholder: 'Enter video script...',
+                      }}
+                      onEdit={handleEdit}
+                      disabled={isContentGenerating}
+                    />
                   </div>
                 </div>
               )}
@@ -322,32 +422,84 @@ export default function ContentClientPage({
                         
                         {/* Blog Post Title */}
                         {blogAsset.headline && (
-                          <h1 className="text-3xl font-bold text-gray-900 mb-6">
-                            {blogAsset.headline}
-                          </h1>
+                          <div className="relative group mb-6">
+                            <h1 className="text-3xl font-bold text-gray-900">
+                              {blogAsset.headline}
+                            </h1>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Blog Title',
+                                value: blogAsset.headline || '',
+                                fieldKey: 'headline',
+                                inputType: 'text',
+                                placeholder: 'Enter blog title...',
+                                assetType: 'blog_post',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
+                          </div>
                         )}
                         
                         {/* Blog Post Content */}
                         {blogAsset.content && (
-                          <div 
-                            className="prose prose-lg max-w-none mb-8 text-gray-700 consistent-text"
-                            dangerouslySetInnerHTML={{ __html: blogAsset.content }}
-                          />
+                          <div className="relative group mb-8">
+                            <div 
+                              className="prose prose-lg max-w-none text-gray-700 consistent-text"
+                              dangerouslySetInnerHTML={{ __html: blogAsset.content }}
+                            />
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Blog Content',
+                                value: blogAsset.content || '',
+                                fieldKey: 'content',
+                                inputType: 'html',
+                                placeholder: 'Enter blog content...',
+                                assetType: 'blog_post',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
+                          </div>
                         )}
                         
                         {/* Meta Description Section */}
                         {blogAsset.blog_meta_description && (
-                          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                          <div className="mb-6 p-4 bg-gray-50 rounded-lg relative group">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Meta Description</h3>
                             <p className="text-gray-700">{blogAsset.blog_meta_description}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Meta Description',
+                                value: blogAsset.blog_meta_description || '',
+                                fieldKey: 'blog_meta_description',
+                                inputType: 'textarea',
+                                placeholder: 'Enter meta description...',
+                                assetType: 'blog_post',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
                         
                         {/* URL Section */}
                         {blogAsset.blog_url && (
-                          <div className="p-4 bg-gray-50 rounded-lg">
+                          <div className="p-4 bg-gray-50 rounded-lg relative group">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">URL</h3>
                             <p className="text-blue-600 font-mono">{blogAsset.blog_url}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Blog URL',
+                                value: blogAsset.blog_url || '',
+                                fieldKey: 'blog_url',
+                                inputType: 'text',
+                                placeholder: 'Enter blog URL...',
+                                assetType: 'blog_post',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
                       </div>
@@ -390,8 +542,20 @@ export default function ContentClientPage({
 
                         {/* Post Content */}
                         {socialAsset.content && (
-                          <div className="px-4 pb-3">
+                          <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap" style={{ fontSize: '15px', lineHeight: '24px' }}>{socialAsset.content}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Social Long Video Content',
+                                value: socialAsset.content || '',
+                                fieldKey: 'content',
+                                inputType: 'textarea',
+                                placeholder: 'Enter social media content...',
+                                assetType: 'social_long_video',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
 
@@ -493,8 +657,20 @@ export default function ContentClientPage({
 
                         {/* Post Content */}
                         {socialAsset.content && (
-                          <div className="px-4 pb-3">
+                          <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap" style={{ fontSize: '15px', lineHeight: '24px' }}>{socialAsset.content}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Social Short Video Content',
+                                value: socialAsset.content || '',
+                                fieldKey: 'content',
+                                inputType: 'textarea',
+                                placeholder: 'Enter social media content...',
+                                assetType: 'social_short_video',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
 
@@ -503,7 +679,7 @@ export default function ContentClientPage({
                           <div className="relative">
                             {content.video_short_url ? (
                               <video 
-                                src={content.video_short_url as string}
+                                src={content.video_short_url!}
                                 className="w-full object-cover"
                                 controls
                                 poster={socialAsset.image_url ?? undefined}
@@ -596,8 +772,20 @@ export default function ContentClientPage({
 
                         {/* Post Content */}
                         {socialAsset.content && (
-                          <div className="px-4 pb-3">
+                          <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Social Rant Post Content',
+                                value: socialAsset.content || '',
+                                fieldKey: 'content',
+                                inputType: 'textarea',
+                                placeholder: 'Enter social media content...',
+                                assetType: 'social_rant_post',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
 
@@ -680,8 +868,20 @@ export default function ContentClientPage({
 
                         {/* Post Content */}
                         {socialAsset.content && (
-                          <div className="px-4 pb-3">
+                          <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Social Blog Post Content',
+                                value: socialAsset.content || '',
+                                fieldKey: 'content',
+                                inputType: 'textarea',
+                                placeholder: 'Enter social media content...',
+                                assetType: 'social_blog_post',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
 
@@ -764,8 +964,20 @@ export default function ContentClientPage({
 
                         {/* Post Content */}
                         {socialAsset.content && (
-                          <div className="px-4 pb-3">
+                          <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'Social Quote Card Content',
+                                value: socialAsset.content || '',
+                                fieldKey: 'content',
+                                inputType: 'textarea',
+                                placeholder: 'Enter quote card content...',
+                                assetType: 'social_quote_card',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
 
@@ -855,9 +1067,23 @@ export default function ContentClientPage({
                         </div>
 
                         {/* Video Title */}
-                        <h1 className="text-xl font-semibold text-gray-900 mb-3 leading-tight">
-                          {youtubeAsset.headline || 'YouTube Video Title'}
-                        </h1>
+                        <div className="relative group mb-3">
+                          <h1 className="text-xl font-semibold text-gray-900 leading-tight">
+                            {youtubeAsset.headline || 'YouTube Video Title'}
+                          </h1>
+                          <EditButton
+                            fieldConfig={{
+                              label: 'YouTube Title',
+                              value: youtubeAsset.headline || '',
+                              fieldKey: 'headline',
+                              inputType: 'text',
+                              placeholder: 'Enter YouTube title...',
+                              assetType: 'youtube_video',
+                            }}
+                            onEdit={handleEdit}
+                            disabled={isContentGenerating}
+                          />
+                        </div>
 
                         {/* Simplified Channel Info - Skeleton Style */}
                         <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
@@ -884,10 +1110,22 @@ export default function ContentClientPage({
 
                         {/* Video Description */}
                         {youtubeAsset.content && (
-                          <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="bg-gray-50 rounded-lg p-4 relative group">
                             <div className="whitespace-pre-wrap text-gray-900 consistent-text">
                               {youtubeAsset.content}
                             </div>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'YouTube Description',
+                                value: youtubeAsset.content || '',
+                                fieldKey: 'content',
+                                inputType: 'textarea',
+                                placeholder: 'Enter YouTube description...',
+                                assetType: 'youtube_video',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
                         )}
                       </div>
@@ -938,21 +1176,47 @@ export default function ContentClientPage({
                             </div>
                             <div className="flex items-center">
                               <span className="text-sm font-medium text-gray-600 w-16">Subject:</span>
-                              <span className="text-sm font-semibold text-gray-900">
-                                {emailAsset.headline || 'Email Subject'}
-                              </span>
+                              <div className="relative group flex-1">
+                                <span className="text-sm font-semibold text-gray-900">
+                                  {emailAsset.headline || 'Email Subject'}
+                                </span>
+                                <EditButton
+                                  fieldConfig={{
+                                    label: 'Email Subject',
+                                    value: emailAsset.headline || '',
+                                    fieldKey: 'headline',
+                                    inputType: 'text',
+                                    placeholder: 'Enter email subject...',
+                                    assetType: 'email',
+                                  }}
+                                  onEdit={handleEdit}
+                                  disabled={isContentGenerating}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Email Body */}
-                        <div className="px-6 py-6">
+                        <div className="px-6 py-6 relative group">
                           {emailAsset.content && (
                             <div 
                               className="text-gray-900 whitespace-pre-wrap consistent-text"
                               dangerouslySetInnerHTML={{ __html: emailAsset.content }}
                             />
                           )}
+                          <EditButton
+                            fieldConfig={{
+                              label: 'Email Content',
+                              value: emailAsset.content || '',
+                              fieldKey: 'content',
+                              inputType: 'html',
+                              placeholder: 'Enter email content...',
+                              assetType: 'email',
+                            }}
+                            onEdit={handleEdit}
+                            disabled={isContentGenerating}
+                          />
                         </div>
 
                         {/* Email Footer */}
@@ -1020,6 +1284,17 @@ export default function ContentClientPage({
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {currentEditField && (
+        <ContentEditModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          fieldConfig={currentEditField}
+          onSave={handleSaveEdit}
+          isLoading={false}
+        />
+      )}
     </div>
   );
 } 

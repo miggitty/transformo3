@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 // Define a schema for the updatable fields
-const updatableFields = z.enum(['transcript', 'research', 'video_script']);
+const updatableFields = z.enum(['transcript', 'research', 'video_script', 'content_title']);
 const videoFields = z.enum(['video_long_url', 'video_short_url']);
 
 export async function updateContentField({
