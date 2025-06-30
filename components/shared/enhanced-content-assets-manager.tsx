@@ -4,9 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ContentAsset, ContentWithBusiness } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -30,29 +27,9 @@ import {
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { 
-  Calendar,
-  Users,
-  CheckCircle,
-  Clock,
-  MoreVertical,
-  Eye,
-  Edit,
-  RefreshCw
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { EnhancedAssetCard } from './enhanced-asset-card';
-import { ContentStatusFlow } from './content-status-flow';
+import { Calendar, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
-  toggleAssetApproval, 
-  bulkApproveAssets,
   scheduleContentAssets,
   updateAssetSchedule,
   getBusinessAssets,
@@ -69,7 +46,6 @@ interface EnhancedContentAssetsManagerProps {
   error: string | null;
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
-  defaultView?: 'overview' | 'list' | 'calendar';
 }
 
 interface CalendarEvent {
@@ -105,13 +81,8 @@ export function EnhancedContentAssetsManager({
   error,
   onRefresh,
   onAssetUpdate,
-  defaultView = 'overview',
 }: EnhancedContentAssetsManagerProps) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState(defaultView);
-  const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   
   // Calendar-related state
   const [businessAssets, setBusinessAssets] = useState<BusinessAsset[]>([]);
@@ -131,9 +102,12 @@ export function EnhancedContentAssetsManager({
 
   // Batch scheduling state
   const [pendingChanges, setPendingChanges] = useState<Map<string, ContentAsset>>(new Map());
-  const [originalAssets, setOriginalAssets] = useState<Map<string, ContentAsset>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Approval validation state
+  const [allAssetsApproved, setAllAssetsApproved] = useState(false);
+  const [approvalProgress, setApprovalProgress] = useState({ approved: 0, total: 0 });
 
   // Utility function to convert field names to user-friendly format
   const formatContentType = (contentType: string): string => {
@@ -153,16 +127,19 @@ export function EnhancedContentAssetsManager({
     ).join(' ');
   };
 
-  // Initialize original assets map when assets change
-  useEffect(() => {
-    const originalMap = new Map();
-    assets.forEach(asset => {
-      if (asset.asset_scheduled_at) {
-        originalMap.set(asset.id, { ...asset });
-      }
-    });
-    setOriginalAssets(originalMap);
+  // Check approval status using stepper menu logic
+  const checkAllAssetsApproved = useCallback(() => {
+    const approvedCount = assets.filter(asset => asset.approved).length;
+    const totalCount = assets.length;
+    
+    setApprovalProgress({ approved: approvedCount, total: totalCount });
+    setAllAssetsApproved(approvedCount === totalCount && totalCount > 0);
   }, [assets]);
+
+  // Update approval status when assets change
+  useEffect(() => {
+    checkAllAssetsApproved();
+  }, [checkAllAssetsApproved]);
 
   // Asset filtering - merge current assets with pending changes
   const getEffectiveAssets = () => {
@@ -173,196 +150,31 @@ export function EnhancedContentAssetsManager({
   };
 
   const effectiveAssets = getEffectiveAssets();
-  const pendingApprovalAssets = effectiveAssets.filter(asset => !asset.approved);
   const approvedAssets = effectiveAssets.filter(asset => asset.approved);
   const scheduledAssets = effectiveAssets.filter(asset => asset.asset_scheduled_at);
   const unscheduledAssets = effectiveAssets.filter(asset => asset.approved && !asset.asset_scheduled_at);
+  const approvedUnscheduledCount = unscheduledAssets.length;
 
-  // Handle individual asset approval toggle
-  const handleApprovalToggle = async (assetId: string, approved: boolean) => {
-    setIsUpdating(true);
-    try {
-      const result = await toggleAssetApproval({ assetId, approved });
-      if (result.success) {
-        // Update the asset in local state
-        const updatedAsset = assets.find(a => a.id === assetId);
-        if (updatedAsset && onAssetUpdate) {
-          onAssetUpdate({ ...updatedAsset, approved });
-        }
-        await onRefresh?.();
-      } else {
-        throw new Error(result.error || 'Failed to update approval');
-      }
-    } catch (error) {
-      console.error('Approval toggle error:', error);
-      throw error; // Let the component handle the error display
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // Handle bulk approval
-  const handleBulkApprove = async () => {
-    const assetsToApprove = selectedAssets.size > 0 
-      ? Array.from(selectedAssets)
-      : pendingApprovalAssets.map(asset => asset.id);
-
-    if (assetsToApprove.length === 0) {
-      toast.info('No assets to approve');
-      return;
-    }
-
-    setBulkActionLoading(true);
-    try {
-      const result = await bulkApproveAssets({
-        assetIds: assetsToApprove,
-        approved: true,
-      });
-
-      if (result.success) {
-        toast.success(`Approved ${result.updatedCount} assets`);
-        setSelectedAssets(new Set());
-        await onRefresh?.();
-      } else {
-        toast.error(result.error || 'Failed to approve assets');
-      }
-    } catch (error) {
-      toast.error('Failed to approve assets');
-      console.error('Bulk approve error:', error);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  };
-
-  // Handle bulk unapprove
-  const handleBulkUnapprove = async () => {
-    const assetsToUnapprove = Array.from(selectedAssets);
-
-    if (assetsToUnapprove.length === 0) {
-      toast.info('No assets selected');
-      return;
-    }
-
-    setBulkActionLoading(true);
-    try {
-      const result = await bulkApproveAssets({
-        assetIds: assetsToUnapprove,
-        approved: false,
-      });
-
-      if (result.success) {
-        toast.success(`Removed approval from ${result.updatedCount} assets`);
-        setSelectedAssets(new Set());
-        await onRefresh?.();
-      } else {
-        toast.error(result.error || 'Failed to update assets');
-      }
-    } catch (error) {
-      toast.error('Failed to update assets');
-      console.error('Bulk unapprove error:', error);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  };
-
-  // Handle schedule all
-  const handleScheduleAll = async () => {
-    if (unscheduledAssets.length === 0) {
-      toast.info('No approved assets to schedule');
-      return;
-    }
-
-    setBulkActionLoading(true);
-    try {
-      // Use tomorrow as default start date
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const result = await scheduleContentAssets({
-        contentId: content.id,
-        startDate: tomorrow.toISOString(),
-        businessTimezone: content.businesses?.timezone || 'UTC',
-      });
-
-      if (result.success) {
-        toast.success(`Scheduled ${result.scheduled} assets`);
-        await onRefresh?.();
-      } else {
-        toast.error(result.error || 'Failed to schedule assets');
-      }
-    } catch (error) {
-      toast.error('Failed to schedule assets');
-      console.error('Schedule all error:', error);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  };
-
-  // Handle asset selection
-  const handleAssetSelection = (assetId: string, checked: boolean) => {
-    const newSelection = new Set(selectedAssets);
-    if (checked) {
-      newSelection.add(assetId);
-    } else {
-      newSelection.delete(assetId);
-    }
-    setSelectedAssets(newSelection);
-  };
-
-  // Handle select all
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedAssets(new Set(assets.map(asset => asset.id)));
-    } else {
-      setSelectedAssets(new Set());
-    }
-  };
-
-  // Asset action handlers
-  const handleAssetView = (assetId: string) => {
-    // TODO: Implement asset detail view
-    console.log('View asset:', assetId);
-  };
-
-  const handleAssetEdit = (assetId: string) => {
-    // TODO: Implement asset edit functionality
-    console.log('Edit asset:', assetId);
-  };
-
-  const handleAssetSchedule = (assetId: string) => {
-    // TODO: Implement individual asset scheduling
-    console.log('Schedule asset:', assetId);
-  };
-
-  // Load business assets for calendar
+  // Load business assets for calendar context
   const loadBusinessAssets = useCallback(async () => {
     if (!content.business_id) return;
-
+    
     setIsLoadingBusinessAssets(true);
     try {
-      // Get date range for the calendar (e.g., 3 months before and after today)
+      // Get date range for the calendar (3 months before and after today)
       const now = new Date();
       const startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString();
       const endDate = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString();
 
-      const params: {
-        businessId: string;
-        startDate: string;
-        endDate: string;
-        excludeContentId?: string;
-      } = {
+      const result = await getBusinessAssets({ 
         businessId: content.business_id,
         startDate,
         endDate,
-      };
+        excludeContentId: content.id 
+      });
       
-      if (content.id) {
-        params.excludeContentId = content.id as string;
-      }
-
-      const result = await getBusinessAssets(params);
-      if (result.success) {
-        setBusinessAssets(result.data || []);
+      if (result.success && result.data) {
+        setBusinessAssets(result.data);
       }
     } catch (error) {
       console.error('Failed to load business assets:', error);
@@ -371,12 +183,10 @@ export function EnhancedContentAssetsManager({
     }
   }, [content.business_id, content.id]);
 
-  // Load business assets when calendar tab is active
+  // Load business assets on mount and when view changes
   useEffect(() => {
-    if (activeView === 'calendar') {
-      loadBusinessAssets();
-    }
-  }, [activeView, loadBusinessAssets]);
+    loadBusinessAssets();
+  }, [loadBusinessAssets]);
 
   // Create calendar events from assets (using effective assets with pending changes)
   const calendarEvents = useMemo(() => {
@@ -407,7 +217,7 @@ export function EnhancedContentAssetsManager({
         });
       });
 
-    // Add other business assets
+    // Add other business assets (very faint gray)
     businessAssets
       .filter(asset => asset.asset_scheduled_at)
       .forEach(asset => {
@@ -417,12 +227,12 @@ export function EnhancedContentAssetsManager({
           id: `business-${asset.id}`,
           title: `${formatContentType(asset.content_type || 'Content')}`,
           date: format(scheduledDate, 'yyyy-MM-dd'),
-          backgroundColor: 'rgba(107, 114, 128, 0.3)', // Very faint gray
-          borderColor: 'rgba(75, 85, 99, 0.4)',
-          textColor: 'rgba(107, 114, 128, 0.8)',
+          backgroundColor: 'rgba(107, 114, 128, 0.15)', // Very faint gray
+          borderColor: 'rgba(75, 85, 99, 0.2)',
+          textColor: 'rgba(107, 114, 128, 0.6)',
           extendedProps: {
             assetType: asset.content_type || 'unknown',
-            contentTitle: asset.content?.content_title ?? undefined,
+            contentTitle: asset.content?.content_title !== null ? asset.content?.content_title : undefined,
             isOwned: false,
             contentId: asset.content?.id,
             assetId: asset.id,
@@ -433,6 +243,15 @@ export function EnhancedContentAssetsManager({
     return events;
   }, [effectiveAssets, businessAssets, content, pendingChanges]);
 
+  // Validate scheduling is allowed
+  const validateSchedulingAllowed = () => {
+    if (!allAssetsApproved) {
+      toast.error('All assets must be approved before scheduling');
+      return false;
+    }
+    return true;
+  };
+
   // Handle date drops on calendar (batch scheduling - don't save immediately)
   const handleDateDrop = async (info: any) => {
     const { event } = info;
@@ -442,6 +261,12 @@ export function EnhancedContentAssetsManager({
     if (!isOwned || !assetId) {
       info.revert();
       toast.error('You can only reschedule assets from this content');
+      return;
+    }
+
+    // Block scheduling if not all assets approved
+    if (!validateSchedulingAllowed()) {
+      info.revert();
       return;
     }
 
@@ -472,8 +297,12 @@ export function EnhancedContentAssetsManager({
     toast.success('Change staged - click "Schedule" to save');
   };
 
-  // Handle calendar date select
+  // Handle calendar date select (for unscheduled assets)
   const handleDateSelect = (selectInfo: any) => {
+    if (!validateSchedulingAllowed()) {
+      return;
+    }
+
     const unscheduledAsset = assets.find(asset => asset.approved && !asset.asset_scheduled_at);
     
     if (!unscheduledAsset) {
@@ -484,31 +313,26 @@ export function EnhancedContentAssetsManager({
     const businessTimezone = content.businesses?.timezone || 'UTC';
     const selectedDate = fromZonedTime(selectInfo.start, businessTimezone);
 
-    scheduleAssetToDate(unscheduledAsset.id, selectedDate);
-  };
-
-  // Schedule asset to specific date
-  const scheduleAssetToDate = async (assetId: string, date: Date) => {
-    try {
-      const result = await updateAssetSchedule({
-        assetId,
-        newDateTime: date.toISOString(),
-      });
-
-      if (result.success) {
-        toast.success('Asset scheduled successfully');
-        await onRefresh?.();
-        loadBusinessAssets();
-      } else {
-        toast.error(result.error || 'Failed to schedule asset');
-      }
-    } catch (error) {
-      toast.error('Failed to schedule asset');
-      console.error('Schedule error:', error);
+    // Past date validation
+    const today = toZonedTime(new Date(), businessTimezone);
+    if (selectedDate < today) {
+      toast.error('Cannot schedule content to a date in the past');
+      return;
     }
+
+    // Store as pending change
+    const updatedAsset = { 
+      ...unscheduledAsset, 
+      asset_scheduled_at: selectedDate.toISOString() 
+    };
+
+    setPendingChanges(prev => new Map(prev.set(unscheduledAsset.id, updatedAsset)));
+    setHasUnsavedChanges(true);
+    
+    toast.success('Asset scheduled - click "Schedule" to save');
   };
 
-  // Handle event click (for time editing)
+  // Handle event click (for time editing or navigation)
   const handleEventClick = (clickInfo: any) => {
     const { event } = clickInfo;
     const assetId = event.extendedProps.assetId;
@@ -529,7 +353,8 @@ export function EnhancedContentAssetsManager({
       return;
     }
 
-    const asset = assets.find(a => a.id === assetId);
+    // Find asset (check pending changes first)
+    let asset = pendingChanges.get(assetId) || assets.find(a => a.id === assetId);
     if (!asset?.asset_scheduled_at) return;
 
     const businessTimezone = content.businesses?.timezone || 'UTC';
@@ -551,44 +376,21 @@ export function EnhancedContentAssetsManager({
     const newDateTime = new Date(`${editingEvent.currentDate}T${editingEvent.time}`);
     const newDateTimeUTC = fromZonedTime(newDateTime, businessTimezone);
 
-    try {
-      const result = await updateAssetSchedule({
-        assetId: editingEvent.assetId,
-        newDateTime: newDateTimeUTC.toISOString(),
-      });
+    // Store as pending change instead of immediate save
+    const originalAsset = assets.find(a => a.id === editingEvent.assetId);
+    if (!originalAsset) return;
 
-      if (result.success) {
-        toast.success('Time updated successfully');
-        setIsEditModalOpen(false);
-        setEditingEvent(null);
-        await onRefresh?.();
-        loadBusinessAssets();
-      } else {
-        toast.error(result.error || 'Failed to update time');
-      }
-    } catch (error) {
-      toast.error('Failed to update time');
-      console.error('Time edit error:', error);
-    }
-  };
+    const updatedAsset = { 
+      ...originalAsset, 
+      asset_scheduled_at: newDateTimeUTC.toISOString() 
+    };
 
-  // Handle reset schedules
-  const handleResetSchedules = async () => {
-    try {
-      const result = await resetContentAssetSchedules({ contentId: content.id });
-
-      if (result.success) {
-        toast.success('All schedules cleared');
-        setIsResetDialogOpen(false);
-        await onRefresh?.();
-        loadBusinessAssets();
-      } else {
-        toast.error(result.error || 'Failed to clear schedules');
-      }
-    } catch (error) {
-      toast.error('Failed to clear schedules');
-      console.error('Reset error:', error);
-    }
+    setPendingChanges(prev => new Map(prev.set(editingEvent.assetId, updatedAsset)));
+    setHasUnsavedChanges(true);
+    
+    toast.success('Time change staged - click "Schedule" to save');
+    setIsEditModalOpen(false);
+    setEditingEvent(null);
   };
 
   // Handle batch save of pending changes
@@ -641,6 +443,91 @@ export function EnhancedContentAssetsManager({
     toast.success('Changes reset to saved state');
   };
 
+  // Handle Schedule All (add to pending changes, don't save immediately)
+  const handleScheduleAll = () => {
+    if (!allAssetsApproved) {
+      toast.error('All assets must be approved before scheduling');
+      return;
+    }
+
+    if (unscheduledAssets.length === 0) {
+      toast.info('No approved assets available to schedule');
+      return;
+    }
+
+    // Replicate the scheduling logic locally (5-day sequence)
+    const schedulingSequence = [
+      { day: 0, types: ['youtube_video', 'blog_post', 'social_long_video'] },
+      { day: 1, types: ['social_quote_card'] },
+      { day: 2, types: ['email', 'social_blog_post'] },
+      { day: 3, types: ['social_rant_post'] },
+      { day: 4, types: ['social_short_video'] },
+    ];
+
+    const businessTimezone = content.businesses?.timezone || 'UTC';
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const newPendingChanges = new Map(pendingChanges);
+    let scheduledCount = 0;
+
+    // Schedule assets according to the sequence
+    schedulingSequence.forEach(({ day, types }) => {
+      types.forEach(type => {
+        const asset = unscheduledAssets.find(asset => 
+          asset.content_type === type && !pendingChanges.has(asset.id)
+        );
+        
+        if (asset) {
+          const scheduleDate = new Date(tomorrow);
+          scheduleDate.setDate(tomorrow.getDate() + day);
+          
+          // Set time to 9:00 AM in business timezone (default)
+          scheduleDate.setHours(9, 0, 0, 0);
+          
+          const updatedAsset = {
+            ...asset,
+            asset_scheduled_at: scheduleDate.toISOString()
+          };
+          
+          newPendingChanges.set(asset.id, updatedAsset);
+          scheduledCount++;
+        }
+      });
+    });
+
+    if (scheduledCount > 0) {
+      setPendingChanges(newPendingChanges);
+      setHasUnsavedChanges(true);
+      toast.success(`${scheduledCount} assets staged for scheduling - click "Schedule" to save`);
+    } else {
+      toast.info('No assets available to schedule');
+    }
+  };
+
+  // Handle reset schedules (clear both saved schedules AND pending changes)
+  const handleResetSchedules = async () => {
+    try {
+      const result = await resetContentAssetSchedules({ contentId: content.id });
+
+      if (result.success) {
+        // Also clear pending changes (orange items)
+        setPendingChanges(new Map());
+        setHasUnsavedChanges(false);
+        
+        toast.success('All schedules cleared');
+        setIsResetDialogOpen(false);
+        await onRefresh?.();
+        loadBusinessAssets();
+      } else {
+        toast.error(result.error || 'Failed to clear schedules');
+      }
+    } catch (error) {
+      toast.error('Failed to clear schedules');
+      console.error('Reset error:', error);
+    }
+  };
+
   // Navigation guard for unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -672,317 +559,155 @@ export function EnhancedContentAssetsManager({
     );
   }
 
+  const showScheduleAllBanner = allAssetsApproved && approvedUnscheduledCount > 0;
+
   return (
     <div className="space-y-6">
-              <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'overview' | 'list' | 'calendar')} className="w-full">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="list">
-              Asset List
-              {pendingApprovalAssets.length > 0 && (
-                <Badge variant="destructive" className="ml-2 text-xs">
-                  {pendingApprovalAssets.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          </TabsList>
+      {/* Schedule All Banner (conditional - only when ALL assets approved) */}
+      {showScheduleAllBanner && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-blue-900 font-medium">Ready to schedule</h3>
+              <p className="text-blue-700">All {approvedUnscheduledCount} assets are approved and ready for scheduling.</p>
+            </div>
+            <Button 
+              onClick={handleScheduleAll} 
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Schedule All
+            </Button>
+          </div>
+        </div>
+      )}
 
-          {/* Bulk Actions */}
-          {selectedAssets.size > 0 && (
+      {/* Approval Required Banner (when assets not approved) */}
+      {!allAssetsApproved && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-orange-900 font-medium">Approval required</h3>
+              <p className="text-orange-700">Complete approval for all assets using the stepper menu before scheduling.</p>
+            </div>
+            <div className="text-orange-600 font-medium">
+              {approvalProgress.approved}/{approvalProgress.total} approved
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Content Calendar</CardTitle>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">
-                {selectedAssets.size} selected
-              </span>
-              <Button
-                size="sm"
-                onClick={handleBulkApprove}
-                disabled={bulkActionLoading}
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Approve
-              </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={handleBulkUnapprove}
-                disabled={bulkActionLoading}
+                onClick={() => setIsResetDialogOpen(true)}
+                disabled={scheduledAssets.length === 0 && pendingChanges.size === 0}
               >
-                Remove Approval
+                Clear All Schedules
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="ghost">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setSelectedAssets(new Set())}>
-                    Clear Selection
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button size="sm" onClick={loadBusinessAssets}>
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Legend */}
+          <div className="mb-4 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-red-500 rounded"></div>
+                <span>Saved Content</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                <span>Pending Changes</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-gray-400 rounded opacity-30"></div>
+                <span>Other Content</span>
+              </div>
+            </div>
+            <p className="mt-2">
+              {unscheduledAssets.length > 0 
+                ? `Click on any date to schedule the next approved asset (${unscheduledAssets.length} remaining)`
+                : 'All approved assets are scheduled'
+              }
+            </p>
+            <p>Drag and drop to reschedule. Changes are saved when you click "Schedule".</p>
+          </div>
+
+          {/* Calendar */}
+          {isLoadingBusinessAssets ? (
+            <div className="text-center py-8">
+              <p>Loading calendar...</p>
+            </div>
+          ) : (
+            <FullCalendar
+              plugins={[dayGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth',
+              }}
+              events={calendarEvents}
+              editable={allAssetsApproved} // Only allow editing if all approved
+              selectable={allAssetsApproved} // Only allow selecting if all approved
+              selectMirror={true}
+              eventDrop={handleDateDrop}
+              eventClick={handleEventClick}
+              select={handleDateSelect}
+              height="auto"
+              dayMaxEvents={3}
+              eventDisplay="block"
+              eventTimeFormat={{
+                hour: 'numeric',
+                minute: '2-digit',
+                meridiem: 'short'
+              }}
+            />
+          )}
+
+          {/* Batch Scheduling Controls */}
+          {hasUnsavedChanges && (
+            <div className="mt-4 flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetPendingChanges}
+                disabled={isSaving}
+              >
+                Reset Changes
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveBatchChanges}
+                disabled={isSaving || pendingChanges.size === 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isSaving ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Schedule ({pendingChanges.size} change{pendingChanges.size !== 1 ? 's' : ''})
+                  </>
+                )}
+              </Button>
             </div>
           )}
-        </div>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <ContentStatusFlow
-            content={content}
-            assets={assets}
-            onBulkApprove={handleBulkApprove}
-            onScheduleAll={handleScheduleAll}
-            isLoading={bulkActionLoading}
-          />
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {pendingApprovalAssets.length}
-                  </div>
-                  {pendingApprovalAssets.length > 0 && (
-                    <Button
-                      size="sm"
-                      onClick={handleBulkApprove}
-                      disabled={bulkActionLoading}
-                    >
-                      Approve All
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Ready to Schedule</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {unscheduledAssets.length}
-                  </div>
-                  {unscheduledAssets.length > 0 && (
-                    <Button
-                      size="sm"
-                      onClick={handleScheduleAll}
-                      disabled={bulkActionLoading}
-                    >
-                      <Calendar className="h-4 w-4 mr-1" />
-                      Schedule
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold text-green-600">
-                    {scheduledAssets.length}
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => setActiveView('calendar')}>
-                    <Calendar className="h-4 w-4 mr-1" />
-                    View Calendar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* List Tab */}
-        <TabsContent value="list" className="space-y-4">
-          {/* Bulk Selection Header */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    checked={selectedAssets.size === assets.length && assets.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                  <CardTitle className="text-sm font-medium">
-                    Content Assets ({assets.length})
-                  </CardTitle>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline">
-                    {approvedAssets.length}/{assets.length} approved
-                  </Badge>
-                  <Badge variant="outline">
-                    {scheduledAssets.length}/{assets.length} scheduled
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Asset List */}
-          <div className="grid grid-cols-1 gap-4">
-            {assets.map((asset) => (
-              <div key={asset.id} className="flex items-start space-x-3">
-                <Checkbox
-                  checked={selectedAssets.has(asset.id)}
-                  onCheckedChange={(checked) => 
-                    handleAssetSelection(asset.id, checked as boolean)
-                  }
-                  className="mt-4"
-                />
-                <div className="flex-1">
-                  <EnhancedAssetCard
-                    asset={asset}
-                    content={content}
-                    onApprovalToggle={handleApprovalToggle}
-                    onSchedule={handleAssetSchedule}
-                    onEdit={handleAssetEdit}
-                    onView={handleAssetView}
-                    isLoading={isUpdating}
-                    showSchedulingActions={true}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {assets.length === 0 && !isLoading && (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">No content assets found.</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Content generation may still be in progress.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Calendar Tab */}
-        <TabsContent value="calendar" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Content Calendar</CardTitle>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsResetDialogOpen(true)}
-                    disabled={scheduledAssets.length === 0}
-                  >
-                    Clear All Schedules
-                  </Button>
-                  <Button size="sm" onClick={loadBusinessAssets}>
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                    Refresh
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4 text-sm text-muted-foreground">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-red-500 rounded"></div>
-                    <span>Saved Content</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-orange-500 rounded"></div>
-                    <span>Pending Changes</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-gray-500 rounded"></div>
-                    <span>Other Content</span>
-                  </div>
-                </div>
-                <p className="mt-2">
-                  {unscheduledAssets.length > 0 
-                    ? `Click on any date to schedule the next approved asset (${unscheduledAssets.length} remaining)`
-                    : 'All approved assets are scheduled'
-                  }
-                </p>
-                <p>Drag and drop to reschedule. Changes are saved when you click "Schedule".</p>
-              </div>
-
-              {isLoadingBusinessAssets ? (
-                <div className="text-center py-8">
-                  <p>Loading calendar...</p>
-                </div>
-              ) : (
-                <FullCalendar
-                  plugins={[dayGridPlugin, interactionPlugin]}
-                  initialView="dayGridMonth"
-                  headerToolbar={{
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth',
-                  }}
-                  events={calendarEvents}
-                  editable={true}
-                  selectable={true}
-                  selectMirror={true}
-                  eventDrop={handleDateDrop}
-                  eventClick={handleEventClick}
-                  select={handleDateSelect}
-                  height="auto"
-                  dayMaxEvents={3}
-                  eventDisplay="block"
-                  eventTimeFormat={{
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    meridiem: 'short'
-                  }}
-                />
-              )}
-
-              {/* Batch Scheduling Controls */}
-              {hasUnsavedChanges && (
-                <div className="mt-4 flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResetPendingChanges}
-                    disabled={isSaving}
-                  >
-                    Reset Changes
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveBatchChanges}
-                    disabled={isSaving || pendingChanges.size === 0}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {isSaving ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Calendar className="h-4 w-4 mr-1" />
-                        Schedule ({pendingChanges.size} change{pendingChanges.size !== 1 ? 's' : ''})
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Time Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -1034,7 +759,7 @@ export function EnhancedContentAssetsManager({
           <AlertDialogHeader>
             <AlertDialogTitle>Clear All Schedules?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove all scheduling information from this content's assets.
+              This will remove all scheduling information from this content's assets, including both saved schedules and pending changes.
               You'll need to reschedule them manually. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
