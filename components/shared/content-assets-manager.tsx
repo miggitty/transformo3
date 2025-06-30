@@ -184,9 +184,9 @@ export default function ContentAssetsManager({
         id: asset.id,
         title: getAssetDisplayName(asset.content_type || ''),
         date: asset.asset_scheduled_at as string,
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#2563eb',
         borderColor: '#1d4ed8',
-        textColor: 'white',
+        textColor: '#2563eb',
         extendedProps: {
           assetType: asset.content_type || '',
           isOwned: true,
@@ -202,9 +202,9 @@ export default function ContentAssetsManager({
         id: `other-${asset.id}`,
         title: getAssetDisplayName(asset.content_type || ''),
         date: asset.asset_scheduled_at as string,
-        backgroundColor: '#6b7280',
-        borderColor: '#4b5563',
-        textColor: 'white',
+        backgroundColor: '#e5e7eb',
+        borderColor: '#d1d5db',
+        textColor: '#9ca3af',
         extendedProps: {
           assetType: asset.content_type || '',
           contentTitle: asset.content?.content_title || '',
@@ -598,7 +598,7 @@ export default function ContentAssetsManager({
         <CardHeader>
           <CardTitle>Content Calendar</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Blue events are your content assets (draggable). Gray events are from other content. 
+            Blue events are your content assets (draggable). Light gray events are from other content. 
             Click on your events to edit the time.
           </p>
         </CardHeader>
@@ -638,7 +638,7 @@ export default function ContentAssetsManager({
                 // Styling for different event types
                 if (!isOwned) {
                   info.el.style.cursor = 'pointer';
-                  info.el.style.opacity = '0.7';
+                  info.el.style.opacity = '0.4';
                   
                   // Add double-click handler for external events
                   info.el.addEventListener('dblclick', () => {
@@ -646,6 +646,8 @@ export default function ContentAssetsManager({
                   });
                 } else {
                   info.el.style.cursor = 'grab';
+                  // Ensure blue text for owned events
+                  info.el.style.color = '#2563eb';
                 }
                 
                 // Add hover effects
