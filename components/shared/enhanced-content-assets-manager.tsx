@@ -27,7 +27,7 @@ import {
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Calendar, RefreshCw } from 'lucide-react';
+import { Calendar, RefreshCw, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   scheduleContentAssets,
@@ -560,9 +560,23 @@ export function EnhancedContentAssetsManager({
   }
 
   const showScheduleAllBanner = allAssetsApproved && approvedUnscheduledCount > 0;
+  const showSuccessBanner = allAssetsApproved && approvedUnscheduledCount === 0 && scheduledAssets.length > 0;
 
   return (
     <div className="space-y-6">
+      {/* Success Banner (when all content is scheduled) */}
+      {showSuccessBanner && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center space-x-3">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <div>
+              <h3 className="text-green-900 font-medium">Content Scheduled for Publishing</h3>
+              <p className="text-green-700">All {scheduledAssets.length} assets are scheduled and will be published automatically.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Schedule All Banner (conditional - only when ALL assets approved) */}
       {showScheduleAllBanner && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

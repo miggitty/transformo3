@@ -78,6 +78,12 @@ export default async function CompletedPage() {
       <Suspense fallback={null}>
         <TrialSuccessBanner />
       </Suspense>
+      
+      {/* Page Heading */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Completed</h1>
+      </div>
+      
       <Card>
         <CardHeader>
           <CardTitle>Completed Content</CardTitle>

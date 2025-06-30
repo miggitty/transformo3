@@ -79,6 +79,12 @@ export default async function PartiallyPublishedPage() {
       <Suspense fallback={null}>
         <TrialSuccessBanner />
       </Suspense>
+      
+      {/* Page Heading */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Partially Published</h1>
+      </div>
+      
       <Card>
         <CardHeader>
           <CardTitle>Partially Published Content</CardTitle>

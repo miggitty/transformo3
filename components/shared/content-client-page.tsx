@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Check, CheckCircle, Calendar, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
 import { EnhancedContentAssetsManager } from '@/components/shared/enhanced-content-assets-manager';
@@ -22,6 +24,7 @@ interface ContentClientPageProps {
 export default function ContentClientPage({
   content: initialContent,
 }: ContentClientPageProps) {
+  const router = useRouter();
   const [content, setContent] = useState<ContentWithBusiness>(initialContent);
   const [contentAssets, setContentAssets] = useState<ContentAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,7 +126,11 @@ export default function ContentClientPage({
   const isStepApproved = (stepId: string): boolean => {
     const contentType = stepToContentType[stepId];
     if (!contentType) {
-      // For steps without content assets (video-script, create-video, schedule)
+      // For schedule step, check if all assets are scheduled
+      if (stepId === 'schedule') {
+        return contentAssets.length > 0 && contentAssets.every(asset => asset.asset_scheduled_at);
+      }
+      // For steps without content assets (video-script, create-video)
       return false;
     }
     
@@ -295,26 +302,76 @@ export default function ContentClientPage({
           line-height: 24px !important;
         }
       `}</style>
+      {/* Back Button */}
+      <div className="mb-4">
+        <Button 
+          variant="ghost" 
+          onClick={() => router.back()}
+          className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+      </div>
+
       {/* Page Title */}
-      <div className="mb-8">
-        <div className="relative group">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {content.content_title}
-          </h1>
-          <EditButton
-            fieldConfig={{
-              label: 'Page Title',
-              value: content.content_title || '',
-              fieldKey: 'content_title',
-              inputType: 'text',
-              placeholder: 'Enter page title...',
-            }}
-            onEdit={handleEdit}
-            disabled={isContentGenerating}
-          />
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">{content.content_title || 'Untitled Content'}</h1>
+        
+        {/* Content Status */}
+        <div className="mb-4">
+          {(() => {
+            // Determine content status
+            const allAssetsScheduled = contentAssets.length > 0 && 
+              contentAssets.every(asset => asset.asset_scheduled_at);
+            const allAssetsApproved = contentAssets.length > 0 && 
+              contentAssets.every(asset => asset.approved);
+            
+            if (allAssetsScheduled) {
+              return (
+                <span className="text-sm text-gray-600">
+                  Status - <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Ready to Publish</span>
+                </span>
+              );
+            } else if (allAssetsApproved) {
+              return (
+                <span className="text-sm text-gray-600">
+                  Status - <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Ready to Schedule</span>
+                </span>
+              );
+            } else {
+              return (
+                <span className="text-sm text-gray-600">
+                  Status - <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded">Draft</span>
+                </span>
+              );
+            }
+          })()}
         </div>
+        
+        {/* Content Title */}
+        <div>
+          <span className="text-sm text-gray-600 block mb-1">Content Title</span>
+          <div className="relative group">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {content.content_title}
+            </h2>
+            <EditButton
+              fieldConfig={{
+                label: 'Content Title',
+                value: content.content_title || '',
+                fieldKey: 'content_title',
+                inputType: 'text',
+                placeholder: 'Enter content title...',
+              }}
+              onEdit={handleEdit}
+              disabled={isContentGenerating}
+            />
+          </div>
+        </div>
+        
         {isContentGenerating && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mt-2">
+          <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mt-3">
             <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-800"></div>
             Generating...
           </div>
@@ -603,7 +660,7 @@ export default function ContentClientPage({
                           <div className="relative">
                             {content.video_long_url ? (
                               <video 
-                                src={content.video_long_url!}
+                                src={content.video_long_url ?? undefined}
                                 className="w-full object-cover"
                                 controls
                                 poster={socialAsset.image_url ?? undefined}
@@ -718,7 +775,7 @@ export default function ContentClientPage({
                           <div className="relative">
                             {content.video_short_url ? (
                               <video 
-                                src={content.video_short_url!}
+                                src={content.video_short_url ?? undefined}
                                 className="w-full object-cover"
                                 controls
                                 poster={socialAsset.image_url ?? undefined}
@@ -1286,7 +1343,6 @@ export default function ContentClientPage({
                         )
                       );
                     }}
-                    defaultView="overview"
                   />
                 </div>
               )}

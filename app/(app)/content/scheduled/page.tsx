@@ -80,6 +80,12 @@ export default async function ScheduledPage() {
       <Suspense fallback={null}>
         <TrialSuccessBanner />
       </Suspense>
+      
+      {/* Page Heading */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Content Schedule</h1>
+      </div>
+      
       <Card>
         <CardHeader>
           <CardTitle>Scheduled Content</CardTitle>
