@@ -351,10 +351,9 @@ export default function ContentClientPage({
                   <h2 className="text-2xl font-bold mb-6">Video Script</h2>
                   <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative group">
                     {content.video_script ? (
-                      <div 
-                        className="content-display text-gray-900"
-                        dangerouslySetInnerHTML={{ __html: content.video_script }}
-                      />
+                      <div className="text-gray-900 whitespace-pre-wrap">
+                        {content.video_script}
+                      </div>
                     ) : (
                       <p className="text-gray-500">No video script has been generated yet.</p>
                     )}
@@ -363,7 +362,7 @@ export default function ContentClientPage({
                         label: 'Video Script',
                         value: content.video_script || '',
                         fieldKey: 'video_script',
-                        inputType: 'html',
+                        inputType: 'textarea',
                         placeholder: 'Enter video script...',
                       }}
                       onEdit={handleEdit}
@@ -523,11 +522,11 @@ export default function ContentClientPage({
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {content.businesses?.first_name?.[0] || 'M'}
+                            {content.businesses?.business_name?.[0] || 'B'}
                           </div>
                           <div className="ml-3">
                             <div className="font-semibold text-gray-900">
-                              {content.businesses?.first_name} {content.businesses?.last_name}
+                              {content.businesses?.business_name || 'Business Name'}
                             </div>
                             <div className="text-xs text-gray-500">JUST NOW</div>
                           </div>
@@ -638,11 +637,11 @@ export default function ContentClientPage({
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {content.businesses?.first_name?.[0] || 'M'}
+                            {content.businesses?.business_name?.[0] || 'B'}
                           </div>
                           <div className="ml-3">
                             <div className="font-semibold text-gray-900">
-                              {content.businesses?.first_name} {content.businesses?.last_name}
+                              {content.businesses?.business_name || 'Business Name'}
                             </div>
                             <div className="text-xs text-gray-500">JUST NOW</div>
                           </div>
@@ -753,11 +752,11 @@ export default function ContentClientPage({
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {content.businesses?.first_name?.[0] || 'M'}
+                            {content.businesses?.business_name?.[0] || 'B'}
                           </div>
                           <div className="ml-3">
                             <div className="font-semibold text-gray-900">
-                              {content.businesses?.first_name} {content.businesses?.last_name}
+                              {content.businesses?.business_name || 'Business Name'}
                             </div>
                             <div className="text-xs text-gray-500">JUST NOW</div>
                           </div>
@@ -849,11 +848,11 @@ export default function ContentClientPage({
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {content.businesses?.first_name?.[0] || 'M'}
+                            {content.businesses?.business_name?.[0] || 'B'}
                           </div>
                           <div className="ml-3">
                             <div className="font-semibold text-gray-900">
-                              {content.businesses?.first_name} {content.businesses?.last_name}
+                              {content.businesses?.business_name || 'Business Name'}
                             </div>
                             <div className="text-xs text-gray-500">JUST NOW</div>
                           </div>
@@ -945,11 +944,11 @@ export default function ContentClientPage({
                         {/* Post Header */}
                         <div className="flex items-center p-4">
                           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {content.businesses?.first_name?.[0] || 'M'}
+                            {content.businesses?.business_name?.[0] || 'B'}
                           </div>
                           <div className="ml-3">
                             <div className="font-semibold text-gray-900">
-                              {content.businesses?.first_name} {content.businesses?.last_name}
+                              {content.businesses?.business_name || 'Business Name'}
                             </div>
                             <div className="text-xs text-gray-500">JUST NOW</div>
                           </div>
@@ -1161,9 +1160,7 @@ export default function ContentClientPage({
                                   }
                                   
                                   // Fallback to business details
-                                  const name = content.businesses?.first_name && content.businesses?.last_name 
-                                    ? `${content.businesses.first_name} ${content.businesses.last_name}`
-                                    : 'Business Owner';
+                                  const name = content.businesses?.business_name || 'Business Name';
                                   const email = content.businesses?.contact_email || 'hello@business.com';
                                   
                                   return `${name} <${email}>`;

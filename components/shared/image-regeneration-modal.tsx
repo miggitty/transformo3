@@ -230,7 +230,7 @@ export default function ImageRegenerationModal({
             <img
               src={contentAsset.image_url}
               alt="Current image"
-              className="w-full aspect-video object-cover rounded-lg border"
+              className="w-full h-auto max-h-80 object-contain rounded-lg border bg-gray-50"
             />
           </div>
         </div>
@@ -308,7 +308,7 @@ export default function ImageRegenerationModal({
               <img
                 src={contentAsset.image_url}
                 alt="Current image"
-                className="w-full aspect-video object-cover rounded-lg border"
+                className="w-full h-auto max-h-96 object-contain rounded-lg border bg-gray-50"
               />
               {selectedImage === 'current' && (
                 <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5 shadow-lg">
@@ -334,7 +334,7 @@ export default function ImageRegenerationModal({
               <img
                 src={newImageUrl}
                 alt="New generated image"
-                className="w-full aspect-video object-cover rounded-lg border"
+                className="w-full h-auto max-h-96 object-contain rounded-lg border bg-gray-50"
               />
               {selectedImage === 'new' && (
                 <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5 shadow-lg">
@@ -343,7 +343,7 @@ export default function ImageRegenerationModal({
               )}
             </div>
           ) : (
-            <div className="w-full aspect-video bg-muted rounded-lg border flex items-center justify-center">
+            <div className="w-full h-96 bg-muted rounded-lg border flex items-center justify-center">
               <ImageIcon className="h-8 w-8 text-muted-foreground" />
             </div>
           )}

@@ -43,12 +43,13 @@ export default function ImageWithRegeneration({
       <Button
         variant="secondary"
         size="sm"
-        className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg hover:bg-white hover:shadow-xl"
+        className={`absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-lg hover:shadow-xl hover:scale-105 ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
         onClick={handleRegenerationStart}
         disabled={disabled}
         aria-label="Regenerate image with AI"
       >
-        <Bot className="h-4 w-4" />
+        <Bot className="h-4 w-4 mr-1" />
+        <span className="text-xs font-medium">AI</span>
       </Button>
 
       {/* Image Regeneration Modal */}
