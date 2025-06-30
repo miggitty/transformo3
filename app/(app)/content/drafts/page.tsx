@@ -50,13 +50,13 @@ export default async function DraftsPage() {
     return <div>Error loading content.</div>;
   }
 
-  // Filter for draft and failed content (both appear on drafts page)
+  // Filter for draft, processing, and failed content (all appear on drafts page)
   const draftContent = content?.filter(item => {
     const assets = item.content_assets || [];
     
-    // Processing or generating content
+    // Processing or generating content (show these so users see immediate feedback)
     if (item.status === 'processing' || item.content_generation_status === 'generating') {
-      return false;
+      return true;
     }
     
     // Failed content appears here
@@ -109,7 +109,7 @@ export default async function DraftsPage() {
           <div>
             <CardTitle>Draft Content</CardTitle>
             <CardDescription>
-              Review and approve your content before scheduling. Failed content also appears here with retry options.
+              Review and approve your content before scheduling. Processing and failed content also appears here.
             </CardDescription>
           </div>
           <Link href="/new">

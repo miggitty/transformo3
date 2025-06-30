@@ -278,7 +278,6 @@ export async function POST(request: NextRequest) {
               business_name: data.businesses.business_name,
               website_url: data.businesses.website_url,
               social_media_profiles: data.businesses.social_media_profiles,
-              social_media_integrations: data.businesses.social_media_integrations,
               writing_style_guide: data.businesses.writing_style_guide,
               cta_youtube: data.businesses.cta_youtube,
               cta_email: data.businesses.cta_email,

@@ -127,9 +127,26 @@ export function EnhancedContentTable({
       }
     }
     
-    const actions = getStatusActions(status);
+    let actions = getStatusActions(status);
     
-    return { ...contentItem, status, actions, assets };
+    // Override actions for stuck processing content (older than 10 minutes)
+    if (status === 'processing' && contentItem.created_at) {
+      const createdAt = new Date(contentItem.created_at);
+      const now = new Date();
+      const minutesOld = (now.getTime() - createdAt.getTime()) / (1000 * 60);
+      
+      if (minutesOld > 10) {
+        // Enable delete and retry actions for stuck processing content
+        actions = {
+          ...actions,
+          canDelete: true,
+          canRetry: true,
+          showRetry: true,
+        };
+      }
+    }
+    
+    return { ...contentItem, status, actions, assets, isStuck: status === 'processing' && contentItem.created_at && (new Date().getTime() - new Date(contentItem.created_at).getTime()) / (1000 * 60) > 10 };
   };
 
   // Filter content based on debounced search query
@@ -266,12 +283,13 @@ export function EnhancedContentTable({
     return buttons;
   };
 
-  const formatStatus = (status: ContentStatus) => {
+  const formatStatus = (status: ContentStatus, isStuck?: boolean) => {
     if (status === 'processing') {
       return (
         <div className="flex items-center gap-2">
-          <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+          <div className={`animate-spin rounded-full h-3 w-3 border-b ${isStuck ? 'border-orange-600' : 'border-blue-600'}`}></div>
           <span>Processing...</span>
+          {isStuck && <AlertTriangle className="h-3 w-3 text-orange-600" />}
         </div>
       );
     }
@@ -358,11 +376,17 @@ export function EnhancedContentTable({
                           Content generation failed
                         </div>
                       )}
+                      {item.isStuck && (
+                        <div className="flex items-center gap-2 text-xs text-orange-600">
+                          <AlertTriangle className="h-3 w-3" />
+                          Processing for {Math.round((new Date().getTime() - new Date(item.created_at || Date.now()).getTime()) / (1000 * 60))} minutes - may be stuck
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(item.status)}>
-                      {formatStatus(item.status)}
+                      {formatStatus(item.status, !!item.isStuck)}
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">

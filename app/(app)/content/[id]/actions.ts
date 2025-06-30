@@ -655,50 +655,107 @@ export async function deleteContent({
 
   try {
     // Step 1: Delete files from storage buckets
-    const filePatterns = [`${contentId}_`, `${businessId}_${contentId}_`];
+    console.log(`Deleting content ${contentId} for business ${businessId}`);
+    
+    // More comprehensive file patterns - check various naming conventions
+    const filePatterns = [
+      contentId,                                    // Files named with just contentId
+      `${businessId}_${contentId}`,                // Standard pattern: businessId_contentId
+      `${contentId}_`,                             // Files starting with contentId_
+      `${businessId}_${contentId}_`,               // Files starting with businessId_contentId_
+    ];
+    
+    // Helper function to match files
+    const matchesPattern = (filename: string): boolean => {
+      return filePatterns.some(pattern => 
+        filename.includes(pattern) || 
+        filename.startsWith(pattern) ||
+        filename === pattern ||
+        filename.startsWith(`${pattern}.`) // Exact match with extension
+      );
+    };
     
     // Delete images
-    const { data: imageFiles } = await supabase.storage
+    console.log('Checking images bucket...');
+    const { data: imageFiles, error: imageListError } = await supabase.storage
       .from('images')
-      .list('', { search: contentId });
+      .list('');
     
-    if (imageFiles && imageFiles.length > 0) {
+    if (imageListError) {
+      console.error('Error listing image files:', imageListError);
+    } else if (imageFiles && imageFiles.length > 0) {
       const imagePaths = imageFiles
-        .filter(file => filePatterns.some(pattern => file.name.includes(pattern)))
+        .filter(file => matchesPattern(file.name))
         .map(file => file.name);
       
+      console.log(`Found ${imagePaths.length} image files to delete:`, imagePaths);
+      
       if (imagePaths.length > 0) {
-        await supabase.storage.from('images').remove(imagePaths);
+        const { error: imageDeleteError } = await supabase.storage
+          .from('images')
+          .remove(imagePaths);
+        
+        if (imageDeleteError) {
+          console.error('Error deleting image files:', imageDeleteError);
+        } else {
+          console.log(`Successfully deleted ${imagePaths.length} image files`);
+        }
       }
     }
 
     // Delete videos  
-    const { data: videoFiles } = await supabase.storage
+    console.log('Checking videos bucket...');
+    const { data: videoFiles, error: videoListError } = await supabase.storage
       .from('videos')
-      .list('', { search: contentId });
+      .list('');
     
-    if (videoFiles && videoFiles.length > 0) {
+    if (videoListError) {
+      console.error('Error listing video files:', videoListError);
+    } else if (videoFiles && videoFiles.length > 0) {
       const videoPaths = videoFiles
-        .filter(file => filePatterns.some(pattern => file.name.includes(pattern)))
+        .filter(file => matchesPattern(file.name))
         .map(file => file.name);
       
+      console.log(`Found ${videoPaths.length} video files to delete:`, videoPaths);
+      
       if (videoPaths.length > 0) {
-        await supabase.storage.from('videos').remove(videoPaths);
+        const { error: videoDeleteError } = await supabase.storage
+          .from('videos')
+          .remove(videoPaths);
+        
+        if (videoDeleteError) {
+          console.error('Error deleting video files:', videoDeleteError);
+        } else {
+          console.log(`Successfully deleted ${videoPaths.length} video files`);
+        }
       }
     }
 
     // Delete audio files
-    const { data: audioFiles } = await supabase.storage
+    console.log('Checking audio bucket...');
+    const { data: audioFiles, error: audioListError } = await supabase.storage
       .from('audio')
-      .list('', { search: contentId });
+      .list('');
     
-    if (audioFiles && audioFiles.length > 0) {
+    if (audioListError) {
+      console.error('Error listing audio files:', audioListError);
+    } else if (audioFiles && audioFiles.length > 0) {
       const audioPaths = audioFiles
-        .filter(file => filePatterns.some(pattern => file.name.includes(pattern)))
+        .filter(file => matchesPattern(file.name))
         .map(file => file.name);
       
+      console.log(`Found ${audioPaths.length} audio files to delete:`, audioPaths);
+      
       if (audioPaths.length > 0) {
-        await supabase.storage.from('audio').remove(audioPaths);
+        const { error: audioDeleteError } = await supabase.storage
+          .from('audio')
+          .remove(audioPaths);
+        
+        if (audioDeleteError) {
+          console.error('Error deleting audio files:', audioDeleteError);
+        } else {
+          console.log(`Successfully deleted ${audioPaths.length} audio files`);
+        }
       }
     }
 
