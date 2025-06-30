@@ -1,3 +1,47 @@
+# Video Upload Implementation Notes
+
+## ⚠️ **CRITICAL: FIT INTO EXISTING ARCHITECTURE**
+
+**DO NOT REINVENT - REUSE EXISTING PATTERNS:**
+- Video transcription follows **EXACT same workflow** as audio processing
+- Use existing N8N callback system (no changes needed)
+- Use existing status progression system (`lib/content-status.ts`)
+- Final status: **'draft'** (same as audio workflow)
+- **NO CHANGES** to existing `/new` page (audio recording)
+- **NO CHANGES** to existing content details page (just hide transcript for video)
+- **NO CHANGES** to existing N8N callback handler
+
+**Two-Stage N8N Workflow (Same as Audio):**
+1. **Video Transcription N8N** → callback sets `status: 'completed'` + triggers content creation
+2. **Content Creation N8N** → callback sets `content_generation_status: 'completed'` + generates assets
+3. **Final Determined Status**: `'draft'` (by `lib/content-status.ts`)
+
+**Video Upload Integration:**
+- Video uploaded to Supabase storage first (same pattern as audio)
+- Video transcription N8N triggered with video URL
+- Callback sends `transcript` + `content_title` (same format as audio)
+- Existing callback logic handles it automatically
+- Real-time Supabase subscriptions update UI
+
+---
+
+## 🎯 **Ready to Implement?**
+
+Now that you understand the architecture, follow the implementation phases **in order**:
+
+### 📋 **Implementation Phases (Execute Sequentially):**
+
+1. **[Phase 1: Database & Infrastructure](./video-upload-phase-1-database-infrastructure.md)**
+2. **[Phase 2: Navigation & Routing](./video-upload-phase-2-navigation-routing.md)**  
+3. **[Phase 3: Video Upload Implementation](./video-upload-phase-3-video-upload-implementation.md)**
+4. **[Phase 4: Content Display Updates](./video-upload-phase-4-content-display-updates.md)**
+5. **[Phase 5: Table & UI Finalization](./video-upload-phase-5-table-ui-finalization.md)**
+6. **[Phase 6: Testing & Integration](./video-upload-phase-6-testing-integration.md)**
+
+**Each phase builds on the previous one** - don't skip ahead!
+
+---
+
 # Video Upload Implementation - Complete
 
 ## Implementation Summary

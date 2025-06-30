@@ -223,6 +223,132 @@ This document outlines the requirements for adding a new project type system to 
 - [ ] Prepare rollback plan if needed
 - [ ] Create deployment checklist
 
+## 🔄 **Video Upload Workflow Explained**
+
+### **Step 1: Video Upload to Supabase Storage** 
+
+```typescript
+// 1. User clicks "Start Video Upload"
+const result = await createVideoUploadProject(); // Creates content record
+// Status: 'processing', project_type: 'video_upload'
+
+// 2. Video file uploaded to Supabase storage FIRST
+const { error: uploadError } = await supabase.storage
+  .from('videos')
+  .upload(fileName, selectedFile);
+
+// 3. Update content record with video URL
+await updateVideoUrl({
+  contentId,
+  videoType: 'long',
+  videoUrl: publicUrl, // Saved to content.video_long_url
+});
+```
+
+### **Step 2: Trigger N8N Workflow**
+**N8N does ALL processing internally (transcription + content generation)**
+
+```typescript
+// 4. After video is safely stored, trigger N8N
+const response = await fetch(process.env.N8N_WEBHOOK_VIDEO_TRANSCRIPTION, {
+  method: 'POST',
+  body: JSON.stringify({
+    video_url: publicUrl,           // ← Supabase video URL
+    content_id: contentId,
+    business_id: businessId,
+    project_type: 'video_upload',
+    callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+    callbackSecret: process.env.N8N_CALLBACK_SECRET,
+  }),
+});
+
+// User sees "Processing..." with spinning wheel during this ENTIRE time
+// No intermediate updates - N8N does everything internally
+```
+
+### **Step 3: Two-Stage N8N Workflow (Same as Audio)**
+**IMPORTANT: Follow existing audio workflow exactly - two separate N8N workflows with callbacks**
+
+```typescript
+// First Callback: Video Transcription N8N Workflow
+if (transcript && content_title && !workflow_type) {
+  console.log('Video transcription completed - follow existing audio pattern');
+  
+  await supabase
+    .from('content')
+    .update({
+      status: 'completed',              // ← Same as audio workflow
+      transcript: transcript,
+      content_title: content_title,
+      error_message: null,
+    })
+    .eq('id', content_id);
+
+  // Auto-trigger content creation workflow (existing logic)
+  const contentCreationResponse = await fetch(process.env.N8N_WEBHOOK_URL_CONTENT_CREATION, {
+    method: 'POST',
+    body: JSON.stringify(contentCreationPayload), // Full business data
+  });
+}
+
+// Second Callback: Content Creation N8N Workflow  
+if (workflow_type === 'content_creation') {
+  console.log('Content creation completed - generates assets');
+  
+  await supabase
+    .from('content')
+    .update({
+      content_generation_status: 'completed',  // ← Triggers asset generation
+    })
+    .eq('id', content_id);
+}
+```
+
+### **🔄 How UI Gets Updated (Real-time - Recommended)**
+
+The UI automatically updates when N8N completes processing using **real-time Supabase subscriptions**:
+
+```typescript
+// components/shared/realtime-content-updater.tsx
+useEffect(() => {
+  const channel = supabase
+    .channel('content-updates')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'content',
+      filter: `business_id=eq.${businessId}`,
+    }, (payload) => {
+      console.log('Real-time content update:', payload);
+      
+      // Automatically refresh content list when status changes
+      if (payload.new.status !== payload.old.status) {
+        router.refresh(); // Updates UI immediately
+      }
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+}, [businessId]);
+```
+
+### **📊 Status Tracking - Follows Existing Audio Pattern**
+
+**Video follows EXACT same progression as audio recording:**
+
+| Stage | Database Status | Determined Status | UI Display | What's Happening |
+|-------|----------------|------------------|------------|------------------|
+| 1 | `status: 'processing'` | `'processing'` | "Processing Video..." ⏳ | Video uploaded, transcription N8N started |
+| 2 | `status: 'processing'` | `'processing'` | "Processing Video..." ⏳ | N8N transcribing (user sees spinner) |
+| 3 | `status: 'completed'` | `'processing'` | "Processing Video..." ⏳ | Transcription done, content creation N8N started |
+| 4 | `status: 'completed'`<br/>`content_generation_status: 'completed'` | `'draft'` | **"Draft"** ✅ | Assets generated, content ready |
+
+**Key Points:**
+- User sees spinning wheel until **content creation completes** (stage 4)
+- Final status: **'draft'** (determined by `lib/content-status.ts`)
+- Content appears in **drafts page** (same as audio workflow)
+- **No changes** to existing status system - video fits into it perfectly
+
 ## Environment Variables Required
 
 ```bash
@@ -309,4 +435,52 @@ N8N_WEBHOOK_VIDEO_TRANSCRIPTION=https://n8n-instance/webhook/video-transcription
 - Reuses proven N8N webhook infrastructure
 - Maintains backward compatibility with existing voice recording projects
 - Follows established patterns for database schema and component architecture
-- Uses existing file naming conventions and storage patterns 
+- Uses existing file naming conventions and storage patterns
+
+---
+
+## 🚀 **Next Steps - Implementation Guide**
+
+**BEFORE starting implementation, read this critical file:**
+
+### ⚠️ **STEP 1: Read Implementation Notes**
+👉 **[video-upload-phase-0b-implementation-notes.md](./video-upload-phase-0b-implementation-notes.md)**
+- **Critical**: Contains architecture corrections and reminders
+- **Purpose**: Ensures you follow existing patterns instead of reinventing
+- **Required Reading**: Before writing any code
+
+### 📋 **STEP 2: Execute Implementation Phases**
+After reading the implementation notes, follow these phases **in order**:
+
+1. **[Phase 1: Database & Infrastructure](./video-upload-phase-1-database-infrastructure.md)**
+   - Database migration + TypeScript types
+   - Foundation for everything else
+
+2. **[Phase 2: Navigation & Routing](./video-upload-phase-2-navigation-routing.md)**
+   - New Content button with dropdown
+   - URL structure changes
+
+3. **[Phase 3: Video Upload Implementation](./video-upload-phase-3-video-upload-implementation.md)**
+   - Video upload functionality
+   - N8N integration
+
+4. **[Phase 4: Content Display Updates](./video-upload-phase-4-content-display-updates.md)**
+   - Content details page enhancements
+   - Project type badges
+
+5. **[Phase 5: Table & UI Finalization](./video-upload-phase-5-table-ui-finalization.md)**
+   - Content tables with project types
+   - All page updates
+
+6. **[Phase 6: Testing & Integration](./video-upload-phase-6-testing-integration.md)**
+   - End-to-end testing
+   - Production deployment
+
+### 🔗 **Documentation Structure**
+```
+video-upload-phase-0a-project-requirements.md (this file) ← Main PRD & Requirements
+└── video-upload-phase-0b-implementation-notes.md ← Critical corrections  
+    └── Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6
+```
+
+**⚡ Quick Start**: Read implementation notes, then execute phases 1-6 sequentially. 
