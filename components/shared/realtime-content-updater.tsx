@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useSupabaseBrowser } from '../providers/supabase-provider';
 import { Tables } from '@/types/supabase';
 
@@ -14,20 +14,58 @@ export function RealtimeContentUpdater({
   onUpdate: (newContent: Tables<'content'>[]) => void;
 }) {
   const supabase = useSupabaseBrowser();
-  const [isMounted, setIsMounted] = useState(false);
+  const currentContentRef = useRef<Tables<'content'>[]>(serverContent);
+  const onUpdateRef = useRef(onUpdate);
+
+  // Update refs when props change
+  useEffect(() => {
+    currentContentRef.current = serverContent;
+  }, [serverContent]);
 
   useEffect(() => {
-    // This guard ensures the subscription only runs on the client,
-    // after the component has mounted.
-    setIsMounted(true);
-  }, []);
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
+
+  // Stable callback functions that don't change
+  const handleUpdate = useCallback((payload: any) => {
+    console.log('🔄 Realtime UPDATE received for:', payload.new.content_title);
+    
+    const newContent = currentContentRef.current.map((item: Tables<'content'>) =>
+      item.id === payload.new.id ? { ...item, ...payload.new } : item
+    );
+    
+    currentContentRef.current = newContent;
+    onUpdateRef.current(newContent);
+  }, []); // No dependencies!
+
+  const handleInsert = useCallback((payload: any) => {
+    console.log('➕ Realtime INSERT received for:', payload.new.content_title);
+    
+    // Check if content already exists to avoid duplicates
+    if (currentContentRef.current.find((item: Tables<'content'>) => item.id === payload.new.id)) {
+      return;
+    }
+    
+    const newContent = [payload.new as Tables<'content'>, ...currentContentRef.current];
+    currentContentRef.current = newContent;
+    onUpdateRef.current(newContent);
+  }, []); // No dependencies!
+
+  const handleDelete = useCallback((payload: any) => {
+    console.log('🗑️ Realtime DELETE received for:', payload.old.content_title);
+    
+    const newContent = currentContentRef.current.filter((item: Tables<'content'>) => item.id !== payload.old.id);
+    currentContentRef.current = newContent;
+    onUpdateRef.current(newContent);
+  }, []); // No dependencies!
 
   useEffect(() => {
-    // If the component isn't mounted, or if we don't have a businessId, do nothing.
-    if (!isMounted || !businessId) return;
+    if (!businessId) return;
+
+    console.log(`🔌 Setting up realtime subscription for business: ${businessId}`);
 
     const channel = supabase
-      .channel(`realtime-content-updater:${businessId}`)
+      .channel(`content-changes:${businessId}`)
       .on(
         'postgres_changes',
         {
@@ -36,33 +74,47 @@ export function RealtimeContentUpdater({
           table: 'content',
           filter: `business_id=eq.${businessId}`,
         },
-        (payload) => {
-          // When an update is received, we call the onUpdate function
-          // passed down from the parent to update its state.
-          const newContent = serverContent.map((item) =>
-            item.id === payload.new.id ? { ...item, ...payload.new } : item
-          );
-          onUpdate(newContent);
-        }
+        handleUpdate
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'content',
+          filter: `business_id=eq.${businessId}`,
+        },
+        handleInsert
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'content',
+          filter: `business_id=eq.${businessId}`,
+        },
+        handleDelete
       )
       .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
-          console.log(`✅ Realtime updater subscribed for: ${businessId}`);
+          console.log(`✅ Realtime subscription active`);
         }
         if (status === 'CHANNEL_ERROR') {
-          console.error(
-            '❌ Realtime updater error. Check RLS policies.',
-            err
-          );
+          console.error('❌ Realtime subscription error:', err);
+        }
+        if (status === 'CLOSED') {
+          console.log(`🔌 Realtime subscription closed`);
         }
       });
 
-    // Cleanup function: remove the channel subscription when the component unmounts.
+    // Cleanup: remove subscription when component unmounts or businessId changes
     return () => {
+      console.log(`🔌 Cleaning up realtime subscription for business: ${businessId}`);
       supabase.removeChannel(channel);
     };
-  }, [isMounted, businessId, supabase, onUpdate, serverContent]);
+  }, [businessId, supabase]); // Only businessId and supabase since callbacks are now stable
 
-  // This component does not render anything itself.
+  // This component renders nothing
   return null;
 } 

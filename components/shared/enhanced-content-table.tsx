@@ -121,27 +121,19 @@ export function EnhancedContentTable({
     
     let status: ContentStatus = 'draft';
     
-    // Simple status determination based on content fields
+    // Determine status based on actual content fields, not variant
     if (contentItem.status === 'processing' || contentItem.content_generation_status === 'generating') {
       status = 'processing';
     } else if (contentItem.content_generation_status === 'failed') {
       status = 'failed';
+    } else if (contentItem.status === 'completed' && contentItem.content_generation_status === 'completed') {
+      // Content generation is complete - determine final status based on assets
+      // For now, since we don't have assets loaded, default to 'draft' for completed content
+      // This will be refined when assets are properly loaded
+      status = 'draft';
     } else {
-      // For demo purposes, map variants to status
-      switch (variant) {
-        case 'drafts':
-          status = 'draft';
-          break;
-        case 'scheduled':
-          status = 'scheduled';
-          break;
-        case 'partially-published':
-          status = 'partially-published';
-          break;
-        case 'completed':
-          status = 'completed';
-          break;
-      }
+      // Default to draft for other cases
+      status = 'draft';
     }
     
     let actions = getStatusActions(status);
@@ -492,17 +484,17 @@ export function EnhancedContentTable({
               <AlertDialogTitle>Delete Content</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="space-y-3 pt-2">
-              <p>
+              <div>
                 This action cannot be undone. Deleting this content will permanently remove:
-              </p>
+              </div>
               <ul className="list-disc list-inside space-y-1 text-sm">
                 <li>All generated content assets (blog posts, emails, social media content)</li>
                 <li>All associated images, videos, and audio files</li>
                 <li>All scheduling information</li>
               </ul>
-              <p className="font-medium">
+              <div className="font-medium">
                 Are you sure you want to delete &quot;{deleteModal.content?.content_title || 'Untitled'}&quot;?
-              </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

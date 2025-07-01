@@ -80,3 +80,35 @@ touch "supabase/migrations/${timestamp}_<description>.sql"
 
 # Documents
 All documentation created are to be put into the /docs folder
+
+
+#Realtime Usage in App
+## Decision Matrix
+
+### ✅ **APPROPRIATE Realtime Use Cases**
+
+| Use Case | Example | Why Appropriate |
+|----------|---------|-----------------|
+| **Immediate User Actions** | User creates/deletes content | Instant feedback for user actions |
+| **Manual Content Edits** | User updates title/description | Real-time collaboration feel |
+| **User Presence** | Show who's online | Social interaction feature |
+| **Live Notifications** | New comment added | Interactive social features |
+
+### ❌ **INAPPROPRIATE Realtime Use Cases** 
+
+| Use Case | Example | Why Inappropriate | Better Alternative |
+|----------|---------|-------------------|-------------------|
+| **Workflow Notifications** | N8N processing completion | External systems, reliability critical | Polling every 10s |
+| **Long-running Processes** | Audio/video transcription | Takes 30s-2min, not time-critical | Polling with backoff |
+| **AI/External Services** | HeyGen video generation | External system dependency | Polling + optimistic UI |
+| **Critical Status Changes** | processing → completed | Must be reliable, not real-time | Smart polling |
+
+### 🔄 **Current App Analysis**
+
+Based on your requirements:
+- **No collaborative features** → Minimal realtime needed
+- **Single user sessions** → No presence features needed  
+- **Reliability over speed** → Polling preferred for critical updates
+- **10+ second delays acceptable** → Perfect for polling approach
+
+---
