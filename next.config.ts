@@ -77,6 +77,11 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    // Fix Router Cache issue that prevents image updates
+    staleTimes: {
+      dynamic: 0, // Disable caching for dynamic pages - fixes image refresh issue
+      static: 300, // Keep static cache for 5 minutes
+    },
   },
   
   // Development optimization

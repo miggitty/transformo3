@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(
   request: NextRequest,
@@ -249,6 +250,14 @@ export async function PATCH(
     }
 
     console.log(`Successfully updated content asset ${id}`);
+    
+    // Invalidate Next.js caches to ensure fresh images are displayed
+    // This is the official solution for the Router Cache image refresh issue
+    if (updatedAsset.content_id) {
+      revalidatePath(`/content/${updatedAsset.content_id}`);
+      console.log(`✅ Cache invalidated for content/${updatedAsset.content_id}`);
+    }
+    
     return NextResponse.json(updatedAsset);
 
   } catch (error) {

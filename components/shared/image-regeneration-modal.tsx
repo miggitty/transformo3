@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSupabaseBrowser } from '../providers/supabase-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +22,6 @@ interface ImageRegenerationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contentAsset: ContentAsset;
-  onImageUpdated?: () => void; // Callback to refresh content assets
 }
 
 type RegenerationStep = 'edit-prompt' | 'generating' | 'compare-images';
@@ -31,8 +31,8 @@ export default function ImageRegenerationModal({
   open,
   onOpenChange,
   contentAsset,
-  onImageUpdated,
 }: ImageRegenerationModalProps) {
+  const router = useRouter();
   const supabase = useSupabaseBrowser();
   const [step, setStep] = useState<RegenerationStep>('edit-prompt');
   const [imagePrompt, setImagePrompt] = useState(contentAsset.image_prompt || '');
@@ -100,7 +100,7 @@ export default function ImageRegenerationModal({
         .subscribe();
 
       // Set timeout for failure case (5 minutes)
-      const timeoutId = setTimeout(() => {
+      setTimeout(() => {
         supabase.removeChannel(channel);
         if (step === 'generating') {
           setStep('edit-prompt');
@@ -123,7 +123,8 @@ export default function ImageRegenerationModal({
   const handleSave = async () => {
     if (selectedImage === 'new' && newImageUrl) {
       try {
-        // Move temporary image to permanent and update prompt
+        console.log('💾 Saving new image...');
+        
         const response = await fetch(`/api/content-assets/${contentAsset.id}`, {
           method: 'PATCH',
           headers: {
@@ -140,12 +141,12 @@ export default function ImageRegenerationModal({
           throw new Error(errorData.error || 'Failed to save image');
         }
 
-        toast.success('Image updated successfully!');
+        console.log('✅ Image saved successfully, refreshing...');
         
-        // Refresh content assets data without page reload
-        if (onImageUpdated) {
-          onImageUpdated();
-        }
+        // Simple router refresh - the API route handles cache invalidation
+        router.refresh();
+        toast.success('Image updated successfully!');
+        onOpenChange(false);
         
       } catch (error) {
         console.error('Error saving image:', error);
@@ -182,6 +183,11 @@ export default function ImageRegenerationModal({
           ? 'Image prompt updated successfully!' 
           : 'Temporary image cleared successfully!';
         toast.success(message);
+        
+        // Refresh page to show any prompt updates
+        if (imagePrompt !== contentAsset.image_prompt) {
+          router.refresh();
+        }
       } catch (error) {
         console.error('Error saving prompt:', error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to save prompt. Please try again.';
@@ -207,6 +213,9 @@ export default function ImageRegenerationModal({
             cancel_temporary_image: true,
           }),
         });
+        
+        // Refresh to clear any temporary state
+        router.refresh();
       } catch (error) {
         console.error('Error clearing temporary image:', error);
         // Continue with cancel even if clearing fails
@@ -363,26 +372,50 @@ export default function ImageRegenerationModal({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 justify-between">
+      <div className="flex gap-3 justify-end">
+        <Button variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
         <Button 
-          variant="outline" 
+          variant="outline"
           onClick={handleRegenerateImage}
           disabled={!imagePrompt.trim() || isRegenerating}
         >
           <Bot className="h-4 w-4 mr-2" />
-          {isRegenerating ? 'Regenerating...' : 'Regenerate Again'}
+          Regenerate
         </Button>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={handleCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>
-            Save Changes
-          </Button>
-        </div>
+        <Button onClick={handleSave}>
+          Save Changes
+        </Button>
       </div>
     </div>
   );
+
+  const getDialogTitle = () => {
+    switch (step) {
+      case 'edit-prompt':
+        return 'AI Image Regeneration';
+      case 'generating':
+        return 'Generating Image...';
+      case 'compare-images':
+        return 'Choose Your Preferred Image';
+      default:
+        return 'AI Image Regeneration';
+    }
+  };
+
+  const getDialogDescription = () => {
+    switch (step) {
+      case 'edit-prompt':
+        return 'Edit the prompt below to regenerate the image with AI.';
+      case 'generating':
+        return 'Please wait while we generate your new image.';
+      case 'compare-images':
+        return 'Select which image you prefer and save your changes.';
+      default:
+        return '';
+    }
+  };
 
   const getStepContent = () => {
     switch (step) {
@@ -394,32 +427,6 @@ export default function ImageRegenerationModal({
         return renderCompareImagesStep();
       default:
         return renderPromptEditStep();
-    }
-  };
-
-  const getDialogTitle = () => {
-    switch (step) {
-      case 'edit-prompt':
-        return 'Regenerate Image with AI';
-      case 'generating':
-        return 'Generating Image';
-      case 'compare-images':
-        return 'Choose Your Image';
-      default:
-        return 'Regenerate Image with AI';
-    }
-  };
-
-  const getDialogDescription = () => {
-    switch (step) {
-      case 'edit-prompt':
-        return 'Edit the prompt below to customize how the AI generates your new image.';
-      case 'generating':
-        return 'Please wait while we generate your new image.';
-      case 'compare-images':
-        return 'Compare the images and select which one you want to keep.';
-      default:
-        return 'Edit the prompt below to customize how the AI generates your new image.';
     }
   };
 

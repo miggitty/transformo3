@@ -17,6 +17,14 @@ import { FieldConfig } from '@/types';
 import { updateContentField, updateContentAsset, toggleAssetApproval } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 
+// Cache busting utility - the proven solution for browser image cache issues
+const addCacheBuster = (url: string | null, cacheBuster?: number): string => {
+  if (!url) return '';
+  const timestamp = cacheBuster || Date.now();
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${timestamp}`;
+};
+
 interface ContentClientPageProps {
   content: ContentWithBusiness;
 }
@@ -33,6 +41,9 @@ export default function ContentClientPage({
   const [isContentGenerating, setIsContentGenerating] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [activeStep, setActiveStep] = useState('video-script');
+  
+  // Cache busting state - tracks when images were last updated
+  const [imageCacheBusters, setImageCacheBusters] = useState<Record<string, number>>({});
   
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -53,6 +64,16 @@ export default function ContentClientPage({
     { id: 'social-blog-post', title: 'Social Blog Post' },
     { id: 'schedule', title: 'Schedule' }
   ];
+
+  // Force immediate image refresh for specific content types
+  const forceImageRefresh = useCallback((contentType: string) => {
+    const timestamp = Date.now();
+    setImageCacheBusters(prev => ({
+      ...prev,
+      [contentType]: timestamp
+    }));
+    console.log(`🔄 Forced image refresh for ${contentType} with timestamp ${timestamp}`);
+  }, []);
 
   const fetchContentAssets = useCallback(async () => {
     if (!supabase) {
@@ -288,7 +309,40 @@ export default function ContentClientPage({
     };
 
     checkPermissionsAndFetch();
-  }, []);
+
+    // Set up realtime subscription for immediate image updates
+    if (supabase) {
+      const imageUpdateChannel = supabase
+        .channel('content_assets_images')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'content_assets',
+            filter: `content_id=eq.${content.id}`,
+          },
+          (payload: any) => {
+            const updatedAsset = payload.new;
+            
+            // Check if image_url was updated
+            if (updatedAsset.image_url && updatedAsset.image_url !== payload.old?.image_url) {
+              console.log(`🖼️ Image updated for ${updatedAsset.content_type}, forcing immediate refresh`);
+              forceImageRefresh(updatedAsset.content_type);
+              
+              // Also refresh the assets data
+              fetchContentAssets();
+            }
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(imageUpdateChannel);
+      };
+    }
+  }, [content.id, supabase, forceImageRefresh, fetchContentAssets]);
 
   return (
     <div className="min-h-screen bg-white px-4 md:px-6 lg:px-8 py-8">
@@ -570,10 +624,9 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={blogAsset as any}
                               className="block w-full"
-                              onImageUpdated={fetchContentAssets}
                             >
                               <img 
-                                src={blogAsset.image_url} 
+                                src={addCacheBuster(blogAsset.image_url, imageCacheBusters['blog_post'])} 
                                 alt={blogAsset.headline || 'Blog post image'}
                                 className="w-full object-cover rounded-lg"
                               />
@@ -728,11 +781,11 @@ export default function ContentClientPage({
                                 src={content.video_long_url ?? undefined}
                                 className="w-full object-cover"
                                 controls
-                                poster={socialAsset.image_url ?? undefined}
+                                poster={socialAsset.image_url ? addCacheBuster(socialAsset.image_url, imageCacheBusters['social_long_video']) : undefined}
                               />
                             ) : (
                               <img 
-                                src={socialAsset.image_url} 
+                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_long_video'])} 
                                 alt="Social post content"
                                 className="w-full object-cover"
                               />
@@ -843,11 +896,11 @@ export default function ContentClientPage({
                                 src={content.video_short_url ?? undefined}
                                 className="w-full object-cover"
                                 controls
-                                poster={socialAsset.image_url ?? undefined}
+                                poster={socialAsset.image_url ? addCacheBuster(socialAsset.image_url, imageCacheBusters['social_short_video']) : undefined}
                               />
                             ) : (
                               <img 
-                                src={socialAsset.image_url} 
+                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_short_video'])} 
                                 alt="Social post content"
                                 className="w-full object-cover"
                               />
@@ -958,7 +1011,7 @@ export default function ContentClientPage({
                               className="block w-full"
                             >
                               <img 
-                                src={socialAsset.image_url} 
+                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_rant_post'])} 
                                 alt="Social post content"
                                 className="w-full object-cover rounded-lg"
                               />
@@ -1054,7 +1107,7 @@ export default function ContentClientPage({
                               className="block w-full"
                             >
                               <img 
-                                src={socialAsset.image_url} 
+                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_blog_post'])} 
                                 alt="Social post content"
                                 className="w-full object-cover rounded-lg"
                               />
@@ -1150,7 +1203,7 @@ export default function ContentClientPage({
                               className="block w-full"
                             >
                               <img 
-                                src={socialAsset.image_url} 
+                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_quote_card'])} 
                                 alt="Quote card visual"
                                 className="w-full object-cover rounded-lg"
                               />
@@ -1208,7 +1261,7 @@ export default function ContentClientPage({
                             >
                               <div className="relative">
                                 <img 
-                                  src={youtubeAsset.image_url} 
+                                  src={addCacheBuster(youtubeAsset.image_url, imageCacheBusters['youtube_video'])} 
                                   alt="YouTube video thumbnail"
                                   className="w-full object-cover"
                                 />
