@@ -129,7 +129,12 @@ password_requirements = "lower_upper_letters_digits"
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 10
+# GLOBAL LIMIT across ALL users (not per user!)
+# 10 = Only 10 total auth emails per hour (very restrictive)
+# 50 = Good for small-medium apps (~1,200 signups/day max)
+# 100 = Production apps (~2,400 signups/day max)
+# 200+ = High-traffic apps
+email_sent = 50
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
@@ -154,7 +159,7 @@ web3 = 30
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
-double_confirm_changes = false
+double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
@@ -176,10 +181,34 @@ pass = "env(RESEND_API_KEY)"
 admin_email = "noreply@messages.transformo.io"
 sender_name = "Transformo"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Custom email templates
+[auth.email.template.confirmation]
+subject = "Confirm Your Email - Transformo"
+content_path = "./supabase/templates/confirmation_template.html"
+
+[auth.email.template.recovery]
+subject = "Reset Your Password - Transformo"
+content_path = "./supabase/templates/recovery_template.html"
+
+[auth.email.template.magic_link]
+subject = "Your Magic Link - Transformo"
+content_path = "./supabase/templates/magic_link_template.html"
+
+[auth.email.template.invite]
+subject = "You're Invited to Transformo"
+content_path = "./supabase/templates/invite_template.html"
+
+[auth.email.template.email_change]
+subject = "Confirm Email Change - Transformo"
+content_path = "./supabase/templates/email_change_template.html"
+
+[auth.email.template.email_change_new]
+subject = "Confirm New Email Address - Transformo"
+content_path = "./supabase/templates/email_change_new_template.html"
+
+[auth.email.template.reauthentication]
+subject = "Confirm Reauthentication - Transformo"
+content_path = "./supabase/templates/reauthentication_template.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

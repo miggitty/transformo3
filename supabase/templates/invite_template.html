@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>You're Invited to Transformo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        background-color: #f8fafc;
+        margin: 0;
+        padding: 20px;
+        color: #1a202c;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+      }
+      .logo {
+        margin-bottom: 30px;
+      }
+      h2 {
+        color: #2d3748;
+        font-size: 24px;
+        margin-bottom: 20px;
+        font-weight: 600;
+      }
+      p {
+        line-height: 1.6;
+        margin-bottom: 16px;
+        color: #4a5568;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #805ad5;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        margin: 20px 0;
+      }
+      .btn:hover {
+        background-color: #6b46c1;
+      }
+      .code {
+        background-color: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 12px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+        color: #2d3748;
+      }
+      .footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+        color: #718096;
+        font-size: 14px;
+      }
+      .invite-notice {
+        background-color: #faf5ff;
+        border: 1px solid #d6bcfa;
+        border-radius: 4px;
+        padding: 16px;
+        margin: 20px 0;
+      }
+      .features {
+        list-style: none;
+        padding: 0;
+      }
+      .features li {
+        padding: 8px 0;
+        position: relative;
+        padding-left: 25px;
+      }
+      .features li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #38a169;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <img src="{{ .SiteURL }}/transformo-logo-dark.png" alt="Transformo Logo" width="150" />
+      </div>
+      
+      <h2>🎉 You're Invited to Transformo!</h2>
+      
+      <p>Great news! You've been invited to join Transformo, the AI-powered content creation platform that transforms your videos and voice recordings into multiple content formats.</p>
+      
+      <div class="invite-notice">
+        <p><strong>What you'll get access to:</strong></p>
+        <ul class="features">
+          <li>AI-powered video and audio transcription</li>
+          <li>Automatic content generation (blog posts, social media, emails)</li>
+          <li>Multi-platform content scheduling</li>
+          <li>Professional AI avatar videos</li>
+          <li>And much more!</li>
+        </ul>
+      </div>
+      
+      <p>Click the button below to accept your invitation and create your account:</p>
+      
+      <a href="{{ .ConfirmationURL }}" class="btn">Accept Invitation</a>
+      
+      <p><strong>Alternative:</strong> You can also enter this code in the invitation form:</p>
+      <div class="code">{{ .Token }}</div>
+      
+      <div class="footer">
+        <p>Welcome to the future of content creation!<br>The Transformo Team</p>
+        <p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
+        <p style="word-break: break-all; color: #a0aec0;">{{ .ConfirmationURL }}</p>
+      </div>
+    </div>
+  </body>
+</html> 
