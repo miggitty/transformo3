@@ -42,12 +42,12 @@ export function ContentStatusFlow({
   const schedulingProgress = totalAssets > 0 ? (scheduledAssets / totalAssets) * 100 : 0;
   const publishingProgress = totalAssets > 0 ? (publishedAssets / totalAssets) * 100 : 0;
 
-  // Determine current phase
+  // Determine current phase using simplified status logic
   const getCurrentPhase = () => {
-    if (content.content_generation_status === 'generating') {
+    if (content.status === 'processing') {
       return 'generating';
     }
-    if (content.content_generation_status === 'failed') {
+    if (content.status === 'failed') {
       return 'failed';
     }
     if (totalAssets === 0) {
@@ -157,9 +157,9 @@ export function ContentStatusFlow({
       id: 'generation',
       title: 'Content Generation',
       icon: FileText,
-      status: content.content_generation_status === 'completed' ? 'completed' : 
-             content.content_generation_status === 'generating' ? 'active' : 
-             content.content_generation_status === 'failed' ? 'failed' : 'pending',
+      status: content.status === 'draft' && totalAssets > 0 ? 'completed' : 
+             content.status === 'processing' ? 'active' : 
+             content.status === 'failed' ? 'failed' : 'pending',
       description: `${totalAssets} assets generated`
     },
     {

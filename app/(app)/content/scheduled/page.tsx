@@ -47,23 +47,25 @@ export default async function ScheduledPage() {
     return <div>Error loading content.</div>;
   }
 
-  // Filter for scheduled content
+  // Filter for scheduled content using simplified status logic
   const scheduledContent = content?.filter(item => {
     const assets = item.content_assets || [];
     
     // Skip processing/failed content
-    if (item.status === 'processing' || 
-        item.content_generation_status === 'generating' ||
-        item.content_generation_status === 'failed' || 
-        (item.status === 'completed' && assets.length === 0)) {
+    if (item.status === 'processing' || item.status === 'failed') {
       return false;
     }
     
-    const scheduledAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_scheduled_at);
-    const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
+    // For draft content, check if it has scheduled assets
+    if (item.status === 'draft') {
+      const scheduledAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_scheduled_at);
+      const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
+      
+      // Scheduled: Assets have scheduled dates but none sent yet
+      return scheduledAssets.length > 0 && sentAssets.length === 0;
+    }
     
-    // Scheduled: Assets have scheduled dates but none sent yet
-    return scheduledAssets.length > 0 && sentAssets.length === 0;
+    return false;
   }) || [];
   
   return (

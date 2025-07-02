@@ -134,11 +134,11 @@ export default function ContentClientPage({
         // Fetch content status
         const { data: contentData } = await supabase
           .from('content')
-          .select('content_generation_status')
+          .select('status')
           .eq('id', content.id)
           .single();
         
-        if (contentData?.content_generation_status === 'generating') {
+        if (contentData?.status === 'processing') {
           setIsContentGenerating(true);
         }
 

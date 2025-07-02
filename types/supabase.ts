@@ -19,8 +19,8 @@ export type Database = {
         Args: {
           query?: string
           extensions?: Json
-          operationName?: string
           variables?: Json
+          operationName?: string
         }
         Returns: Json
       }
@@ -216,7 +216,6 @@ export type Database = {
         Row: {
           audio_url: string | null
           business_id: string | null
-          content_generation_status: string | null
           content_title: string | null
           created_at: string | null
           error_message: string | null
@@ -239,7 +238,6 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           business_id?: string | null
-          content_generation_status?: string | null
           content_title?: string | null
           created_at?: string | null
           error_message?: string | null
@@ -262,7 +260,6 @@ export type Database = {
         Update: {
           audio_url?: string | null
           business_id?: string | null
-          content_generation_status?: string | null
           content_title?: string | null
           created_at?: string | null
           error_message?: string | null
@@ -609,7 +606,7 @@ export type Database = {
         Returns: undefined
       }
       generate_upload_post_username: {
-        Args: { p_business_id: string; p_business_name: string }
+        Args: { p_business_name: string; p_business_id: string }
         Returns: string
       }
       get_ai_avatar_integration: {
@@ -631,12 +628,12 @@ export type Database = {
       get_blog_integration: {
         Args: { p_business_id: string }
         Returns: {
-          username: string
           id: string
           provider: string
-          validated_at: string
-          status: string
+          username: string
           site_url: string
+          status: string
+          validated_at: string
         }[]
       }
       get_blog_secret_v2: {
@@ -677,11 +674,11 @@ export type Database = {
       }
       set_blog_integration: {
         Args: {
-          p_provider: string
           p_business_id: string
+          p_provider: string
           p_credential: string
-          p_site_url?: string
           p_username?: string
+          p_site_url?: string
         }
         Returns: string
       }

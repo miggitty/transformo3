@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSupabaseBrowser } from '../providers/supabase-provider';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,6 +33,7 @@ export default function ImageRegenerationModal({
   contentAsset,
   onImageUpdated,
 }: ImageRegenerationModalProps) {
+  const supabase = useSupabaseBrowser();
   const [step, setStep] = useState<RegenerationStep>('edit-prompt');
   const [imagePrompt, setImagePrompt] = useState(contentAsset.image_prompt || '');
   const [newImageUrl, setNewImageUrl] = useState<string | null>(null);
@@ -77,43 +79,37 @@ export default function ImageRegenerationModal({
         throw new Error(data.error || 'Failed to start image regeneration');
       }
 
-      // Start polling for completion
-      const startPolling = () => {
-        const pollInterval = setInterval(async () => {
-          try {
-            // Check if the content asset has been updated with a temporary image
-            const checkResponse = await fetch(`/api/content-assets/${contentAsset.id}`);
-            if (checkResponse.ok) {
-              const updatedAsset = await checkResponse.json();
-              
-              // Check if temporary_image_url is populated (indicating completion)
-              if (updatedAsset.temporary_image_url) {
-                clearInterval(pollInterval);
-                setNewImageUrl(updatedAsset.temporary_image_url);
-                setIsRegenerating(false); // Reset regenerating state
-                setStep('compare-images');
-                toast.success('New image generated successfully!');
-              }
-              // Continue polling if no change yet
-            }
-          } catch (error) {
-            console.error('Error polling for completion:', error);
-            // Continue polling despite error
+      // Set up realtime listener for completion
+      const channel = supabase
+        .channel(`image-regen-${contentAsset.id}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'content_assets',
+          filter: `id=eq.${contentAsset.id}`,
+        }, (payload) => {
+          const updatedAsset = payload.new as any;
+          if (updatedAsset.temporary_image_url) {
+            setNewImageUrl(updatedAsset.temporary_image_url);
+            setIsRegenerating(false);
+            setStep('compare-images');
+            supabase.removeChannel(channel);
+            toast.success('New image generated successfully!');
           }
-        }, 2000); // Poll every 2 seconds
+        })
+        .subscribe();
 
-        // Stop polling after 5 minutes (timeout)
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          if (step === 'generating') {
-            setStep('edit-prompt');
-            setIsRegenerating(false); // Reset regenerating state
-            toast.error('Image generation timed out. Please try again.');
-          }
-        }, 300000); // 5 minutes
-      };
+      // Set timeout for failure case (5 minutes)
+      const timeoutId = setTimeout(() => {
+        supabase.removeChannel(channel);
+        if (step === 'generating') {
+          setStep('edit-prompt');
+          setIsRegenerating(false);
+          toast.error('Image generation timed out. Please try again.');
+        }
+      }, 300000); // 5 minutes
 
-      startPolling();
+      // Note: Cleanup will be handled by component unmount or timeout
       
     } catch (error) {
       console.error('Error regenerating image:', error);

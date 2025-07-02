@@ -46,22 +46,24 @@ export default async function CompletedPage() {
     return <div>Error loading content.</div>;
   }
 
-  // Filter for completed content
+  // Filter for completed content using simplified status logic
   const completedContent = content?.filter(item => {
     const assets = item.content_assets || [];
     
     // Skip processing/failed content
-    if (item.status === 'processing' || 
-        item.content_generation_status === 'generating' ||
-        item.content_generation_status === 'failed' || 
-        (item.status === 'completed' && assets.length === 0)) {
+    if (item.status === 'processing' || item.status === 'failed') {
       return false;
     }
     
-    const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
+    // For draft content, check if all assets have been sent
+    if (item.status === 'draft') {
+      const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
+      
+      // Completed: All assets have been sent successfully
+      return assets.length > 0 && sentAssets.length === assets.length;
+    }
     
-    // Completed: All assets have been sent successfully
-    return assets.length > 0 && sentAssets.length === assets.length;
+    return false;
   }) || [];
   
   return (

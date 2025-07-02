@@ -22,39 +22,41 @@ export function determineContentStatus(
   content: Tables<'content'>, 
   assets: Tables<'content_assets'>[]
 ): ContentStatus {
-  // Processing: Audio/Video still being processed or content generation in progress
-  // Both project types follow the same processing workflow
-  if (content.status === 'processing' || content.content_generation_status === 'generating') {
-    return 'processing';
+  // Simplified single-status architecture
+  switch (content.status) {
+    case 'processing':
+      return 'processing';
+    
+    case 'failed':
+      return 'failed';
+      
+    case 'draft':
+      // Asset-based sub-status determination for draft content
+      const scheduledAssets = assets.filter(asset => asset.asset_scheduled_at);
+      const sentAssets = assets.filter(asset => asset.asset_status === 'Sent');
+      
+      // All assets sent successfully
+      if (sentAssets.length === assets.length && assets.length > 0) {
+        return 'completed';
+      }
+      
+      // Some assets sent, some pending
+      if (sentAssets.length > 0) {
+        return 'partially-published';
+      }
+      
+      // Assets have scheduled dates but none sent yet
+      if (scheduledAssets.length > 0) {
+        return 'scheduled';
+      }
+      
+      // Content is ready for review/scheduling
+      return 'draft';
+      
+    default:
+      // Handle any other status values directly
+      return content.status as ContentStatus;
   }
-  
-  // Failed: Content generation failed or has no assets after completion
-  if (content.content_generation_status === 'failed' || 
-      (content.status === 'completed' && assets.length === 0)) {
-    return 'failed';
-  }
-  
-  // Asset-based status determination (same for both project types)
-  const scheduledAssets = assets.filter(asset => asset.asset_scheduled_at);
-  const sentAssets = assets.filter(asset => asset.asset_status === 'Sent');
-  
-  // Completed: All assets have been sent successfully
-  if (assets.length > 0 && sentAssets.length === assets.length) {
-    return 'completed';
-  }
-  
-  // Partially Published: Some assets sent, some pending/failed
-  if (sentAssets.length > 0 && sentAssets.length < assets.length) {
-    return 'partially-published';
-  }
-  
-  // Scheduled: Assets have scheduled dates but none sent yet
-  if (scheduledAssets.length > 0 && sentAssets.length === 0) {
-    return 'scheduled';
-  }
-  
-  // Draft: Content is complete but no assets scheduled
-  return 'draft';
 }
 
 /**

@@ -141,11 +141,11 @@ export async function generateContent(payload: {
   }
 
   try {
-    // First, update the content status to 'generating'
+    // First, update the content status to 'processing'
     const supabase = await createClient();
     const { error: statusUpdateError } = await supabase
       .from('content')
-      .update({ content_generation_status: 'generating' })
+      .update({ status: 'processing' })
       .eq('id', payload.contentId);
 
     if (statusUpdateError) {
@@ -220,7 +220,7 @@ export async function generateContent(payload: {
       // Revert the status update if webhook fails
       await supabase
         .from('content')
-        .update({ content_generation_status: null })
+        .update({ status: 'failed' })
         .eq('id', payload.contentId);
         
       return {
@@ -240,7 +240,7 @@ export async function generateContent(payload: {
       const supabase = await createClient();
       await supabase
         .from('content')
-        .update({ content_generation_status: null })
+        .update({ status: 'failed' })
         .eq('id', payload.contentId);
     } catch (revertError) {
       console.error('Error reverting status:', revertError);
@@ -838,11 +838,11 @@ export async function retryContentProcessing({
       };
     }
 
-    // Reset content generation status to generating
+    // Reset content status to processing
     const { error: statusError } = await supabase
       .from('content')
       .update({ 
-        content_generation_status: 'generating',
+        status: 'processing',
         error_message: null 
       })
       .eq('id', contentId);
@@ -855,17 +855,6 @@ export async function retryContentProcessing({
       };
     }
 
-    // Trigger N8N workflow again (using existing generateContent logic)
-    const webhookUrl = process.env.N8N_WEBHOOK_URL_CONTENT_CREATION;
-    
-    if (!webhookUrl) {
-      console.error('N8N_WEBHOOK_URL_CONTENT_CREATION is not set.');
-      return {
-        success: false,
-        error: 'Webhook URL is not configured.',
-      };
-    }
-
     const business = content.businesses;
     if (!business) {
       return {
@@ -874,25 +863,99 @@ export async function retryContentProcessing({
       };
     }
 
-    // Prepare payload for N8N (simplified version)
-    const payload = {
-      contentId: content.id,
-      content_title: content.content_title,
-      transcript: content.transcript,
-      research: content.research,
-      video_script: content.video_script,
-      keyword: content.keyword,
-      business_name: business.name,
-      website_url: business.website_url,
-      social_media_profiles: business.social_media_profiles,
-      social_media_integrations: business.social_media_integrations,
-      writing_style_guide: business.writing_style_guide,
-      cta_youtube: business.cta_youtube,
-      cta_email: business.cta_email,
-      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
-      callbackSecret: process.env.N8N_CALLBACK_SECRET,
-      environment: process.env.NODE_ENV,
-    };
+    // Handle different project types with appropriate workflows
+    let webhookUrl: string | undefined;
+    let payload: any;
+
+    if (content.project_type === 'video_upload') {
+      // For video upload projects, retry the full video processing workflow
+      webhookUrl = process.env.N8N_WEBHOOK_URL_VIDEO_TRANSCRIPTION;
+      
+      if (!webhookUrl) {
+        console.error('N8N_WEBHOOK_URL_VIDEO_TRANSCRIPTION is not set.');
+        return {
+          success: false,
+          error: 'Video transcription webhook URL is not configured.',
+        };
+      }
+
+      // Prepare URL for N8N access (same logic as video upload)
+      let publicVideoUrl = content.video_long_url;
+      if (process.env.NODE_ENV === 'development' && publicVideoUrl?.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+        const urlPath = publicVideoUrl.replace('http://127.0.0.1:54321', '');
+        publicVideoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+      }
+
+      payload = {
+        video_url: publicVideoUrl,
+        content_id: content.id,
+        business_id: content.business_id,
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+        callbackSecret: process.env.N8N_CALLBACK_SECRET,
+        environment: process.env.NODE_ENV
+      };
+    } else if (content.project_type === 'voice_recording') {
+      // For audio projects, retry the full audio processing workflow
+      webhookUrl = process.env.N8N_WEBHOOK_URL_AUDIO_PROCESSING;
+      
+      if (!webhookUrl) {
+        console.error('N8N_WEBHOOK_URL_AUDIO_PROCESSING is not set.');
+        return {
+          success: false,
+          error: 'Audio processing webhook URL is not configured.',
+        };
+      }
+
+      // Prepare URL for N8N access (same logic as audio upload)
+      let publicAudioUrl = content.audio_url;
+      if (process.env.NODE_ENV === 'development' && publicAudioUrl?.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+        const urlPath = publicAudioUrl.replace('http://127.0.0.1:54321', '');
+        publicAudioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+      }
+
+      payload = {
+        audio_url: publicAudioUrl,
+        content_id: content.id,
+        business_id: content.business_id,
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+        callbackSecret: process.env.N8N_CALLBACK_SECRET,
+        environment: process.env.NODE_ENV
+      };
+    } else {
+      // For other projects (content creation only), use content creation workflow
+      webhookUrl = process.env.N8N_WEBHOOK_URL_CONTENT_CREATION;
+      
+      if (!webhookUrl) {
+        console.error('N8N_WEBHOOK_URL_CONTENT_CREATION is not set.');
+        return {
+          success: false,
+          error: 'Content creation webhook URL is not configured.',
+        };
+      }
+
+      payload = {
+        contentId: content.id,
+        content_title: content.content_title,
+        transcript: content.transcript,
+        research: content.research,
+        video_script: content.video_script,
+        keyword: content.keyword,
+        business_name: business.name,
+        website_url: business.website_url,
+        social_media_profiles: business.social_media_profiles,
+        social_media_integrations: business.social_media_integrations,
+        writing_style_guide: business.writing_style_guide,
+        cta_youtube: business.cta_youtube,
+        cta_email: business.cta_email,
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+        callbackSecret: process.env.N8N_CALLBACK_SECRET,
+        environment: process.env.NODE_ENV,
+      };
+    }
+
+    console.log(`Retrying ${content.project_type || 'unknown'} processing for content ${contentId}`);
+    console.log('Webhook URL:', webhookUrl);
+    console.log('Payload:', JSON.stringify(payload, null, 2));
 
     const response = await fetch(webhookUrl, {
       method: 'POST',

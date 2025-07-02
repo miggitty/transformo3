@@ -38,7 +38,6 @@ export async function createVideoUploadProject() {
         business_id: profile.business_id,
         project_type: 'video_upload',
         status: 'creating',
-        content_generation_status: 'pending',
       })
       .select('id, business_id')
       .single();
@@ -56,10 +55,16 @@ export async function createVideoUploadProject() {
   }
 }
 
-// Action 2: Finalize video upload and trigger N8N video transcription workflow
+// Action 2: Finalize video upload and trigger N8N video processing workflow
+// This now works EXACTLY like audio processing - unified workflow
 export async function finalizeVideoUploadRecord(contentId: string, videoUrl: string) {
   console.log('Action: finalizeVideoUploadRecord started', { contentId, videoUrl });
   const supabase = await createSupabaseServerClient();
+
+  console.log('=== Video URL Debug Info ===');
+  console.log('Input videoUrl:', videoUrl);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('NEXT_PUBLIC_SUPABASE_EXTERNAL_URL:', process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL);
 
   try {
     const {
@@ -77,10 +82,9 @@ export async function finalizeVideoUploadRecord(contentId: string, videoUrl: str
       .update({
         video_long_url: videoUrl,
         status: 'processing',
-        content_generation_status: 'pending',
       })
       .eq('id', contentId)
-      .select('id, business_id, video_long_url')
+      .select('id, business_id')
       .single();
 
     if (updateError || !updatedContent) {
@@ -90,51 +94,78 @@ export async function finalizeVideoUploadRecord(contentId: string, videoUrl: str
 
     console.log(`Action: Content record updated successfully. { contentId: '${updatedContent.id}' }`);
 
-    // Trigger N8N video transcription webhook
+    // For N8N, we need to provide a publicly accessible URL (same logic as audio)
+    let publicVideoUrl = videoUrl;
+    
+    // In local development, convert local Supabase URLs to external Supabase URLs for N8N access
+    if (process.env.NODE_ENV === 'development' && videoUrl.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+      // Extract the path from the local Supabase URL and construct external Supabase URL
+      const urlPath = videoUrl.replace('http://127.0.0.1:54321', '');
+      publicVideoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+      console.log('URL converted for development - urlPath:', urlPath);
+      console.log('URL converted for development - publicVideoUrl:', publicVideoUrl);
+    }
+    // In production/staging, videoUrl is already a public Supabase URL that N8N can access directly
+
+    console.log('Final publicVideoUrl being sent to N8N:', publicVideoUrl);
+
+    // Trigger N8N video processing workflow (unified workflow like audio)
     const webhookUrl = process.env.N8N_WEBHOOK_URL_VIDEO_TRANSCRIPTION;
-    console.log('Action: Webhook URL:', webhookUrl);
+    
+    console.log('=== N8N Environment Variables Debug ===');
+    console.log('N8N_WEBHOOK_URL_VIDEO_TRANSCRIPTION:', webhookUrl);
+    console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
+    console.log('N8N_CALLBACK_SECRET exists:', !!process.env.N8N_CALLBACK_SECRET);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
 
     if (!webhookUrl) {
       console.error('Action Error: N8N_WEBHOOK_URL_VIDEO_TRANSCRIPTION is not set.');
       return { error: 'Video transcription webhook URL is not configured' };
     }
 
-    const webhookPayload = {
-      content_id: contentId,
-      business_id: updatedContent.business_id,
-      video_url: videoUrl,
-      project_type: 'video_upload',
-      callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
-      callback_secret: process.env.N8N_CALLBACK_SECRET,
-      environment: process.env.NODE_ENV,
-    };
+    try {
+      // Use EXACT same payload structure as audio processing
+      const enrichedPayload = {
+        video_url: publicVideoUrl,
+        content_id: updatedContent.id,
+        business_id: updatedContent.business_id!,
+        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/n8n/callback`,
+        callbackSecret: process.env.N8N_CALLBACK_SECRET,
+        environment: process.env.NODE_ENV
+      };
 
-    console.log('Action: Sending webhook payload:', JSON.stringify(webhookPayload, null, 2));
+      console.log('Triggering N8N video processing workflow...');
+      console.log('N8N Payload being sent:', JSON.stringify(enrichedPayload, null, 2));
+      console.log('Making fetch request to:', webhookUrl);
 
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(webhookPayload),
-    });
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(enrichedPayload),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Action Error: Webhook request failed. Status: ${response.status}, Response: ${errorText}`);
-      return { error: `Failed to trigger video transcription: ${response.status}` };
+      console.log('N8N webhook response status:', response.status);
+      console.log('N8N webhook response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('N8N webhook failed:', errorText);
+        return { error: `N8N webhook failed: ${response.statusText}` };
+      }
+
+      const responseText = await response.text();
+      console.log('N8N webhook response body:', responseText);
+
+      revalidatePath('/content');
+      revalidatePath('/content/drafts');
+
+      return { success: true, data: { message: 'Video processing started successfully' } };
+    } catch (error) {
+      console.error('N8N integration error:', error);
+      return { error: 'Failed to trigger N8N workflow' };
     }
-
-    const responseData = await response.json();
-    console.log('Action: Webhook response:', responseData);
-
-    console.log(`Action: Video transcription workflow triggered successfully for content ${contentId}`);
-    revalidatePath('/content');
-    revalidatePath('/content/drafts');
-    
-    return { success: true, data: updatedContent };
   } catch (error) {
     console.error('Action Error: Unexpected error in finalizeVideoUploadRecord.', error);
-    return { error: 'An unexpected error occurred during video transcription setup' };
+    return { error: 'An unexpected error occurred during video processing setup' };
   }
 } 

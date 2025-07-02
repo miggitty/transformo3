@@ -69,6 +69,26 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: getImagePatterns(),
   },
+  // Disable React Strict Mode in development to fix Supabase realtime issues
+  reactStrictMode: process.env.NODE_ENV === 'production',
+  
+  experimental: {
+    // Enable server actions
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+  
+  // Development optimization
+  ...(process.env.NODE_ENV === 'development' && {
+    webpack: (config) => {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      }
+      return config
+    },
+  }),
 };
 
 // Wrap the Next.js config with the PWA config

@@ -47,22 +47,24 @@ export default async function PartiallyPublishedPage() {
     return <div>Error loading content.</div>;
   }
 
-  // Filter for partially published content
+  // Filter for partially published content using simplified status logic
   const partiallyPublishedContent = content?.filter(item => {
     const assets = item.content_assets || [];
     
     // Skip processing/failed content
-    if (item.status === 'processing' || 
-        item.content_generation_status === 'generating' ||
-        item.content_generation_status === 'failed' || 
-        (item.status === 'completed' && assets.length === 0)) {
+    if (item.status === 'processing' || item.status === 'failed') {
       return false;
     }
     
-    const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
+    // For draft content, check if it has partially published assets
+    if (item.status === 'draft') {
+      const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
+      
+      // Partially Published: Some assets sent, some pending/failed
+      return sentAssets.length > 0 && sentAssets.length < assets.length;
+    }
     
-    // Partially Published: Some assets sent, some pending/failed
-    return sentAssets.length > 0 && sentAssets.length < assets.length;
+    return false;
   }) || [];
   
   return (

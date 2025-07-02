@@ -65,11 +65,8 @@ export function SubscriptionProvider({
     }
   }, [initialSubscription]);
 
-  // Auto-refresh subscription status every 2 minutes (more frequent for better UX)
-  useEffect(() => {
-    const interval = setInterval(refreshSubscription, 2 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+      // Note: Subscription changes are handled by Stripe webhooks in real-time
+    // No need for polling - webhooks update the database immediately
 
   // Also refresh when the page becomes visible (user returns from another tab/app)
   useEffect(() => {

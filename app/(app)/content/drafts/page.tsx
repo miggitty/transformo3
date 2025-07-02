@@ -13,6 +13,7 @@ import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
 import { deleteContent, retryContentProcessing } from '../[id]/actions';
 import { Tables } from '@/types/supabase';
 import { Suspense } from 'react';
+import { determineContentStatus } from '@/lib/content-status';
 
 export default async function DraftsPage() {
   const supabase = await createClient();
@@ -51,35 +52,10 @@ export default async function DraftsPage() {
   // Filter for draft, processing, and failed content (all appear on drafts page)
   const draftContent = content?.filter(item => {
     const assets = item.content_assets || [];
+    const status = determineContentStatus(item, assets);
     
-    // Processing or generating content (show these so users see immediate feedback)
-    if (item.status === 'processing' || item.content_generation_status === 'generating') {
-      return true;
-    }
-    
-    // Failed content appears here
-    if (item.content_generation_status === 'failed' || 
-        (item.status === 'completed' && assets.length === 0)) {
-      return true;
-    }
-    
-    // Draft content (completed but not scheduled)
-    const scheduledAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_scheduled_at);
-    const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
-    
-    if (assets.length > 0 && sentAssets.length === assets.length) {
-      return false; // completed
-    }
-    
-    if (sentAssets.length > 0 && sentAssets.length < assets.length) {
-      return false; // partially published
-    }
-    
-    if (scheduledAssets.length > 0 && sentAssets.length === 0) {
-      return false; // scheduled
-    }
-    
-    return true; // draft
+    // Drafts page shows: processing, failed, and draft content
+    return status === 'processing' || status === 'failed' || status === 'draft';
   }) || [];
   
   return (
@@ -112,7 +88,7 @@ export default async function DraftsPage() {
         </CardHeader>
         <CardContent>
           <EnhancedContentTable
-            serverContent={draftContent.map(item => ({ ...item, content_assets: undefined }))}
+            serverContent={draftContent}
             businessId={businessId || ''}
             variant="drafts"
             showPagination={true}

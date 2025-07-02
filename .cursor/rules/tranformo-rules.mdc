@@ -112,3 +112,5 @@ Based on your requirements:
 - **10+ second delays acceptable** → Perfect for polling approach
 
 ---
+
+- never reset the database unless you you ask for permission first.

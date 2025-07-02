@@ -72,8 +72,6 @@ export function ContentTable({
     <>
       <RealtimeContentUpdater
         businessId={businessId}
-        serverContent={content}
-        onUpdate={setContent}
       />
       <Table>
         <TableHeader>

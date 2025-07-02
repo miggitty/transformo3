@@ -49,6 +49,7 @@ import {
   getStatusLabel, 
   getStatusBadgeVariant, 
   getStatusActions,
+  determineContentStatus,
   type ContentStatus 
 } from '@/lib/content-status';
 import { toast } from 'sonner';
@@ -113,28 +114,13 @@ export function EnhancedContentTable({
     setContent(serverContent);
   }, [serverContent]);
 
-  // Get status for each content item (simplified for now - in real implementation, fetch assets)
-  const getContentWithStatus = (contentItem: Tables<'content'>) => {
-    // TODO: In real implementation, fetch assets for each content item
-    // For now, we'll determine status based on content fields only
-    const assets: Tables<'content_assets'>[] = []; // Placeholder
+  // Get status for each content item using proper status determination
+  const getContentWithStatus = (contentItem: any) => {
+    // Extract assets from the content item (they may come from server-side joins)
+    const assets: Tables<'content_assets'>[] = contentItem.content_assets || [];
     
-    let status: ContentStatus = 'draft';
-    
-    // Determine status based on actual content fields, not variant
-    if (contentItem.status === 'processing' || contentItem.content_generation_status === 'generating') {
-      status = 'processing';
-    } else if (contentItem.content_generation_status === 'failed') {
-      status = 'failed';
-    } else if (contentItem.status === 'completed' && contentItem.content_generation_status === 'completed') {
-      // Content generation is complete - determine final status based on assets
-      // For now, since we don't have assets loaded, default to 'draft' for completed content
-      // This will be refined when assets are properly loaded
-      status = 'draft';
-    } else {
-      // Default to draft for other cases
-      status = 'draft';
-    }
+    // Use the proper status determination logic
+    const status = determineContentStatus(contentItem, assets);
     
     let actions = getStatusActions(status);
     
@@ -345,8 +331,6 @@ export function EnhancedContentTable({
       {/* Real-time Updates */}
       <RealtimeContentUpdater
         businessId={businessId}
-        serverContent={content}
-        onUpdate={setContent}
       />
 
       {/* Table */}
