@@ -13,7 +13,7 @@
 
 **Two-Stage N8N Workflow (Same as Audio):**
 1. **Video Transcription N8N** → callback sets `status: 'completed'` + triggers content creation
-2. **Content Creation N8N** → callback sets `content_generation_status: 'completed'` + generates assets
+2. **Content Creation N8N** → updates `status: 'draft'` + generates assets
 3. **Final Determined Status**: `'draft'` (by `lib/content-status.ts`)
 
 **Video Upload Integration:**

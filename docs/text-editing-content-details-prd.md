@@ -180,7 +180,7 @@ All phases completed successfully with comprehensive testing and user feedback i
 - **Refresh content display after successful save**
 
 #### **[x] 3.2: Permission and State Management**
-- **Disable editing when `content_generation_status === 'generating'`**
+- **Disable editing when `status === 'processing'`**
 - **Respect business permissions (existing RLS)**
 - **Show appropriate disabled states and messages**
 
