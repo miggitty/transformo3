@@ -77,8 +77,8 @@ export function SidebarNav() {
       {/* New Content Button with Dropdown */}
       <div className="mb-2">
         <NewContentButton 
-          variant="ghost" 
-          className="w-full justify-start text-muted-foreground hover:text-primary"
+          variant="default" 
+          className="w-full justify-start"
         />
       </div>
 

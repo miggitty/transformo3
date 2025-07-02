@@ -370,101 +370,64 @@ export default function ContentClientPage({
 
       {/* Page Title */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">{content.content_title || 'Untitled Content'}</h1>
+        {/* Video Title - Above main heading */}
+        <span className="text-sm font-medium text-gray-600 block mb-2">Video Name</span>
         
-        {/* Content Status */}
-        <div className="mb-4">
-          {(() => {
-            // Determine content status
-            const allAssetsScheduled = contentAssets.length > 0 && 
-              contentAssets.every(asset => asset.asset_scheduled_at);
-            const allAssetsApproved = contentAssets.length > 0 && 
-              contentAssets.every(asset => asset.approved);
-            
-            if (allAssetsScheduled) {
-              return (
-                <span className="text-sm text-gray-600">
-                  Status - <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Ready to Publish</span>
-                </span>
-              );
-            } else if (allAssetsApproved) {
-              return (
-                <span className="text-sm text-gray-600">
-                  Status - <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Ready to Schedule</span>
-                </span>
-              );
-            } else {
-              return (
-                <span className="text-sm text-gray-600">
-                  Status - <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded">Draft</span>
-                </span>
-              );
-            }
-          })()}
-        </div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-6">{content.content_title || 'Untitled Content'}</h1>
         
-        {/* Project Type Display */}
-        <div className="mb-4">
-          <span className="text-sm text-gray-600 block mb-1">Project Type</span>
-          <div className="flex items-center gap-2">
+        {/* Status and Project Type - Side by side with consistent styling */}
+        <div className="flex items-start gap-8 mb-6">
+          {/* Content Status */}
+          <div>
+            <span className="text-sm font-medium text-gray-600 block mb-2">Status</span>
             {(() => {
-              const projectType = content.project_type as ProjectType;
-              const Icon = projectType === 'video_upload' ? Video : Mic;
-              const label = PROJECT_TYPES[projectType] || projectType || 'Voice Recording';
+              // Determine content status
+              const allAssetsScheduled = contentAssets.length > 0 && 
+                contentAssets.every(asset => asset.asset_scheduled_at);
+              const allAssetsApproved = contentAssets.length > 0 && 
+                contentAssets.every(asset => asset.approved);
               
-              return (
-                <>
-                  <Icon className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-900">{label}</span>
-                </>
-              );
+              if (allAssetsScheduled) {
+                return (
+                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-lg">
+                    Ready to Publish
+                  </span>
+                );
+              } else if (allAssetsApproved) {
+                return (
+                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-lg">
+                    Ready to Schedule
+                  </span>
+                );
+              } else {
+                return (
+                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-orange-100 text-orange-800 rounded-lg">
+                    Draft
+                  </span>
+                );
+              }
             })()}
           </div>
-        </div>
-
-        {/* Content Title */}
-        <div>
-          <span className="text-sm text-gray-600 block mb-1">Content Title</span>
-          <div className="relative group">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {content.content_title}
-            </h2>
-            <EditButton
-              fieldConfig={{
-                label: 'Content Title',
-                value: content.content_title || '',
-                fieldKey: 'content_title',
-                inputType: 'text',
-                placeholder: 'Enter content title...',
-              }}
-              onEdit={handleEdit}
-              disabled={isContentGenerating}
-            />
-          </div>
-        </div>
-
-        {/* Transcript Section - Only show for voice recording projects */}
-        {content.project_type === 'voice_recording' && content.transcript && (
-          <div className="mt-4">
-            <span className="text-sm text-gray-600 block mb-1">Transcript</span>
-            <div className="bg-gray-50 rounded-lg p-4 relative group">
-              <div className="whitespace-pre-wrap text-gray-900 text-sm max-h-32 overflow-y-auto">
-                {content.transcript}
-              </div>
-                             <EditButton
-                 fieldConfig={{
-                   label: 'Transcript',
-                   value: content.transcript ?? '',
-                   fieldKey: 'transcript',
-                   inputType: 'textarea',
-                   placeholder: 'Enter transcript...',
-                 }}
-                 onEdit={handleEdit}
-                 disabled={isContentGenerating}
-               />
+          
+          {/* Project Type */}
+          <div>
+            <span className="text-sm font-medium text-gray-600 block mb-2">Project Type</span>
+            <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg">
+              {(() => {
+                const projectType = content.project_type as ProjectType;
+                const Icon = projectType === 'video_upload' ? Video : Mic;
+                const label = PROJECT_TYPES[projectType] || projectType || 'Voice Recording';
+                
+                return (
+                  <>
+                    <Icon className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-900">{label}</span>
+                  </>
+                );
+              })()}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Research Section */}
         {content.research && (
