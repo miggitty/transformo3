@@ -4,6 +4,9 @@ import { Tables } from '@/types/supabase';
 import { SubscriptionProvider } from '@/components/providers/subscription-provider';
 import AppLayoutClient from '@/components/shared/app-layout-client';
 
+// Force dynamic rendering for this layout
+export const dynamic = 'force-dynamic';
+
 export default async function AppLayout({
   children,
 }: {

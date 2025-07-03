@@ -12,6 +12,9 @@ import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
 import { Tables } from '@/types/supabase';
 import { Suspense } from 'react';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default async function CompletedPage() {
   const supabase = await createClient();
 

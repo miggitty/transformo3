@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 interface ContentPageProps {
   searchParams: Promise<{ trial_setup?: string }>;
 }

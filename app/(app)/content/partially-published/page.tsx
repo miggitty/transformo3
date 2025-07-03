@@ -13,6 +13,9 @@ import { deleteContent, retryContentProcessing } from '../[id]/actions';
 import { Tables } from '@/types/supabase';
 import { Suspense } from 'react';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default async function PartiallyPublishedPage() {
   const supabase = await createClient();
 

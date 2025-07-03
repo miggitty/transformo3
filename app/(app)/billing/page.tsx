@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { BillingPageClient } from '@/components/shared/billing/billing-page-client';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Billing & Subscription',
   description: 'Manage your subscription and billing settings',

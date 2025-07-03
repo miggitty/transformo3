@@ -16,6 +16,9 @@ import { determineContentStatus } from '@/lib/content-status';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 interface DraftsPageProps {
   searchParams: Promise<{ trial_setup?: string }>;
 }
