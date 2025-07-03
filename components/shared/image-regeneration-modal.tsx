@@ -90,6 +90,7 @@ export default function ImageRegenerationModal({
           table: 'content_assets',
           filter: `id=eq.${contentAsset.id}`,
         }, (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const updatedAsset = payload.new as any;
           if (updatedAsset.temporary_image_url) {
             setNewImageUrl(updatedAsset.temporary_image_url);
@@ -165,6 +166,7 @@ export default function ImageRegenerationModal({
     } else if (selectedImage === 'current') {
       try {
         // User kept current image - clear temporary and optionally update prompt
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const payload: any = {
           cancel_temporary_image: true,
         };

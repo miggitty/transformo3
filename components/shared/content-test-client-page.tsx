@@ -889,6 +889,7 @@ export default function ContentClientPage({
                               <span className="text-sm text-gray-900">
                                 {(() => {
                                   // Get email integration data
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                   const emailIntegration = (content.businesses as any)?.email_integrations?.[0];
                                   
                                   if (emailIntegration?.sender_name && emailIntegration?.sender_email) {
