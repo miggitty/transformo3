@@ -14,8 +14,17 @@ import { deleteContent, retryContentProcessing } from '../[id]/actions';
 import { Tables } from '@/types/supabase';
 import { Suspense } from 'react';
 import { determineContentStatus } from '@/lib/content-status';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle } from 'lucide-react';
 
-export default async function DraftsPage() {
+interface DraftsPageProps {
+  searchParams: Promise<{ trial_setup?: string }>;
+}
+
+export default async function DraftsPage(props: DraftsPageProps) {
+  const searchParams = await props.searchParams;
+  const isTrialSuccess = searchParams.trial_setup === 'success';
+  
   const supabase = await createClient();
 
   const {
@@ -73,6 +82,15 @@ export default async function DraftsPage() {
         <Suspense fallback={null}>
           <TrialSuccessBanner />
         </Suspense>
+        
+        {isTrialSuccess && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              🎉 <strong>Welcome to Transformo!</strong> Your 7-day free trial is now active. Start creating your first content by clicking "New Content" below.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <h1 className="text-3xl font-bold">Content Drafts</h1>
         

@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { type Database } from '@/types/supabase';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -18,6 +19,10 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get message from URL parameters
+  const message = searchParams.get('message');
   
   // Create client only after component mounts (not during build)
   useEffect(() => {
@@ -61,6 +66,13 @@ export default function SignInPage() {
         height={50}
         className="h-auto w-auto"
       />
+      
+      {message && (
+        <Alert className="w-full">
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
+      
       <form
         onSubmit={handleSignIn}
         className="animate-in text-foreground flex w-full flex-col justify-center gap-2"
