@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { createCheckoutSession, createTrialSubscriptionSetup } from '@/app/actions/billing';
+import { createTrialSubscriptionSetup } from '@/app/actions/billing';
 import { calculateYearlySavings } from '@/lib/subscription';
 import { Tables } from '@/types/supabase';
 import { useState } from 'react';
@@ -17,8 +17,8 @@ interface PlanSelectionCardProps {
 
 export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
   const [isLoadingTrial, setIsLoadingTrial] = useState(false);
-  const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
-  const [isLoadingYearly, setIsLoadingYearly] = useState(false);
+  const [isLoadingMonthly] = useState(false);
+  const [isLoadingYearly] = useState(false);
   
   const { savings, percentSavings } = calculateYearlySavings();
 
@@ -40,25 +40,26 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
     }
   };
 
-  const handlePlanSelection = async (plan: 'monthly' | 'yearly') => {
-    const setLoading = plan === 'monthly' ? setIsLoadingMonthly : setIsLoadingYearly;
-    
-    setLoading(true);
-    try {
-      const result = await createCheckoutSession(plan);
-      if (result.success && result.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = result.url;
-      } else {
-        toast.error(result.error || 'Failed to create checkout session');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error('Failed to create checkout session');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Unused for now but kept for future enhancement
+  // const handlePlanSelection = async (plan: 'monthly' | 'yearly') => {
+  //   const setLoading = plan === 'monthly' ? setIsLoadingMonthly : setIsLoadingYearly;
+  //   
+  //   setLoading(true);
+  //   try {
+  //     const result = await createCheckoutSession(plan);
+  //     if (result.success && result.url) {
+  //       // Redirect to Stripe Checkout
+  //       window.location.href = result.url;
+  //     } else {
+  //       toast.error(result.error || 'Failed to create checkout session');
+  //     }
+  //   } catch (error) {
+  //     console.error('Checkout error:', error);
+  //     toast.error('Failed to create checkout session');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const features = [
     'Unlimited content generation',
@@ -73,7 +74,7 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
 
   const isLoading = isLoadingTrial || isLoadingMonthly || isLoadingYearly;
   const hasActiveSubscription = subscription && ['trialing', 'active'].includes(subscription.status) && !subscription.cancel_at_period_end;
-  const currentPlan = subscription?.price_id;
+  // const currentPlan = subscription?.price_id; // Unused for now
 
   // If user has a canceled subscription, don't show this card at all
   if (subscription?.cancel_at_period_end) {
@@ -122,7 +123,7 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
           <CardTitle>Choose Your Plan</CardTitle>
         </div>
         <CardDescription>
-          Start with a 7-day free trial. Add your payment method to get started - you won't be charged until your trial ends.
+          Start with a 7-day free trial. Add your payment method to get started - you won&apos;t be charged until your trial ends.
         </CardDescription>
       </CardHeader>
       

@@ -54,7 +54,7 @@ export default async function ContentPage(props: ContentPageProps) {
           cookieNames.forEach(name => {
             try {
               cookieStore.delete(name);
-            } catch (e) {
+            } catch {
               // Cookie might not exist
             }
           });

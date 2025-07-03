@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Type assertion and safe access for nested data
-    const content = contentAsset.content as any;
-    const business = content?.businesses as any;
+    const content = contentAsset.content as unknown as { businesses?: { id: string; business_name?: string } };
+    const business = content?.businesses;
     const businessId = business?.id;
     
     if (!businessId) {

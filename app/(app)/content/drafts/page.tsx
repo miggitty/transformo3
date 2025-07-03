@@ -11,7 +11,6 @@ import { EnhancedContentTable } from '@/components/shared/enhanced-content-table
 import { AccessGate } from '@/components/shared/access-gate';
 import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
 import { deleteContent, retryContentProcessing } from '../[id]/actions';
-import { Tables } from '@/types/supabase';
 import { Suspense } from 'react';
 import { determineContentStatus } from '@/lib/content-status';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -87,7 +86,7 @@ export default async function DraftsPage(props: DraftsPageProps) {
           <Alert className="border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              🎉 <strong>Welcome to Transformo!</strong> Your 7-day free trial is now active. Start creating your first content by clicking "New Content" below.
+              🎉 <strong>Welcome to Transformo!</strong> Your 7-day free trial is now active. Start creating your first content by clicking &quot;New Content&quot; below.
             </AlertDescription>
           </Alert>
         )}

@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { isValidEmail } from '@/lib/auth-utils';
 import Image from 'next/image';
-import Link from 'next/link';
+
 
 // Error Boundary Component
 class VerificationErrorBoundary extends React.Component<
@@ -25,7 +25,7 @@ class VerificationErrorBoundary extends React.Component<
     return { hasError: true, error: error.message };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Verification page error:', error, errorInfo);
   }
 
@@ -69,10 +69,10 @@ function VerificationPageContent() {
   const isEmailLinkVerification = tokenHash && type === 'signup';
 
   // State management
-  const [email, setEmail] = useState(emailParam || '');
+  const [email] = useState(emailParam || '');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [supabase, setSupabase] = useState<any>(null);
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null);
   const [mounted, setMounted] = useState(false);
   
   // Validation and error states
@@ -288,7 +288,7 @@ function VerificationPageContent() {
           {/* Resend Option */}
           <div className="text-center">
             <p className="text-sm text-gray-600 mb-2">
-              Didn't receive the email?
+              Didn&apos;t receive the email?
             </p>
             
             <Button

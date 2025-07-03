@@ -53,7 +53,7 @@ export default function VerifySuccessPage() {
         
         // Verify the email on the client side for better session management
         const { data, error } = await supabase.auth.verifyOtp({
-          type: type as any,
+          type: type as 'signup' | 'email_change' | 'recovery',
           token_hash,
         });
 
@@ -173,7 +173,7 @@ export default function VerifySuccessPage() {
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-gray-600">
-            Great! Your email has been verified successfully. You're now ready to start your 7-day free trial.
+            Great! Your email has been verified successfully. You&apos;re now ready to start your 7-day free trial.
           </p>
           
           <div className="bg-green-50 p-4 rounded-lg">

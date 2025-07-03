@@ -10,8 +10,7 @@ import { SubscriptionBanner } from './subscription-banner';
 import { checkSubscriptionAccess } from '@/lib/subscription';
 import { getSubscriptionStatus } from '@/app/actions/billing';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+
 
 interface BillingPageClientProps {
   business: Tables<'businesses'>;

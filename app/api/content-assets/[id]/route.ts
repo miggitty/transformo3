@@ -151,7 +151,7 @@ export async function PATCH(
         console.log(`Storing image to Supabase storage: ${filename}`);
 
         // Upload to Supabase storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('images')
           .upload(filename, imageBuffer, {
             contentType: imageResponse.headers.get('content-type') || `image/${fileExtension}`,

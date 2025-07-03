@@ -30,7 +30,6 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { Calendar, RefreshCw, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
-  scheduleContentAssets,
   updateAssetSchedule,
   getBusinessAssets,
   resetContentAssetSchedules
@@ -78,11 +77,8 @@ interface BusinessAsset {
 export function EnhancedContentAssetsManager({
   assets,
   content,
-  isLoading,
   error,
   onRefresh,
-  onAssetUpdate,
-  onImageUpdated,
 }: EnhancedContentAssetsManagerProps) {
   const router = useRouter();
   
@@ -152,7 +148,7 @@ export function EnhancedContentAssetsManager({
   };
 
   const effectiveAssets = getEffectiveAssets();
-  const approvedAssets = effectiveAssets.filter(asset => asset.approved);
+  // const approvedAssets = effectiveAssets.filter(asset => asset.approved); // Unused for now
   const scheduledAssets = effectiveAssets.filter(asset => asset.asset_scheduled_at);
   const unscheduledAssets = effectiveAssets.filter(asset => asset.approved && !asset.asset_scheduled_at);
   const approvedUnscheduledCount = unscheduledAssets.length;
@@ -356,7 +352,7 @@ export function EnhancedContentAssetsManager({
     }
 
     // Find asset (check pending changes first)
-    let asset = pendingChanges.get(assetId) || assets.find(a => a.id === assetId);
+    const asset = pendingChanges.get(assetId) || assets.find(a => a.id === assetId);
     if (!asset?.asset_scheduled_at) return;
 
     const businessTimezone = content.businesses?.timezone || 'UTC';

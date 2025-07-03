@@ -49,14 +49,14 @@ export default function ForgotPasswordPage() {
           <CardContent className="space-y-4">
             <Alert>
               <AlertDescription>
-                We've sent a password reset link to <strong>{state.email}</strong>. 
+                We&apos;ve sent a password reset link to <strong>{state.email}</strong>. 
                 Click the link in the email to reset your password.
               </AlertDescription>
             </Alert>
             
             <div className="space-y-2 text-sm text-gray-600">
               <p>• The link will expire in 1 hour</p>
-              <p>• Check your spam folder if you don't see the email</p>
+              <p>• Check your spam folder if you don&apos;t see the email</p>
               <p>• You can request a new link if needed</p>
             </div>
             

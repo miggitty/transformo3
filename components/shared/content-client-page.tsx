@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Check, CheckCircle, Calendar, ArrowLeft, Mic, Video } from 'lucide-react';
+import { Check, ArrowLeft, Mic, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
@@ -322,11 +321,12 @@ export default function ContentClientPage({
             table: 'content_assets',
             filter: `content_id=eq.${content.id}`,
           },
-          (payload: any) => {
-            const updatedAsset = payload.new;
+          (payload: Record<string, unknown>) => {
+            const updatedAsset = payload.new as ContentAsset;
+            const oldAsset = payload.old as ContentAsset | undefined;
             
             // Check if image_url was updated
-            if (updatedAsset.image_url && updatedAsset.image_url !== payload.old?.image_url) {
+            if (updatedAsset.image_url && updatedAsset.image_url !== oldAsset?.image_url && updatedAsset.content_type) {
               console.log(`🖼️ Image updated for ${updatedAsset.content_type}, forcing immediate refresh`);
               forceImageRefresh(updatedAsset.content_type);
               
@@ -598,7 +598,7 @@ export default function ContentClientPage({
                         {blogAsset.image_url && (
                           <div className="mb-6">
                             <ImageWithRegeneration 
-                              contentAsset={blogAsset as any}
+                              contentAsset={blogAsset}
                               className="block w-full"
                               onImageUpdated={forceImageRefresh}
                             >
@@ -1081,7 +1081,7 @@ export default function ContentClientPage({
                         {socialAsset.image_url && (
                           <div className="px-4 pb-3">
                             <ImageWithRegeneration 
-                              contentAsset={socialAsset as any}
+                              contentAsset={socialAsset}
                               className="block w-full"
                               onImageUpdated={forceImageRefresh}
                             >
@@ -1236,7 +1236,7 @@ export default function ContentClientPage({
                         <div className="relative bg-black rounded-lg overflow-hidden mb-4">
                           {youtubeAsset.image_url ? (
                             <ImageWithRegeneration 
-                              contentAsset={youtubeAsset as any}
+                              contentAsset={youtubeAsset}
                               className="block w-full"
                               onImageUpdated={forceImageRefresh}
                             >
@@ -1349,7 +1349,7 @@ export default function ContentClientPage({
                               <span className="text-sm text-gray-900">
                                 {(() => {
                                   // Get email integration data
-                                  const emailIntegration = (content.businesses as any)?.email_integrations?.[0];
+                                  const emailIntegration = (content.businesses as unknown as { email_integrations?: Array<{ sender_name?: string; sender_email?: string }> })?.email_integrations?.[0];
                                   
                                   if (emailIntegration?.sender_name && emailIntegration?.sender_email) {
                                     return `${emailIntegration.sender_name} <${emailIntegration.sender_email}>`;

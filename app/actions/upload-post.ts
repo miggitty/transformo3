@@ -278,7 +278,7 @@ export async function syncSocialMediaAccounts() {
     }
 
     // Update our database with fresh social accounts data and Facebook Page ID
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       social_accounts: uploadPostData.social_accounts,
       last_synced_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

@@ -364,11 +364,9 @@ export async function bulkApproveAssets({
 export async function scheduleContentAssets({
   contentId,
   startDate,
-  businessTimezone,
 }: {
   contentId: string;
   startDate: string; // ISO string of the start date
-  businessTimezone: string;
 }) {
   const supabase = await createClient();
 
@@ -573,7 +571,7 @@ export async function saveBatchScheduleChanges({
   // Process each change individually for granular error handling
   for (const change of changes) {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('content_assets')
         .update({ asset_scheduled_at: change.newDateTime })
         .eq('id', change.assetId)
@@ -865,7 +863,7 @@ export async function retryContentProcessing({
 
     // Handle different project types with appropriate workflows
     let webhookUrl: string | undefined;
-    let payload: any;
+    let payload: Record<string, unknown>;
 
     if (content.project_type === 'video_upload') {
       // For video upload projects, retry the full video processing workflow
