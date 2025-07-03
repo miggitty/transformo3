@@ -400,7 +400,7 @@ export default function ContentClientPage({
                               />
                             ) : (
                               <img 
-                                src={socialAsset.image_url} 
+                                src={socialAsset.image_url ?? undefined} 
                                 alt="Social post content"
                                 className="w-full object-cover"
                               />
@@ -503,7 +503,7 @@ export default function ContentClientPage({
                               />
                             ) : (
                               <img 
-                                src={socialAsset.image_url} 
+                                src={socialAsset.image_url ?? undefined} 
                                 alt="Social post content"
                                 className="w-full object-cover"
                               />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
-export default function VerifySuccessPage() {
+function VerifySuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
@@ -188,5 +188,31 @@ export default function VerifySuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function VerifySuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen w-full flex-col items-center justify-center gap-6 px-8">
+        <Image
+          src="/transformo-logo.webp"
+          alt="Transformo Logo"
+          width={200}
+          height={50}
+          className="h-auto w-auto"
+        />
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <h2 className="text-lg font-semibold">Loading...</h2>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <VerifySuccessContent />
+    </Suspense>
   );
 } 
