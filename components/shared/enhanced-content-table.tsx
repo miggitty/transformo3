@@ -115,6 +115,7 @@ export function EnhancedContentTable({
   }, [serverContent]);
 
   // Get status for each content item using proper status determination
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getContentWithStatus = (contentItem: any) => {
     // Extract assets from the content item (they may come from server-side joins)
     const assets: Tables<'content_assets'>[] = contentItem.content_assets || [];

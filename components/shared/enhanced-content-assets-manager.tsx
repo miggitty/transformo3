@@ -70,7 +70,7 @@ interface BusinessAsset {
   asset_scheduled_at: string | null;
   content?: {
     id: string;
-    content_title: string;
+    content_title: string | null;
   };
 }
 
@@ -230,7 +230,8 @@ export function EnhancedContentAssetsManager({
           textColor: 'rgba(107, 114, 128, 0.6)',
           extendedProps: {
             assetType: asset.content_type || 'unknown',
-            contentTitle: asset.content?.content_title || undefined,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            contentTitle: asset.content?.content_title as any,
             isOwned: false,
             contentId: asset.content?.id,
             assetId: asset.id,
@@ -251,6 +252,7 @@ export function EnhancedContentAssetsManager({
   };
 
   // Handle date drops on calendar (batch scheduling - don't save immediately)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDateDrop = async (info: any) => {
     const { event } = info;
     const assetId = event.extendedProps.assetId;
@@ -292,10 +294,11 @@ export function EnhancedContentAssetsManager({
     setPendingChanges(prev => new Map(prev.set(assetId, updatedAsset)));
     setHasUnsavedChanges(true);
     
-    toast.success('Change staged - click "Schedule" to save');
+    toast.success('Change staged - click &quot;Schedule&quot; to save');
   };
 
   // Handle calendar date select (for unscheduled assets)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDateSelect = (selectInfo: any) => {
     if (!validateSchedulingAllowed()) {
       return;
@@ -327,10 +330,11 @@ export function EnhancedContentAssetsManager({
     setPendingChanges(prev => new Map(prev.set(unscheduledAsset.id, updatedAsset)));
     setHasUnsavedChanges(true);
     
-    toast.success('Asset scheduled - click "Schedule" to save');
+    toast.success('Asset scheduled - click &quot;Schedule&quot; to save');
   };
 
   // Handle event click (for time editing or navigation)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEventClick = (clickInfo: any) => {
     const { event } = clickInfo;
     const assetId = event.extendedProps.assetId;
@@ -386,7 +390,7 @@ export function EnhancedContentAssetsManager({
     setPendingChanges(prev => new Map(prev.set(editingEvent.assetId, updatedAsset)));
     setHasUnsavedChanges(true);
     
-    toast.success('Time change staged - click "Schedule" to save');
+    toast.success('Time change staged - click &quot;Schedule&quot; to save');
     setIsEditModalOpen(false);
     setEditingEvent(null);
   };
@@ -462,7 +466,7 @@ export function EnhancedContentAssetsManager({
       { day: 4, types: ['social_short_video'] },
     ];
 
-    const businessTimezone = content.businesses?.timezone || 'UTC';
+    // const businessTimezone = content.businesses?.timezone || 'UTC'; // Unused for now
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -497,7 +501,7 @@ export function EnhancedContentAssetsManager({
     if (scheduledCount > 0) {
       setPendingChanges(newPendingChanges);
       setHasUnsavedChanges(true);
-      toast.success(`${scheduledCount} assets staged for scheduling - click "Schedule" to save`);
+      toast.success(`${scheduledCount} assets staged for scheduling - click &quot;Schedule&quot; to save`);
     } else {
       toast.info('No assets available to schedule');
     }
@@ -652,7 +656,7 @@ export function EnhancedContentAssetsManager({
                 : 'All approved assets are scheduled'
               }
             </p>
-            <p>Drag and drop to reschedule. Changes are saved when you click "Schedule".</p>
+            <p>Drag and drop to reschedule. Changes are saved when you click &quot;Schedule&quot;.</p>
           </div>
 
           {/* Calendar */}
@@ -712,7 +716,7 @@ export function EnhancedContentAssetsManager({
                 ) : (
                   <>
                     <Calendar className="h-4 w-4 mr-1" />
-                    Schedule ({pendingChanges.size} change{pendingChanges.size !== 1 ? 's' : ''})
+                    Schedule ({pendingChanges.size} {pendingChanges.size === 1 ? 'change' : 'changes'})
                   </>
                 )}
               </Button>
@@ -771,8 +775,8 @@ export function EnhancedContentAssetsManager({
           <AlertDialogHeader>
             <AlertDialogTitle>Clear All Schedules?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove all scheduling information from this content's assets, including both saved schedules and pending changes.
-              You'll need to reschedule them manually. This action cannot be undone.
+              This will remove all scheduling information from this content&apos;s assets, including both saved schedules and pending changes.
+              You&apos;ll need to reschedule them manually. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
