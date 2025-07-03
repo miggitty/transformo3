@@ -9,10 +9,9 @@ export async function updateSession(request: NextRequest) {
       },
     });
 
-    // Check if environment variables exist
-      // Use external ngrok URL if available, otherwise fall back to local URL
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+          // Check if environment variables exist
+     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing Supabase environment variables:', {

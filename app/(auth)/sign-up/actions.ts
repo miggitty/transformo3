@@ -105,9 +105,8 @@ export async function signup(prevState: SignupState, formData: FormData): Promis
     }
 
     // Create admin client for database operations
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAdmin = createAdminClient(
-      supabaseUrl!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         auth: {

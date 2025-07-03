@@ -1,12 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/utils/supabase/server';
 
 // Action 1: Create an initial content record with voice_recording project type
 export async function createContentRecord() {
   console.log('Action: createContentRecord started (voice_recording)');
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createClient();
   console.log('Action: Supabase client created.');
 
   try {
@@ -68,7 +68,7 @@ export async function finalizeContentRecord(
   contentId: string,
   audioUrl: string,
 ) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createClient();
 
   console.log('=== Audio URL Debug Info ===');
   console.log('Input audioUrl:', audioUrl);
