@@ -107,7 +107,14 @@ enabled = true
 # in emails.
 site_url = "env(NEXT_PUBLIC_APP_URL)"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://staging.transformo.io", "https://transformo.io"]
+additional_redirect_urls = [
+  "https://staging.transformo.io", 
+  "https://transformo.io",
+  "https://transformolocal.ngrok.dev/auth/confirm",
+  "https://transformolocal.ngrok.dev/auth/callback", 
+  "https://transformolocal.ngrok.dev/auth/verify-success",
+  "https://transformolocal.ngrok.dev/account/update-password"
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.

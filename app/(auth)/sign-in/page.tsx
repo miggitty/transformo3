@@ -79,13 +79,21 @@ export default function SignInPage() {
           Password
         </Label>
         <Input
-          className="mb-6 rounded-md border bg-inherit px-4 py-2"
+          className="mb-3 rounded-md border bg-inherit px-4 py-2"
           type="password"
           name="password"
           onChange={(e) => setPassword(e.target.value)}
           value={password}
           placeholder="••••••••"
         />
+        <div className="text-right mb-4">
+          <Link 
+            href="/forgot-password" 
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Forgot your password?
+          </Link>
+        </div>
         <Button type="submit" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign In'}
         </Button>

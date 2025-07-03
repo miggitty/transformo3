@@ -16,6 +16,12 @@ const BYPASS_ROUTES = [
   '/sign-in',
   '/sign-up',
   '/sign-out',
+  '/verify-email',        // From signup verification
+  '/forgot-password',     // From forgot password
+  '/account/update-password',  // From forgot password
+  '/auth/callback',       // For email links
+  '/auth/confirm',        // Alternative callback
+  '/auth/verify-success', // Client-side verification handler
   '/api',
   '/_next',
   '/favicon.ico',
