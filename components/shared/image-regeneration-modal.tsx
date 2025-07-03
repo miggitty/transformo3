@@ -300,7 +300,7 @@ export default function ImageRegenerationModal({
       <div className="text-center">
         <h3 className="text-lg font-semibold mb-2">Choose your preferred image</h3>
         <p className="text-muted-foreground">
-          Select which image you'd like to use, or edit the prompt below to generate another version.
+          Select which image you&apos;d like to use, or edit the prompt below to generate another version.
         </p>
       </div>
 
@@ -375,7 +375,7 @@ export default function ImageRegenerationModal({
           maxLength={1000}
         />
         <p className="text-xs text-muted-foreground">
-          Edit the prompt above and click "Regenerate" to create another version for comparison.
+          Edit the prompt above and click &quot;Regenerate&quot; to create another version for comparison.
         </p>
       </div>
 

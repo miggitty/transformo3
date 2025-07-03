@@ -229,7 +229,6 @@ export function ContentStatusFlow({
         {/* Progress Flow Visualization */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {flowSteps.map((step, index) => {
-            const StepIcon = step.icon;
             const StatusIcon = getStepIcon(step.status);
             
             return (

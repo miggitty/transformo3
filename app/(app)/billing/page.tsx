@@ -57,7 +57,7 @@ export default async function BillingPage() {
   }
 
   // Get subscription data
-  const { data: subscription, error: subscriptionError } = await supabase
+  const { data: subscription } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('business_id', profile.business_id)

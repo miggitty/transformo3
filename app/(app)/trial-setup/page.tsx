@@ -83,7 +83,7 @@ export default function TrialSetupPage() {
           
           <div className="bg-gray-50 p-3 rounded-lg">
             <p className="text-xs text-gray-600">
-              <strong>What happens next:</strong> You'll add a payment method but won't be charged until your 7-day trial ends. You can cancel anytime during the trial period.
+              <strong>What happens next:</strong> You&apos;ll add a payment method but won&apos;t be charged until your 7-day trial ends. You can cancel anytime during the trial period.
             </p>
           </div>
         </CardContent>

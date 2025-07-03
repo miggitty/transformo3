@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     try {
       // Use verifyOtp for token-based verification
       const { data, error } = await supabase.auth.verifyOtp({
-        type: type as any,
+        type: type as 'signup' | 'email' | 'recovery',
         token_hash,
       });
       

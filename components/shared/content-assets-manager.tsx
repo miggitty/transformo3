@@ -11,7 +11,7 @@ import SocialShortVideoForm from './content-asset-forms/social-short-video-form'
 import SocialQuoteCardForm from './content-asset-forms/social-quote-card-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import {
   Dialog,
   DialogContent,
@@ -99,7 +99,7 @@ export default function ContentAssetsManager({
   onImageUpdated,
 }: ContentAssetsManagerProps) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState(defaultView);
+  const [activeView] = useState(defaultView);
   const [isScheduling, setIsScheduling] = useState(false);
   const [businessAssets, setBusinessAssets] = useState<BusinessAsset[]>([]);
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -128,7 +128,7 @@ export default function ContentAssetsManager({
   
   // FEATURE: Batch Scheduling State Management
   const [pendingChanges, setPendingChanges] = useState<Map<string, ContentAsset>>(new Map());
-  const [originalAssets, setOriginalAssets] = useState<Map<string, ContentAsset>>(new Map());
+  const [, setOriginalAssets] = useState<Map<string, ContentAsset>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -290,7 +290,6 @@ export default function ContentAssetsManager({
       const result = await scheduleContentAssets({
         contentId: content.id,
         startDate: scheduleDate.toISOString(),
-        businessTimezone,
       });
 
       if (result.success) {

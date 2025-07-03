@@ -17,9 +17,7 @@ export async function POST(request: NextRequest) {
       content_id, 
       content_asset_id,
       success, 
-      workflow_type, 
-      error: workflowError,
-      environment 
+      error: workflowError 
     } = body;
 
     // Initialize Supabase client with service role key for N8N callbacks (bypasses RLS)

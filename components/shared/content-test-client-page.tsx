@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
-import { RichTextEditor } from '@/components/shared/rich-text-editor';
+
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
 import ContentAssetsManager from '@/components/shared/content-assets-manager';
 import { ContentWithBusiness, ContentAsset } from '@/types';
 import { createClient } from '@/utils/supabase/client';
-import { toast } from 'sonner';
+
 
 interface ContentClientPageProps {
   content: ContentWithBusiness;
@@ -161,10 +161,10 @@ export default function ContentClientPage({
     checkPermissionsAndFetch();
   }, []);
 
-  // Helper function to get content asset by type
-  const getAssetByType = (type: string) => {
-    return contentAssets.find(asset => asset.content_type === type);
-  };
+  // Helper function to get content asset by type (currently unused)
+  // const getAssetByType = (type: string) => {
+  //   return contentAssets.find(asset => asset.content_type === type);
+  // };
 
   return (
     <div className="min-h-screen bg-white px-4 md:px-6 lg:px-8 py-8">

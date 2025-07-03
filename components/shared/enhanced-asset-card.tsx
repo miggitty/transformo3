@@ -39,7 +39,6 @@ interface EnhancedAssetCardProps {
 
 export function EnhancedAssetCard({
   asset,
-  content,
   onApprovalToggle,
   onSchedule,
   onEdit,

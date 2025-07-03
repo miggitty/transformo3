@@ -31,7 +31,7 @@ export function TrialSuccessBanner() {
         <div>
           <strong className="text-green-800">Welcome to your 7-day free trial!</strong>
           <p className="text-green-700 mt-1">
-            Your trial is active and you have full access to all features. You won't be charged until your trial ends.
+            Your trial is active and you have full access to all features. You won&apos;t be charged until your trial ends.
           </p>
         </div>
         <Button

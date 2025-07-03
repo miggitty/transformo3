@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { validatePassword } from '@/lib/auth-utils';
 import { PasswordRequirements } from '@/components/auth/password-requirements';
 import type { PasswordValidation } from '@/types/auth';
@@ -61,7 +60,7 @@ function UpdatePasswordContent() {
               toast.error('Invalid or expired password reset link');
               router.push('/forgot-password');
             }
-          } catch (error) {
+          } catch {
             toast.error('Invalid password reset link');
             router.push('/forgot-password');
           }
@@ -108,7 +107,7 @@ function UpdatePasswordContent() {
         // Redirect to sign-in
         router.push('/sign-in?message=Password updated successfully. Please sign in with your new password.');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to update password. Please try again.');
     } finally {
       setIsLoading(false);
