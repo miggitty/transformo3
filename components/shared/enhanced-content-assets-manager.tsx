@@ -207,7 +207,7 @@ export function EnhancedContentAssetsManager({
           textColor: '#ffffff',
           extendedProps: {
             assetType: asset.content_type || 'unknown',
-            contentTitle: content.content_title,
+            contentTitle: content.content_title ?? undefined,
             isOwned: true,
             contentId: content.id,
             assetId: asset.id,

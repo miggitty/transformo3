@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Initialize Supabase client with service role key
@@ -66,7 +66,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Initialize Supabase client with service role key

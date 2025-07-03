@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClientSafe } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { type Database } from '@/types/supabase';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export default function SignInPage() {
+function SignInContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -118,5 +118,27 @@ export default function SignInPage() {
         </p>
       </form>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen w-full flex-col items-center justify-center gap-6 px-8">
+        <Image
+          src="/transformo-logo.webp"
+          alt="Transformo Logo"
+          width={200}
+          height={50}
+          className="h-auto w-auto"
+        />
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 } 
