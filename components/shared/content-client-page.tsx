@@ -373,7 +373,20 @@ export default function ContentClientPage({
         {/* Video Title - Above main heading */}
         <span className="text-sm font-medium text-gray-600 block mb-2">Video Name</span>
         
-        <h1 className="text-4xl font-bold text-gray-900 mb-6">{content.content_title || 'Untitled Content'}</h1>
+        <div className="relative group mb-6">
+          <h1 className="text-4xl font-bold text-gray-900">{content.content_title || 'Untitled Content'}</h1>
+          <EditButton
+            fieldConfig={{
+              label: 'Content Title',
+              value: content.content_title || '',
+              fieldKey: 'content_title',
+              inputType: 'text',
+              placeholder: 'Enter content title...',
+            }}
+            onEdit={handleEdit}
+            disabled={isContentGenerating}
+          />
+        </div>
         
         {/* Status and Project Type - Side by side with consistent styling */}
         <div className="flex items-start gap-8 mb-6">
