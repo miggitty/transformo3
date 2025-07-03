@@ -3,7 +3,7 @@
 As you complete tasks in this doc can you tick them off.
 
 ### **1\. Project Overview**
-
+    
 This document outlines the strategic, phased development plan for a SaaS application that enables clients to manage the creation and scheduling of marketing content. The application is designed to be a comprehensive tool for managing brand profiles, initiating content creation via text or audio, reviewing and approving assets, and scheduling content for publishing. The core backend logic is handled by external n8n workflows, with Supabase providing the database, authentication, storage, and real-time capabilities.
 
 ### **2\. Core Technology & Design Principles**
