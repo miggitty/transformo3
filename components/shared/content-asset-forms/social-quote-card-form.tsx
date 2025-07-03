@@ -13,11 +13,13 @@ import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 interface SocialQuoteCardFormProps {
   asset: ContentAsset;
   disabled?: boolean;
+  onImageUpdated?: (contentType: string) => void;
 }
 
 export default function SocialQuoteCardForm({
   asset,
   disabled,
+  onImageUpdated,
 }: SocialQuoteCardFormProps) {
   const [content, setContent] = useState(asset.content || '');
 
@@ -52,6 +54,7 @@ export default function SocialQuoteCardForm({
               contentAsset={asset}
               disabled={disabled}
               className="inline-block"
+              onImageUpdated={onImageUpdated}
             >
               <Image
                 src={asset.image_url}

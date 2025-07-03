@@ -22,6 +22,7 @@ interface ImageRegenerationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contentAsset: ContentAsset;
+  onImageUpdated?: (contentType: string) => void;
 }
 
 type RegenerationStep = 'edit-prompt' | 'generating' | 'compare-images';
@@ -31,6 +32,7 @@ export default function ImageRegenerationModal({
   open,
   onOpenChange,
   contentAsset,
+  onImageUpdated,
 }: ImageRegenerationModalProps) {
   const router = useRouter();
   const supabase = useSupabaseBrowser();
@@ -141,9 +143,15 @@ export default function ImageRegenerationModal({
           throw new Error(errorData.error || 'Failed to save image');
         }
 
-        console.log('✅ Image saved successfully, refreshing...');
+        console.log('✅ Image saved successfully, triggering cache refresh...');
         
-        // Simple router refresh - the API route handles cache invalidation
+        // Trigger immediate cache busting for this content type
+        if (onImageUpdated && contentAsset.content_type) {
+          onImageUpdated(contentAsset.content_type);
+          console.log(`🔄 Cache refresh triggered for ${contentAsset.content_type}`);
+        }
+        
+        // Router refresh for complete data sync
         router.refresh();
         toast.success('Image updated successfully!');
         onOpenChange(false);

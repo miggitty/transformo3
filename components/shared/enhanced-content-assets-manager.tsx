@@ -46,6 +46,7 @@ interface EnhancedContentAssetsManagerProps {
   error: string | null;
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
+  onImageUpdated?: (contentType: string) => void;
 }
 
 interface CalendarEvent {
@@ -81,6 +82,7 @@ export function EnhancedContentAssetsManager({
   error,
   onRefresh,
   onAssetUpdate,
+  onImageUpdated,
 }: EnhancedContentAssetsManagerProps) {
   const router = useRouter();
   
@@ -232,7 +234,7 @@ export function EnhancedContentAssetsManager({
           textColor: 'rgba(107, 114, 128, 0.6)',
           extendedProps: {
             assetType: asset.content_type || 'unknown',
-            contentTitle: asset.content?.content_title !== null ? asset.content?.content_title : undefined,
+            contentTitle: asset.content?.content_title || undefined,
             isOwned: false,
             contentId: asset.content?.id,
             assetId: asset.id,

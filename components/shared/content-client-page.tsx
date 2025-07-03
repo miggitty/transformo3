@@ -587,6 +587,7 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={blogAsset as any}
                               className="block w-full"
+                              onImageUpdated={forceImageRefresh}
                             >
                               <img 
                                 src={addCacheBuster(blogAsset.image_url, imageCacheBusters['blog_post'])} 
@@ -972,6 +973,7 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={socialAsset}
                               className="block w-full"
+                              onImageUpdated={forceImageRefresh}
                             >
                               <img 
                                 src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_rant_post'])} 
@@ -1068,6 +1070,7 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={socialAsset as any}
                               className="block w-full"
+                              onImageUpdated={forceImageRefresh}
                             >
                               <img 
                                 src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_blog_post'])} 
@@ -1164,6 +1167,7 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={socialAsset}
                               className="block w-full"
+                              onImageUpdated={forceImageRefresh}
                             >
                               <img 
                                 src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_quote_card'])} 
@@ -1221,6 +1225,7 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={youtubeAsset as any}
                               className="block w-full"
+                              onImageUpdated={forceImageRefresh}
                             >
                               <div className="relative">
                                 <img 
@@ -1424,6 +1429,7 @@ export default function ContentClientPage({
                         )
                       );
                     }}
+                    onImageUpdated={forceImageRefresh}
                   />
                 </div>
               )}

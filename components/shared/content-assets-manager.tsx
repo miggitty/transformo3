@@ -59,6 +59,7 @@ interface ContentAssetsManagerProps {
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
   defaultView?: 'list' | 'calendar';
+  onImageUpdated?: (contentType: string) => void;
 }
 
 interface CalendarEvent {
@@ -95,6 +96,7 @@ export default function ContentAssetsManager({
   onRefresh,
   onAssetUpdate,
   defaultView = 'list',
+  onImageUpdated,
 }: ContentAssetsManagerProps) {
   const router = useRouter();
   const [activeView, setActiveView] = useState(defaultView);
@@ -613,21 +615,21 @@ export default function ContentAssetsManager({
   const renderAssetForm = (asset: ContentAsset) => {
     switch (asset.content_type) {
       case 'youtube_video':
-        return <YouTubeVideoForm asset={asset} content={content} />;
+        return <YouTubeVideoForm asset={asset} content={content} onImageUpdated={onImageUpdated} />;
       case 'email':
         return <EmailForm asset={asset} />;
       case 'blog_post':
-        return <BlogPostForm asset={asset} />;
+        return <BlogPostForm asset={asset} onImageUpdated={onImageUpdated} />;
       case 'social_rant_post':
-        return <SocialRantPostForm asset={asset} />;
+        return <SocialRantPostForm asset={asset} onImageUpdated={onImageUpdated} />;
       case 'social_blog_post':
-        return <SocialBlogPostForm asset={asset} />;
+        return <SocialBlogPostForm asset={asset} onImageUpdated={onImageUpdated} />;
       case 'social_long_video':
         return <SocialLongVideoForm asset={asset} content={content} />;
       case 'social_short_video':
         return <SocialShortVideoForm asset={asset} content={content} />;
       case 'social_quote_card':
-        return <SocialQuoteCardForm asset={asset} />;
+        return <SocialQuoteCardForm asset={asset} onImageUpdated={onImageUpdated} />;
       default:
         return (
           <Card>

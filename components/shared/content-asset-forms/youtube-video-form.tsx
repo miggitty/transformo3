@@ -17,12 +17,14 @@ interface YouTubeVideoFormProps {
   asset: ContentAsset;
   content: ContentWithBusiness;
   disabled?: boolean;
+  onImageUpdated?: (contentType: string) => void;
 }
 
 export default function YouTubeVideoForm({
   asset,
   content,
   disabled,
+  onImageUpdated,
 }: YouTubeVideoFormProps) {
   const [headline, setHeadline] = useState(asset.headline || '');
   const [description, setDescription] = useState(asset.content || '');
@@ -78,6 +80,7 @@ export default function YouTubeVideoForm({
               contentAsset={asset}
               disabled={disabled}
               className="inline-block"
+              onImageUpdated={onImageUpdated}
             >
               <Image
                 src={asset.image_url}

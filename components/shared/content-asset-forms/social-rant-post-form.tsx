@@ -14,9 +14,10 @@ import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 interface SocialRantPostFormProps {
   asset: ContentAsset;
   disabled?: boolean;
+  onImageUpdated?: (contentType: string) => void;
 }
 
-export default function SocialRantPostForm({ asset, disabled }: SocialRantPostFormProps) {
+export default function SocialRantPostForm({ asset, disabled, onImageUpdated }: SocialRantPostFormProps) {
   const [content, setContent] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
@@ -50,6 +51,7 @@ export default function SocialRantPostForm({ asset, disabled }: SocialRantPostFo
               contentAsset={asset}
               disabled={disabled}
               className="inline-block"
+              onImageUpdated={onImageUpdated}
             >
               <Image
                 src={asset.image_url}

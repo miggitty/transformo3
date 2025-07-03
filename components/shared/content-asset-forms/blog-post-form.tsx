@@ -16,9 +16,10 @@ import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 interface BlogPostFormProps {
   asset: ContentAsset;
   disabled?: boolean;
+  onImageUpdated?: (contentType: string) => void;
 }
 
-export default function BlogPostForm({ asset, disabled }: BlogPostFormProps) {
+export default function BlogPostForm({ asset, disabled, onImageUpdated }: BlogPostFormProps) {
   const [headline, setHeadline] = useState(asset.headline || '');
   const [metaDescription, setMetaDescription] = useState(
     asset.blog_meta_description || ''
@@ -94,6 +95,7 @@ export default function BlogPostForm({ asset, disabled }: BlogPostFormProps) {
               contentAsset={asset}
               disabled={disabled}
               className="inline-block"
+              onImageUpdated={onImageUpdated}
             >
               <Image
                 src={asset.image_url}
