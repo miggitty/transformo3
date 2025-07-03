@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
-import ContentDetailClientPage from '@/components/shared/content-detail-client-page';
+import ContentClientPage from '@/components/shared/content-client-page';
 
 // Define props with an interface for clarity
 interface ContentDetailPageProps {
@@ -16,7 +16,27 @@ export default async function ContentDetailPage(props: ContentDetailPageProps) {
 
   const { data: content } = await supabase
     .from('content')
-    .select('*, businesses(*)')
+    .select(`
+      *, 
+      businesses(
+        *, 
+        ai_avatar_integrations(
+          id,
+          secret_id,
+          avatar_id,
+          voice_id,
+          status,
+          provider
+        ),
+        email_integrations(
+          id,
+          sender_name,
+          sender_email,
+          status,
+          provider
+        )
+      )
+    `)
     .eq('id', id)
     .single();
 
@@ -24,5 +44,5 @@ export default async function ContentDetailPage(props: ContentDetailPageProps) {
     notFound();
   }
 
-  return <ContentDetailClientPage content={content} />;
+  return <ContentClientPage content={content} />;
 } 

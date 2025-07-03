@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { createClientSafe } from '@/utils/supabase/client';
 import { updateVideoUrl } from '@/app/(app)/content/[id]/actions';
+import { finalizeVideoUploadRecord } from '@/app/(app)/video-upload/actions';
 import { Upload, X, Video, Loader2, CheckCircle } from 'lucide-react';
 
 interface VideoUploadModalProps {
@@ -22,6 +23,7 @@ interface VideoUploadModalProps {
   contentId: string;
   businessId: string;
   onVideoUploaded: (videoType: 'long' | 'short', videoUrl: string) => void;
+  isVideoUploadProject?: boolean; // Flag for video upload projects
 }
 
 export function VideoUploadModal({
@@ -31,6 +33,7 @@ export function VideoUploadModal({
   contentId,
   businessId,
   onVideoUploaded,
+  isVideoUploadProject = false,
 }: VideoUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -180,6 +183,23 @@ export function VideoUploadModal({
       setUploadComplete(true);
       toast.success(`${videoType === 'long' ? 'Long' : 'Short'} video uploaded successfully!`);
       
+      // If this is a video upload project, trigger the video transcription workflow
+      if (isVideoUploadProject && videoType === 'long') {
+        console.log('Triggering video transcription for video upload project');
+        try {
+          const finalizeResult = await finalizeVideoUploadRecord(contentId, publicUrl);
+          if (finalizeResult.error) {
+            console.error('Failed to trigger video transcription:', finalizeResult.error);
+            toast.warning('Video uploaded successfully, but transcription may need to be retried.');
+          } else {
+            console.log('Video transcription triggered successfully');
+          }
+        } catch (error) {
+          console.error('Error triggering video transcription:', error);
+          toast.warning('Video uploaded successfully, but transcription may need to be retried.');
+        }
+      }
+
       // Call the callback with the video URL
       onVideoUploaded(videoType, publicUrl);
       

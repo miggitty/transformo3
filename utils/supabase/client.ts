@@ -29,7 +29,14 @@ export function createClient(): SupabaseClient<Database> | null {
   
   return createBrowserClient(
     supabaseUrl,
-    supabaseAnonKey
+    supabaseAnonKey,
+    {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+      },
+    }
   );
 }
 

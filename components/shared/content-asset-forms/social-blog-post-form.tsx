@@ -9,15 +9,20 @@ import { ContentAsset } from '@/types';
 import { updateContentAsset } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 
 interface SocialBlogPostFormProps {
   asset: ContentAsset;
+  disabled?: boolean;
+  onImageUpdated?: (contentType: string) => void;
 }
 
-export default function SocialBlogPostForm({ asset }: SocialBlogPostFormProps) {
+export default function SocialBlogPostForm({ asset, disabled, onImageUpdated }: SocialBlogPostFormProps) {
   const [content, setContent] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
+    if (disabled) return; // Prevent saving when disabled
+    
     const { success, error } = await updateContentAsset(asset.id, {
       [field]: value,
     });
@@ -32,19 +37,30 @@ export default function SocialBlogPostForm({ asset }: SocialBlogPostFormProps) {
     <Card>
       <CardHeader>
         <CardTitle>Social Blog Post</CardTitle>
+        {disabled && (
+          <p className="text-sm text-muted-foreground">
+            Content is being regenerated. Editing is temporarily disabled.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {asset.image_url && (
           <div className="space-y-2">
             <Label>Image</Label>
-            <Image
-              src={asset.image_url}
-              alt="Social Blog Post Image"
-              width={320}
-              height={180}
-              className="rounded-lg"
-
-            />
+            <ImageWithRegeneration 
+              contentAsset={asset}
+              disabled={disabled}
+              className="inline-block"
+              onImageUpdated={onImageUpdated}
+            >
+              <Image
+                src={asset.image_url}
+                alt="Social Blog Post Image"
+                width={320}
+                height={180}
+                className="rounded-lg"
+              />
+            </ImageWithRegeneration>
           </div>
         )}
         <div className="space-y-2">
@@ -54,6 +70,7 @@ export default function SocialBlogPostForm({ asset }: SocialBlogPostFormProps) {
             value={content}
             onChange={e => setContent(e.target.value)}
             onBlur={e => handleSave('content', e.target.value)}
+            disabled={disabled}
           />
         </div>
       </CardContent>

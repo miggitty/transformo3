@@ -30,7 +30,9 @@ interface SocialAccounts {
 }
 
 interface SocialMediaData {
-  profile: Record<string, unknown>;
+  profile: Record<string, unknown> & {
+    facebook_page_id?: string | null;
+  };
   social_accounts: SocialAccounts;
   synced: boolean;
   last_synced_at?: string;
@@ -177,6 +179,8 @@ export function SocialMediaIntegrationCard({
           </div>
           
           <SocialMediaStatusIcons socialAccounts={socialMediaData?.social_accounts} />
+          
+
         </div>
 
         <div className="pt-4 border-t">

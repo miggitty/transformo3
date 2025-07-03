@@ -11,20 +11,27 @@ import { updateContentAsset } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { VideoPlayer } from '@/components/shared/video-player';
+import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 
 interface YouTubeVideoFormProps {
   asset: ContentAsset;
   content: ContentWithBusiness;
+  disabled?: boolean;
+  onImageUpdated?: (contentType: string) => void;
 }
 
 export default function YouTubeVideoForm({
   asset,
   content,
+  disabled,
+  onImageUpdated,
 }: YouTubeVideoFormProps) {
   const [headline, setHeadline] = useState(asset.headline || '');
   const [description, setDescription] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
+    if (disabled) return; // Prevent saving when disabled
+    
     const { success, error } = await updateContentAsset(asset.id, {
       [field]: value,
     });
@@ -39,6 +46,11 @@ export default function YouTubeVideoForm({
     <Card>
       <CardHeader>
         <CardTitle>YouTube Video</CardTitle>
+        {disabled && (
+          <p className="text-sm text-muted-foreground">
+            Content is being regenerated. Editing is temporarily disabled.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -48,6 +60,7 @@ export default function YouTubeVideoForm({
             value={headline}
             onChange={e => setHeadline(e.target.value)}
             onBlur={e => handleSave('headline', e.target.value)}
+            disabled={disabled}
           />
         </div>
         <div className="space-y-2">
@@ -57,19 +70,26 @@ export default function YouTubeVideoForm({
             value={description}
             onChange={e => setDescription(e.target.value)}
             onBlur={e => handleSave('content', e.target.value)}
+            disabled={disabled}
           />
         </div>
         {asset.image_url && (
           <div className="space-y-2">
             <Label>Thumbnail</Label>
-            <Image
-              src={asset.image_url}
-              alt="YouTube Thumbnail"
-              width={320}
-              height={180}
-              className="rounded-lg"
-
-            />
+            <ImageWithRegeneration 
+              contentAsset={asset}
+              disabled={disabled}
+              className="inline-block"
+              onImageUpdated={onImageUpdated}
+            >
+              <Image
+                src={asset.image_url}
+                alt="YouTube Thumbnail"
+                width={320}
+                height={180}
+                className="rounded-lg"
+              />
+            </ImageWithRegeneration>
           </div>
         )}
         {content.video_long_url && (

@@ -69,6 +69,31 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: getImagePatterns(),
   },
+  // Disable React Strict Mode in development to fix Supabase realtime issues
+  reactStrictMode: process.env.NODE_ENV === 'production',
+  
+  experimental: {
+    // Enable server actions
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+    // Fix Router Cache issue that prevents image updates
+    staleTimes: {
+      dynamic: 0, // Disable caching for dynamic pages - fixes image refresh issue
+      static: 300, // Keep static cache for 5 minutes
+    },
+  },
+  
+  // Development optimization
+  ...(process.env.NODE_ENV === 'development' && {
+    webpack: (config) => {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      }
+      return config
+    },
+  }),
 };
 
 // Wrap the Next.js config with the PWA config
