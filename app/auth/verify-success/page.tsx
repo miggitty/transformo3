@@ -49,7 +49,13 @@ function VerifySuccessContent() {
       }
 
       try {
-        const supabase = createClient()!;
+        const supabase = createClient();
+        if (!supabase) {
+          console.error('Failed to create Supabase client');
+          setStatus('error');
+          toast.error('Connection error');
+          return;
+        }
         
         // Verify the email on the client side for better session management
         const { data, error } = await supabase.auth.verifyOtp({
