@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import ContentClientPage from '@/components/shared/content-client-page';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // Define props with an interface for clarity
 interface ContentDetailPageProps {
   params: Promise<{ id: string }>;

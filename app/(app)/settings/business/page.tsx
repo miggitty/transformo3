@@ -11,6 +11,9 @@ import { SpeakerDetailsForm } from '@/components/shared/settings/speaker-details
 import { SocialMediaForm } from '@/components/shared/settings/social-media-form';
 import { CallToActionsForm } from '@/components/shared/settings/call-to-actions-form';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default async function BusinessSettingsPage() {
   const supabase = await createClient();
 

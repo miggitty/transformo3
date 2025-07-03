@@ -1,15 +1,18 @@
 import { createClient } from '@/utils/supabase/server';
+import { EmailIntegrationForm } from '@/components/shared/settings/email-integration-form';
+import { BlogIntegrationForm } from '@/components/shared/settings/blog-integration-form';
+import { HeygenSettingsForm } from '@/components/shared/settings/heygen-settings-form';
+import { SocialMediaIntegrationWrapper } from '@/components/shared/settings/social-media-integration-wrapper';
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { EmailIntegrationForm } from '@/components/shared/settings/email-integration-form';
-import { HeygenSettingsForm } from '@/components/shared/settings/heygen-settings-form';
-import { BlogIntegrationForm } from '@/components/shared/settings/blog-integration-form';
-import { SocialMediaIntegrationWrapper } from '@/components/shared/settings/social-media-integration-wrapper';
 import ErrorBoundary from '@/components/shared/error-boundary';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 export default async function IntegrationsPage() {
   const supabase = await createClient();
@@ -117,7 +120,7 @@ export default async function IntegrationsPage() {
             Configure your HeyGen integration for AI avatar video generation with custom avatars and voices.
           </CardDescription>
         </CardHeader>
-        <HeygenSettingsForm business={transformedBusiness} />
+                  <HeygenSettingsForm business={transformedBusiness} />
       </Card>
 
       <Card>
