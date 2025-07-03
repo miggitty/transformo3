@@ -35,7 +35,12 @@ function UpdatePasswordContent() {
   // Check for valid password reset session
   useEffect(() => {
     const checkSession = async () => {
-      const supabase = createClient()!;
+      const supabase = createClient();
+      if (!supabase) {
+        toast.error('Connection error. Please try again.');
+        router.push('/forgot-password');
+        return;
+      }
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -90,7 +95,11 @@ function UpdatePasswordContent() {
     setIsLoading(true);
     
     try {
-      const supabase = createClient()!;
+      const supabase = createClient();
+      if (!supabase) {
+        toast.error('Connection error. Please try again.');
+        return;
+      }
       
       const { error } = await supabase.auth.updateUser({
         password: password
