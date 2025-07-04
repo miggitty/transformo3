@@ -16,12 +16,20 @@ import { FieldConfig } from '@/types';
 import { updateContentField, updateContentAsset, toggleAssetApproval } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 
-// Cache busting utility - the proven solution for browser image cache issues
+// Cache busting utility - Enhanced for Vercel compatibility
+// Only applies cache busting to images that have been regenerated
 const addCacheBuster = (url: string | null, cacheBuster?: number): string => {
   if (!url) return '';
-  const timestamp = cacheBuster || Date.now();
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}v=${timestamp}`;
+  
+  // Only add cache busting if a specific cacheBuster is provided
+  if (cacheBuster) {
+    const randomString = Math.random().toString(36).substring(2, 8);
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${cacheBuster}&r=${randomString}`;
+  }
+  
+  // Return original URL without cache busting for non-regenerated images
+  return url;
 };
 
 interface ContentClientPageProps {
@@ -41,8 +49,26 @@ export default function ContentClientPage({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [activeStep, setActiveStep] = useState('video-script');
   
-  // Cache busting state - tracks when images were last updated
-  const [imageCacheBusters, setImageCacheBusters] = useState<Record<string, number>>({});
+  // Cache busting state - tracks when images were last updated with persistence
+  const [imageCacheBusters, setImageCacheBusters] = useState<Record<string, number>>(() => {
+    // Initialize with cached values from sessionStorage
+    const cached: Record<string, number> = {};
+    if (typeof window !== 'undefined') {
+      try {
+        const keys = Object.keys(sessionStorage).filter(key => key.startsWith('imageCacheBuster_'));
+        keys.forEach(key => {
+          const contentType = key.replace('imageCacheBuster_', '');
+          const timestamp = parseInt(sessionStorage.getItem(key) || '0');
+          if (timestamp > 0) {
+            cached[contentType] = timestamp;
+          }
+        });
+      } catch {
+        // Ignore storage errors
+      }
+    }
+    return cached;
+  });
   
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -64,15 +90,35 @@ export default function ContentClientPage({
     { id: 'schedule', title: 'Schedule' }
   ];
 
-  // Force immediate image refresh for specific content types
+  // Force immediate image refresh for specific content types - Enhanced for Vercel
   const forceImageRefresh = useCallback((contentType: string) => {
     const timestamp = Date.now();
     setImageCacheBusters(prev => ({
       ...prev,
       [contentType]: timestamp
     }));
+    
+    // Also store in sessionStorage for persistence across reloads
+    try {
+      sessionStorage.setItem(`imageCacheBuster_${contentType}`, timestamp.toString());
+    } catch {
+      // Ignore storage errors
+    }
+    
     console.log(`🔄 Forced image refresh for ${contentType} with timestamp ${timestamp}`);
-  }, []);
+    
+    // Force preload the new image to bypass cache
+    const asset = contentAssets.find(a => a.content_type === contentType);
+    if (asset?.image_url) {
+      const img = new Image();
+      img.src = addCacheBuster(asset.image_url, timestamp);
+      img.onload = () => {
+        console.log(`✅ New image preloaded for ${contentType}`);
+        // Trigger a router refresh to update the UI
+        router.refresh();
+      };
+    }
+  }, [contentAssets, router]);
 
   const fetchContentAssets = useCallback(async () => {
     if (!supabase) {
