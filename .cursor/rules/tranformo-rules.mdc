@@ -6,7 +6,7 @@ alwaysApply: true
 ---
 description: these are the general rules when building this app.
 ---    
-
+    
 * NEVER MAKE AN UPDATE TO THE SUPABASE DATABASE USING THE SUPABASE MCP SERVER. 
 * ALWAYS ASK FIRST AND MAKE CHANGE USING MIGRATIONS.
 * Never commit to git without asking for permission
