@@ -182,8 +182,11 @@ export async function PATCH(
           console.log(`Converted local URL to external URL: ${localPublicUrl} -> ${publicUrl}`);
         }
 
-        // Update database with permanent image URL and clear temporary
-        updateData.image_url = publicUrl;
+        // Add timestamp cache buster to the image URL for Vercel compatibility
+        const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
+        
+        // Update database with permanent image URL (with cache buster) and clear temporary
+        updateData.image_url = cacheBustedUrl;
         updateData.temporary_image_url = null;
         
         console.log(`Successfully stored image and updated database for content asset ${id}`);

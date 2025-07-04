@@ -22,7 +22,7 @@ interface ImageRegenerationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contentAsset: ContentAsset;
-  onImageUpdated?: (contentType: string) => void;
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 type RegenerationStep = 'edit-prompt' | 'generating' | 'compare-images';
@@ -139,35 +139,21 @@ export default function ImageRegenerationModal({
           }),
         });
 
+        let updatedAsset;
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to save image');
+        } else {
+          updatedAsset = await response.json();
         }
 
-        console.log('✅ Image saved successfully, triggering cache refresh...');
+        console.log('✅ Image saved successfully, triggering client-side update...');
         
-        // Force refresh the image on server-side to bypass Vercel cache
-        const updatedAsset = await response.json();
-        if (updatedAsset.image_url) {
-          try {
-            await fetch('/api/image-refresh', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ imageUrl: updatedAsset.image_url })
-            });
-          } catch (error) {
-            console.warn('Failed to refresh image cache:', error);
-          }
+        // Trigger immediate client-side update with the new asset data
+        if (onImageUpdated) {
+          onImageUpdated(updatedAsset);
         }
         
-        // Trigger immediate cache busting for this content type
-        if (onImageUpdated && contentAsset.content_type) {
-          onImageUpdated(contentAsset.content_type);
-          console.log(`🔄 Cache refresh triggered for ${contentAsset.content_type}`);
-        }
-        
-        // Router refresh for complete data sync
-        router.refresh();
         toast.success('Image updated successfully!');
         onOpenChange(false);
         
