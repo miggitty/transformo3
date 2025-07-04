@@ -11,7 +11,7 @@ import SocialShortVideoForm from './content-asset-forms/social-short-video-form'
 import SocialQuoteCardForm from './content-asset-forms/social-quote-card-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import {
   Dialog,
   DialogContent,
@@ -43,7 +43,8 @@ import {
   scheduleContentAssets,
   updateAssetSchedule,
   getBusinessAssets,
-  resetContentAssetSchedules
+  resetContentAssetSchedules,
+  saveBatchScheduleChanges
 } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
@@ -55,10 +56,10 @@ interface ContentAssetsManagerProps {
   content: ContentWithBusiness;
   isLoading: boolean;
   error: string | null;
-  onGenerate: () => void;
-  isGenerating: boolean;
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
+  defaultView?: 'list' | 'calendar';
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 interface CalendarEvent {
@@ -92,13 +93,13 @@ export default function ContentAssetsManager({
   content,
   isLoading,
   error,
-  onGenerate,
-  isGenerating,
   onRefresh,
   onAssetUpdate,
+  defaultView = 'list',
+  onImageUpdated,
 }: ContentAssetsManagerProps) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState('list');
+  const [activeView] = useState(defaultView);
   const [isScheduling, setIsScheduling] = useState(false);
   const [businessAssets, setBusinessAssets] = useState<BusinessAsset[]>([]);
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -124,7 +125,13 @@ export default function ContentAssetsManager({
     contentId: '',
     contentTitle: '',
   });
-
+  
+  // FEATURE: Batch Scheduling State Management
+  const [pendingChanges, setPendingChanges] = useState<Map<string, ContentAsset>>(new Map());
+  const [, setOriginalAssets] = useState<Map<string, ContentAsset>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const businessTimezone = content.businesses?.timezone || 'UTC';
 
   // Helper function for asset display names
@@ -144,18 +151,7 @@ export default function ContentAssetsManager({
 
   // Get unscheduled assets count
   const unscheduledAssets = useMemo(() => {
-    const filtered = assets.filter(asset => !asset.asset_scheduled_at);
-    console.log('Assets analysis:', {
-      totalAssets: assets.length,
-      unscheduledAssets: filtered.length,
-      allAssets: assets.map(a => ({ 
-        id: a.id, 
-        type: a.content_type, 
-        scheduled: !!a.asset_scheduled_at 
-      })),
-      unscheduledTypes: filtered.map(a => a.content_type)
-    });
-    return filtered;
+    return assets.filter(asset => !asset.asset_scheduled_at);
   }, [assets]);
 
   // Get scheduled assets count
@@ -188,25 +184,76 @@ export default function ContentAssetsManager({
     }
   }, [activeView, calendarDate, content.businesses?.id, fetchBusinessAssets]);
 
-  // Convert assets to calendar events
+  // FEATURE: Initialize original assets map when assets change (for batch scheduling)
+  useEffect(() => {
+    const originalMap = new Map();
+    assets.forEach(asset => {
+      if (asset.asset_scheduled_at) {
+        originalMap.set(asset.id, asset);
+      }
+    });
+    setOriginalAssets(originalMap);
+    
+    // Clear pending changes if assets are refreshed from server
+    if (assets.length > 0) {
+      setPendingChanges(new Map());
+      setHasUnsavedChanges(false);
+    }
+  }, [assets]);
+
+  // FEATURE: Navigation Guard - warn about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Convert assets to calendar events (including pending changes)
   const calendarEvents: CalendarEvent[] = useMemo(() => {
-    // Own content assets
-    const ownedEvents: CalendarEvent[] = assets
+    // Create a map of current assets (original + pending changes)
+    const mergedAssets = new Map<string, ContentAsset>();
+    
+    // Start with original assets
+    assets.forEach(asset => {
+      if (asset.asset_scheduled_at) {
+        mergedAssets.set(asset.id, asset);
+      }
+    });
+    
+    // Apply pending changes
+    pendingChanges.forEach((pendingAsset, assetId) => {
+      mergedAssets.set(assetId, pendingAsset);
+    });
+    
+    // Own content assets with visual indicators for pending vs saved
+    const ownedEvents: CalendarEvent[] = Array.from(mergedAssets.values())
       .filter(asset => asset.asset_scheduled_at !== null)
-      .map(asset => ({
-        id: asset.id,
-        title: getAssetDisplayName(asset.content_type || ''),
-        date: asset.asset_scheduled_at as string,
-        backgroundColor: '#3b82f6',
-        borderColor: '#1d4ed8',
-        textColor: 'white',
-        extendedProps: {
-          assetType: asset.content_type || '',
-          isOwned: true,
-          contentId: content.id,
-          assetId: asset.id,
-        },
-      }));
+      .map(asset => {
+        const isPending = pendingChanges.has(asset.id);
+        return {
+          id: asset.id,
+          title: getAssetDisplayName(asset.content_type || ''),
+          date: asset.asset_scheduled_at as string,
+          // Visual indicators: pending changes have different styling
+          backgroundColor: isPending ? '#f59e0b' : '#2563eb', // Orange for pending, blue for saved
+          borderColor: isPending ? '#d97706' : '#1d4ed8',
+          textColor: isPending ? '#92400e' : '#2563eb',
+          extendedProps: {
+            assetType: asset.content_type || '',
+            isOwned: true,
+            contentId: content.id,
+            assetId: asset.id,
+            isPending: isPending,
+          },
+        };
+      });
 
     // Other business assets
     const otherEvents: CalendarEvent[] = businessAssets
@@ -215,9 +262,9 @@ export default function ContentAssetsManager({
         id: `other-${asset.id}`,
         title: getAssetDisplayName(asset.content_type || ''),
         date: asset.asset_scheduled_at as string,
-        backgroundColor: '#6b7280',
-        borderColor: '#4b5563',
-        textColor: 'white',
+        backgroundColor: '#e5e7eb',
+        borderColor: '#d1d5db',
+        textColor: '#9ca3af',
         extendedProps: {
           assetType: asset.content_type || '',
           contentTitle: asset.content?.content_title || '',
@@ -228,24 +275,10 @@ export default function ContentAssetsManager({
       }));
 
     const allEvents = [...ownedEvents, ...otherEvents];
-    console.log('Calendar events:', {
-      ownedEvents: ownedEvents.length,
-      otherEvents: otherEvents.length,
-      totalEvents: allEvents.length,
-      events: allEvents.map(e => ({ id: e.id, title: e.title, date: e.date }))
-    });
-
     return allEvents;
-  }, [assets, businessAssets, content.id]);
+  }, [assets, businessAssets, content.id, pendingChanges]);
 
   const handleScheduleAll = async (startDate?: Date) => {
-    console.log('handleScheduleAll called with:', { 
-      startDate, 
-      unscheduledAssetsCount: unscheduledAssets.length,
-      unscheduledAssets: unscheduledAssets.map(a => ({ id: a.id, type: a.content_type })),
-      businessTimezone 
-    });
-
     if (unscheduledAssets.length === 0) {
       toast.error('No unscheduled assets to schedule.');
       return;
@@ -254,19 +287,10 @@ export default function ContentAssetsManager({
     const scheduleDate = startDate || new Date();
     setIsScheduling(true);
     try {
-      console.log('Calling scheduleContentAssets with:', {
-        contentId: content.id,
-        startDate: scheduleDate.toISOString(),
-        businessTimezone,
-      });
-
       const result = await scheduleContentAssets({
         contentId: content.id,
         startDate: scheduleDate.toISOString(),
-        businessTimezone,
       });
-
-      console.log('scheduleContentAssets result:', result);
 
       if (result.success) {
         toast.success(`Scheduled ${result.scheduled} assets successfully!`);
@@ -282,11 +306,6 @@ export default function ContentAssetsManager({
       }
     } catch (error) {
       console.error('Error scheduling assets:', error);
-      console.error('Full error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        error
-      });
       toast.error('An error occurred while scheduling assets.');
     } finally {
       setIsScheduling(false);
@@ -405,6 +424,22 @@ export default function ContentAssetsManager({
       return;
     }
 
+    // FEATURE: Past Date Prevention - validate date before any processing
+    const newDate = new Date(event.start);
+    const today = new Date();
+    const todayInBusinessTZ = toZonedTime(today, businessTimezone);
+    const newDateInBusinessTZ = toZonedTime(newDate, businessTimezone);
+    
+    // Compare dates only (ignore time) to check if dropping to past date
+    const todayDateOnly = new Date(todayInBusinessTZ.getFullYear(), todayInBusinessTZ.getMonth(), todayInBusinessTZ.getDate());
+    const newDateOnly = new Date(newDateInBusinessTZ.getFullYear(), newDateInBusinessTZ.getMonth(), newDateInBusinessTZ.getDate());
+    
+    if (newDateOnly < todayDateOnly) {
+      info.revert();
+      toast.error('Cannot schedule content to a date in the past');
+      return;
+    }
+
     try {
       // Keep the same time, just change the date
       const originalAsset = assets.find(a => a.id === event.extendedProps.assetId);
@@ -443,32 +478,17 @@ export default function ContentAssetsManager({
 
       const finalDateTime = finalDate.toISOString();
 
-      // Optimistic update - update local state immediately
-      if (onAssetUpdate && originalAsset) {
-        const updatedAsset = {
-          ...originalAsset,
-          asset_scheduled_at: finalDateTime,
-        };
-        onAssetUpdate(updatedAsset);
-      }
-
-      toast.success('Asset rescheduled successfully!');
-
-      // Update on server in background
-      const result = await updateAssetSchedule({
-        assetId: event.extendedProps.assetId,
-        newDateTime: finalDateTime,
-      });
-
-      console.log('Update asset schedule result:', result);
-
-      if (!result.success) {
-        // If server update fails, revert the optimistic update
-        if (onAssetUpdate && originalAsset) {
-          onAssetUpdate(originalAsset); // Revert to original
-        }
-        toast.error(result.error || 'Failed to update schedule.');
-      }
+      // FEATURE: Batch Scheduling - store change locally (don't save to DB yet)
+      const updatedAsset = {
+        ...originalAsset,
+        asset_scheduled_at: finalDateTime,
+      };
+      
+      // Add to pending changes
+      setPendingChanges(prev => new Map(prev.set(originalAsset.id, updatedAsset)));
+      setHasUnsavedChanges(true);
+      
+      toast.success('Asset moved (not saved yet - click Schedule to save changes)');
     } catch (error) {
       console.error('Drag drop error:', error);
       info.revert();
@@ -525,24 +545,90 @@ export default function ContentAssetsManager({
     }
   };
 
+  // FEATURE: Batch Scheduling - Reset Changes Handler
+  const handleResetChanges = () => {
+    setPendingChanges(new Map());
+    setHasUnsavedChanges(false);
+    toast.success('Changes reset to saved state');
+  };
+
+  // FEATURE: Batch Scheduling - Schedule Changes Handler with error handling and rollback
+  const handleScheduleChanges = async () => {
+    if (pendingChanges.size === 0) return;
+    
+    setIsSaving(true);
+    
+    // Store current pending changes for potential rollback
+    const currentPendingChanges = new Map(pendingChanges);
+    
+    try {
+      // Prepare changes array for server action
+      const changes = Array.from(pendingChanges.values()).map(asset => ({
+        assetId: asset.id,
+        newDateTime: asset.asset_scheduled_at!,
+      }));
+
+      // Optimistic update - apply changes immediately
+      if (onRefresh) {
+        // Clear pending changes optimistically
+        setPendingChanges(new Map());
+        setHasUnsavedChanges(false);
+      }
+
+      // Save to server
+      const result = await saveBatchScheduleChanges({
+        changes,
+        contentId: content.id,
+      });
+
+      if (result.success) {
+        if (result.warning) {
+          // Partial success
+          toast.warning(result.warning);
+        } else {
+          // Full success
+          toast.success(`Scheduled ${result.scheduled} change${result.scheduled !== 1 ? 's' : ''} successfully!`);
+        }
+        
+        // Refresh data from server to ensure consistency
+        if (onRefresh) {
+          await onRefresh();
+        }
+      } else {
+        // All failed - rollback optimistic updates
+        setPendingChanges(currentPendingChanges);
+        setHasUnsavedChanges(true);
+        toast.error(result.error || 'Failed to save changes');
+      }
+    } catch (error) {
+      // Network or unexpected error - rollback optimistic updates
+      console.error('Error saving changes:', error);
+      setPendingChanges(currentPendingChanges);
+      setHasUnsavedChanges(true);
+      toast.error('An error occurred while saving changes');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const renderAssetForm = (asset: ContentAsset) => {
     switch (asset.content_type) {
       case 'youtube_video':
-        return <YouTubeVideoForm asset={asset} content={content} />;
+        return <YouTubeVideoForm asset={asset} content={content} onImageUpdated={onImageUpdated} />;
       case 'email':
         return <EmailForm asset={asset} />;
       case 'blog_post':
-        return <BlogPostForm asset={asset} />;
+        return <BlogPostForm asset={asset} onImageUpdated={onImageUpdated} />;
       case 'social_rant_post':
-        return <SocialRantPostForm asset={asset} />;
+        return <SocialRantPostForm asset={asset} onImageUpdated={onImageUpdated} />;
       case 'social_blog_post':
-        return <SocialBlogPostForm asset={asset} />;
+        return <SocialBlogPostForm asset={asset} onImageUpdated={onImageUpdated} />;
       case 'social_long_video':
         return <SocialLongVideoForm asset={asset} content={content} />;
       case 'social_short_video':
         return <SocialShortVideoForm asset={asset} content={content} />;
       case 'social_quote_card':
-        return <SocialQuoteCardForm asset={asset} />;
+        return <SocialQuoteCardForm asset={asset} onImageUpdated={onImageUpdated} />;
       default:
         return (
           <Card>
@@ -638,7 +724,7 @@ export default function ContentAssetsManager({
         <CardHeader>
           <CardTitle>Content Calendar</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Blue events are your content assets (draggable). Gray events are from other content. 
+            Blue events are your content assets (draggable). Light gray events are from other content. 
             Click on your events to edit the time.
           </p>
         </CardHeader>
@@ -678,7 +764,7 @@ export default function ContentAssetsManager({
                 // Styling for different event types
                 if (!isOwned) {
                   info.el.style.cursor = 'pointer';
-                  info.el.style.opacity = '0.7';
+                  info.el.style.opacity = '0.4';
                   
                   // Add double-click handler for external events
                   info.el.addEventListener('dblclick', () => {
@@ -686,6 +772,8 @@ export default function ContentAssetsManager({
                   });
                 } else {
                   info.el.style.cursor = 'grab';
+                  // Ensure blue text for owned events
+                  info.el.style.color = '#2563eb';
                 }
                 
                 // Add hover effects
@@ -705,6 +793,43 @@ export default function ContentAssetsManager({
           </TooltipProvider>
         </CardContent>
       </Card>
+
+      {/* FEATURE: Batch Scheduling - Schedule & Reset Buttons */}
+      {hasUnsavedChanges && (
+        <div className="flex justify-end gap-2 mt-4">
+          <Button
+            onClick={handleResetChanges}
+            variant="outline"
+            size="sm"
+            disabled={isSaving}
+          >
+            Reset Changes
+          </Button>
+          <Button
+            onClick={handleScheduleChanges}
+            disabled={pendingChanges.size === 0 || isSaving}
+            size="sm"
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            {isSaving 
+              ? 'Scheduling...' 
+              : `Schedule (${pendingChanges.size} change${pendingChanges.size !== 1 ? 's' : ''})`
+            }
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Content Assets</h2>
+        </div>
+
+        {activeView === 'calendar' ? renderCalendarView() : renderListView()}
+      </div>
 
       {/* Time Edit Modal */}
       <Dialog open={timeEditModal.open} onOpenChange={(open) => 
@@ -774,32 +899,6 @@ export default function ContentAssetsManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Content Assets</h2>
-        <Button onClick={onGenerate} disabled={isGenerating}>
-          {isGenerating ? 'Generating...' : 'Generate Content'}
-        </Button>
-      </div>
-
-      <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="list">List View</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="list" className="mt-6">
-          {renderListView()}
-        </TabsContent>
-        
-        <TabsContent value="calendar" className="mt-6">
-          {renderCalendarView()}
-        </TabsContent>
-      </Tabs>
-    </div>
+    </>
   );
 } 

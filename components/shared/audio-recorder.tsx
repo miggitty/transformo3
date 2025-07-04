@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import {
   createContentRecord,
   finalizeContentRecord,
-} from '@/app/(app)/new/actions';
+} from '@/app/(app)/voice-recording/actions';
 
 type RecordingStatus = 'idle' | 'recording' | 'processing' | 'uploading';
 
@@ -146,7 +146,7 @@ export function AudioRecorder() {
         toast.error(finalizeResult.error);
       } else {
         toast.success('Content created successfully!');
-        router.push('/content');
+        router.push('/content/drafts');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to upload audio file.';

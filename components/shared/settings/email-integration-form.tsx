@@ -59,11 +59,13 @@ const emailSettingsFormSchema = z.object({
 type EmailSettingsFormValues = z.infer<typeof emailSettingsFormSchema>;
 
 interface EmailIntegrationFormProps {
-  business: Tables<'businesses'>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  business: Tables<'businesses'> & any;
 }
 
 export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
-  const [isKeySet, setIsKeySet] = useState(!!business.email_secret_id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [isKeySet, setIsKeySet] = useState(!!(business as any).email_secret_id);
   const [groups, setGroups] = useState<EmailGroup[]>([]);
   const [isValidating, setIsValidating] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);

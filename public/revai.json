@@ -1,0 +1,251 @@
+{
+    "name": "Rev.ai Video Transcription",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "rev-ai-transcription-final",
+          "options": {}
+        },
+        "id": "e8a1b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5",
+        "name": "Start: Receive Video URL",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [0, 200],
+        "webhookId": "f8b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.rev.ai/speechtotext/v1/jobs",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $env.REVAI_ACCESS_TOKEN }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"media_url\": \"{{ $json.body.media_url }}\"\n}",
+          "options": {}
+        },
+        "id": "a9b3c4d5-e6f7-b8c9-d0e1-f2a3b4c5d6e7",
+        "name": "Submit Job (Rev.ai)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [260, 200]
+      },
+      {
+        "parameters": {
+          "amount": 30
+        },
+        "id": "b0c4d5e6-f7a8-b9c0-d1e2-f3a4b5c6d7e8",
+        "name": "Wait 30s",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [500, 200]
+      },
+      {
+        "parameters": {
+          "url": "=https://api.rev.ai/speechtotext/v1/jobs/{{ $('Submit Job (Rev.ai)').item.json.id }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $env.REVAI_ACCESS_TOKEN }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "c1d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9",
+        "name": "Check Job Status",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [720, 200]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "d2e6f7a8-b9c0-d1e2-f3a4-b5c6d7e8f9a0",
+                "leftValue": "={{ $json.status }}",
+                "rightValue": "transcribed",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "e3f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1",
+        "name": "Is Status 'transcribed'?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [960, 200]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "f4a8b9c0-d1e2-f3a4-b5c6-d7e8f9a0b1c2",
+                "leftValue": "={{ $json.status }}",
+                "rightValue": "failed",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "a5b9c0d1-e2f3-a4b5-c6d7-e8f9a0b1c2d3",
+        "name": "Is Status 'failed'?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [960, 420]
+      },
+      {
+        "parameters": {
+          "jsCode": "const runCount = $runIndex;\nconst maxAttempts = 20;\nif (runCount >= maxAttempts) {\n  $node.error = 'Polling timeout after ' + maxAttempts + ' attempts.';\n  return [null, { json: { error: 'Polling timeout' } }];\n}\nreturn [{ json: { runCount: runCount + 1 } }];"
+        },
+        "id": "b6c0d1e2-f3a4-b5c6-d7e8-f9a0b1c2d3e4",
+        "name": "Loop Counter & Timeout",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [720, 520]
+      },
+      {
+        "parameters": {
+          "url": "=https://api.rev.ai/speechtotext/v1/jobs/{{ $('Submit Job (Rev.ai)').item.json.id }}/transcript",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "=Bearer {{ $env.REVAI_ACCESS_TOKEN }}"
+              },
+              {
+                "name": "Accept",
+                "value": "text/plain"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "text"
+              }
+            }
+          }
+        },
+        "id": "c7d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5",
+        "name": "Get Transcript",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1200, 100]
+      },
+      {
+        "parameters": {
+          "responseBody": "={{ $('Get Transcript').item.text }}",
+          "options": {
+            "responseHeaders": {
+              "headers": [
+                {
+                  "name": "Content-Type",
+                  "value": "text/plain"
+                }
+              ]
+            }
+          }
+        },
+        "id": "d8e2f3a4-b5c6-d7e8-f9a0-b1c2d3e4f5a6",
+        "name": "Success Response",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [1440, 100]
+      },
+      {
+        "parameters": {
+          "responseCode": 500,
+          "responseBody": "={{ JSON.stringify({error: 'Transcription job failed.', details: $('Check Job Status').item.json}) }}",
+          "options": {}
+        },
+        "id": "e9f3a4b5-c6d7-e8f9-a0b1-c2d3e4f5a6b7",
+        "name": "Error Response",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [1200, 420]
+      }
+    ],
+    "pinData": {},
+    "connections": {
+      "Start: Receive Video URL": {
+        "main": [[{ "node": "Submit Job (Rev.ai)", "type": "main", "index": 0 }]]
+      },
+      "Submit Job (Rev.ai)": {
+        "main": [[{ "node": "Wait 30s", "type": "main", "index": 0 }]]
+      },
+      "Wait 30s": {
+        "main": [[{ "node": "Check Job Status", "type": "main", "index": 0 }]]
+      },
+      "Check Job Status": {
+        "main": [[{ "node": "Is Status 'transcribed'?", "type": "main", "index": 0 }]]
+      },
+      "Is Status 'transcribed'?": {
+        "main": [
+          [{ "node": "Get Transcript", "type": "main", "index": 0 }],
+          [{ "node": "Is Status 'failed'?", "type": "main", "index": 0 }]
+        ]
+      },
+      "Is Status 'failed'?": {
+        "main": [
+          [{ "node": "Error Response", "type": "main", "index": 0 }],
+          [{ "node": "Loop Counter & Timeout", "type": "main", "index": 0 }]
+        ]
+      },
+      "Loop Counter & Timeout": {
+        "main": [[{ "node": "Wait 30s", "type": "main", "index": 0 }]]
+      },
+      "Get Transcript": {
+        "main": [[{ "node": "Success Response", "type": "main", "index": 0 }]]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "f0a1b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5",
+    "id": "RevAiWorkflow_1689",
+    "tags": []
+  }
+  

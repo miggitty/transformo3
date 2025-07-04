@@ -1,43 +1,66 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { SupabaseClient } from '@supabase/supabase-js';
 import { type Database } from '@/types/supabase';
 
-export function createClient(): SupabaseClient<Database> | null {
-  // During build time, environment variables might not be available
-  // Return a null client that can be handled gracefully
-  if (typeof window === 'undefined') {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Supabase environment variables not available during build time');
-      return null;
-    }
+let client: ReturnType<typeof createBrowserClient<Database>> | undefined;
+
+export function createClient() {
+  // Return existing client if already created
+  if (client) {
+    return client;
   }
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Supabase environment variables missing:', {
-      url: !!supabaseUrl,
-      key: !!supabaseAnonKey
+
+  // --- START VERCEL DEBUG LOG ---
+  console.log('--- CLIENT-SIDE ENVIRONMENT CHECK ---');
+  console.log(
+    'NEXT_PUBLIC_SUPABASE_URL:',
+    process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Exists' : 'MISSING OR EMPTY'
+  );
+  console.log(
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY:',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Exists' : 'MISSING OR EMPTY'
+  );
+  console.log('-----------------------------------');
+  // --- END VERCEL DEBUG LOG ---
+
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    console.error('Missing Supabase environment variables:', {
+      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     });
     
-    throw new Error('@supabase/ssr: Your project\'s URL and API key are required to create a Supabase client!\n\nCheck your Supabase project\'s API settings to find these values\n\nhttps://supabase.com/dashboard/project/_/settings/api');
+    // Return null instead of throwing to allow components to handle gracefully
+    return null;
   }
-  
-  return createBrowserClient(
-    supabaseUrl,
-    supabaseAnonKey
-  );
+
+  try {
+    client = createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        auth: {
+          flowType: 'pkce',
+          autoRefreshToken: true,
+          persistSession: true,
+        },
+      }
+    );
+    
+    console.log('✅ Supabase client created successfully');
+    return client;
+  } catch (error) {
+    console.error('❌ Failed to create Supabase client:', error);
+    return null;
+  }
 }
 
-// Safe client for client-side components that throws if env vars are missing
-export function createClientSafe(): SupabaseClient<Database> {
-  const client = createClient();
-  if (!client) {
-    throw new Error('@supabase/ssr: Your project\'s URL and API key are required to create a Supabase client!\n\nCheck your Supabase project\'s API settings to find these values\n\nhttps://supabase.com/dashboard/project/_/settings/api');
+// Safe client for components that need to throw if env vars are missing
+export function createClientSafe() {
+  const supabaseClient = createClient();
+  if (!supabaseClient) {
+    throw new Error('Supabase client could not be created. Check your environment variables.');
   }
-  return client;
+  return supabaseClient;
 }

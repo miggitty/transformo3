@@ -48,18 +48,23 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
     };
   }, [content.id, content.heygen_status, onContentUpdate, supabase]);
 
+  // Get HeyGen integration data
+  const heygenIntegration = content.businesses?.ai_avatar_integrations?.find(
+    integration => integration.provider === 'heygen' && integration.status === 'active'
+  );
+
   const handleGenerateVideo = async () => {
     if (!content.video_script) {
       toast.error('Video script is required to generate an AI avatar video.');
       return;
     }
 
-    if (!content.businesses?.heygen_secret_id) {
+    if (!heygenIntegration?.secret_id) {
       toast.error('HeyGen API key is not configured. Please set it up in Settings.');
       return;
     }
 
-    if (!content.businesses?.heygen_avatar_id || !content.businesses?.heygen_voice_id) {
+    if (!heygenIntegration?.avatar_id || !heygenIntegration?.voice_id) {
       toast.error('HeyGen avatar and voice IDs are required. Please configure them in Settings.');
       return;
     }
@@ -127,9 +132,9 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
   };
 
   const canGenerate = content.video_script && 
-                     content.businesses?.heygen_secret_id && 
-                     content.businesses?.heygen_avatar_id && 
-                     content.businesses?.heygen_voice_id &&
+                     heygenIntegration?.secret_id && 
+                     heygenIntegration?.avatar_id && 
+                     heygenIntegration?.voice_id &&
                      content.heygen_status !== 'processing';
 
   return (
@@ -154,20 +159,20 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span>HeyGen API Key:</span>
-            <Badge variant={content.businesses?.heygen_secret_id ? "default" : "secondary"}>
-              {content.businesses?.heygen_secret_id ? "Configured" : "Not Set"}
+            <Badge variant={heygenIntegration?.secret_id ? "default" : "secondary"}>
+              {heygenIntegration?.secret_id ? "Configured" : "Not Set"}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span>Avatar ID:</span>
-            <Badge variant={content.businesses?.heygen_avatar_id ? "default" : "secondary"}>
-              {content.businesses?.heygen_avatar_id ? "Set" : "Not Set"}
+            <Badge variant={heygenIntegration?.avatar_id ? "default" : "secondary"}>
+              {heygenIntegration?.avatar_id ? "Set" : "Not Set"}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span>Voice ID:</span>
-            <Badge variant={content.businesses?.heygen_voice_id ? "default" : "secondary"}>
-              {content.businesses?.heygen_voice_id ? "Set" : "Not Set"}
+            <Badge variant={heygenIntegration?.voice_id ? "default" : "secondary"}>
+              {heygenIntegration?.voice_id ? "Set" : "Not Set"}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
@@ -220,17 +225,26 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
         </div>
 
         {/* Video Player */}
-        {content.heygen_status === 'completed' && content.video_long_url && (
+        {content.heygen_status === 'completed' && (content.heygen_url || content.video_long_url) && (
           <div className="space-y-2">
             <h4 className="font-medium">Generated Video:</h4>
             <div className="aspect-video rounded-lg overflow-hidden bg-black">
               <video
                 controls
                 className="w-full h-full"
-                src={content.video_long_url}
+                src={content.heygen_url || content.video_long_url || undefined}
+                onError={(e) => {
+                  console.error('Video failed to load:', e);
+                  toast.error('Video failed to load. Please check the URL.');
+                }}
+                onLoadStart={() => console.log('Video loading started')}
+                onLoadedData={() => console.log('Video data loaded')}
               >
                 Your browser does not support the video tag.
               </video>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Video URL: {content.heygen_url || content.video_long_url}
             </div>
           </div>
         )}

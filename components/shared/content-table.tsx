@@ -13,17 +13,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { PROJECT_TYPES, ProjectType } from '@/types/index';
+import { Mic, Video } from 'lucide-react';
 
-function formatStatus(status: string | null) {
+function formatStatus(status: string | null, projectType?: ProjectType) {
   if (!status) return 'Unknown';
   if (status === 'processing') {
+    const processingText = projectType === 'video_upload' 
+      ? 'Processing Video...' 
+      : 'Processing Audio...';
     return (
       <div className="flex items-center">
         <span className="relative mr-2 flex h-3 w-3">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
           <span className="relative inline-flex h-3 w-3 rounded-full bg-sky-500"></span>
         </span>
-        Still Process Content...
+        {processingText}
       </div>
     );
   }
@@ -31,6 +36,20 @@ function formatStatus(status: string | null) {
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+function getProjectTypeDisplay(projectType: ProjectType | null) {
+  if (!projectType) return null;
+  
+  const Icon = projectType === 'video_upload' ? Video : Mic;
+  const label = PROJECT_TYPES[projectType] || projectType;
+  
+  return (
+    <div className="flex items-center gap-1">
+      <Icon className="h-3 w-3" />
+      <span className="text-xs">{label}</span>
+    </div>
+  );
 }
 
 export function ContentTable({
@@ -53,15 +72,14 @@ export function ContentTable({
     <>
       <RealtimeContentUpdater
         businessId={businessId}
-        serverContent={content}
-        onUpdate={setContent}
       />
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Created At</TableHead>
+            <TableHead className="hidden md:table-cell">Created At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -74,8 +92,11 @@ export function ContentTable({
               >
                 <TableCell className="font-medium">
                   {item.status === 'processing'
-                    ? 'Currently Processing Audio...'
+                    ? (item.project_type === 'video_upload' ? 'Processing Video...' : 'Processing Audio...')
                     : item.content_title || 'Untitled'}
+                </TableCell>
+                <TableCell>
+                  {getProjectTypeDisplay(item.project_type as ProjectType)}
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -83,7 +104,7 @@ export function ContentTable({
                       item.status === 'completed' ? 'default' : 'outline'
                     }
                   >
-                    {formatStatus(item.status)}
+                    {formatStatus(item.status, item.project_type as ProjectType)}
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
@@ -100,7 +121,7 @@ export function ContentTable({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={3} className="h-24 text-center">
+              <TableCell colSpan={4} className="h-24 text-center">
                 No content created yet.
               </TableCell>
             </TableRow>

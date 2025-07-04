@@ -47,9 +47,9 @@ export function validateUsername(username: string): string {
     throw new UploadPostValidationError('Username must be between 3 and 50 characters');
   }
   
-  // Ensure it matches our expected format for Transformo usernames
-  if (!sanitized.startsWith('transformo_')) {
-    throw new UploadPostValidationError('Invalid username format for Transformo integration');
+  // Ensure it contains underscore (business_name_id format)
+  if (!sanitized.includes('_')) {
+    throw new UploadPostValidationError('Invalid username format for business integration');
   }
   
   return sanitized;
@@ -165,6 +165,18 @@ interface CreateUserProfileResponse {
 interface GenerateJWTResponse {
   success: boolean;
   access_url: string;
+}
+
+interface FacebookPage {
+  id: string;
+  name: string;
+  account_id: string;
+  picture?: string;
+}
+
+interface FacebookPagesResponse {
+  pages: FacebookPage[];
+  success: boolean;
 }
 
 /**
@@ -455,5 +467,75 @@ export function validateJWTRedirect(searchParams: URLSearchParams): {
       connected: false, 
       error: 'Invalid redirect parameters' 
     };
+  }
+}
+
+/**
+ * Generate upload-post username from business name and business ID
+ * Format: {sanitized_business_name}_{last_8_digits_of_business_id}
+ */
+export function generateUploadPostUsername(businessName: string, businessId: string): string {
+  // Sanitize business name for username
+  const sanitizedBusinessName = businessName
+    .toLowerCase()
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .replace(/[^a-z0-9_]/g, ''); // Remove any remaining non-alphanumeric characters except underscores
+  
+  // Get last 8 characters of business ID for uniqueness
+  const businessIdSuffix = businessId.replace(/-/g, '').slice(-8);
+  
+  // Combine sanitized business name with business ID suffix
+  const username = `${sanitizedBusinessName}_${businessIdSuffix}`;
+  
+  // Ensure we have a valid username (minimum length check only)
+  if (sanitizedBusinessName.length === 0) {
+    return `business_${businessIdSuffix}`;
+  }
+  
+  return username;
+}
+
+/**
+ * Fetch Facebook Page ID for a given upload-post username
+ * Returns the first page ID if available, null otherwise
+ */
+export async function fetchFacebookPageId(username: string): Promise<string | null> {
+  try {
+    // Validate username before making API call
+    const validatedUsername = validateUsername(username);
+    
+    console.log(`📡 Fetching Facebook pages for profile: ${validatedUsername}`);
+    
+    const response = await fetch(
+      `${UPLOAD_POST_API_URL}/facebook/pages?profile=${encodeURIComponent(validatedUsername)}`,
+      {
+        method: 'GET',
+        headers: createHeaders(),
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+      }
+    );
+
+    console.log(`📡 Facebook Pages API response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.warn(`❌ Failed to fetch Facebook pages for ${username}: ${response.status} - ${errorText}`);
+      return null;
+    }
+
+    const data: FacebookPagesResponse = await response.json();
+    console.log(`📡 Facebook Pages API response:`, JSON.stringify(data, null, 2));
+    
+    // Return the first page ID if available
+    if (data.success && data.pages && data.pages.length > 0) {
+      console.log(`✅ Found ${data.pages.length} Facebook page(s), using first: ${data.pages[0].id}`);
+      return data.pages[0].id;
+    }
+    
+    console.log(`⚠️ No Facebook pages found in response`);
+    return null;
+  } catch (error) {
+    console.error('❌ Error fetching Facebook Page ID:', error);
+    return null;
   }
 } 

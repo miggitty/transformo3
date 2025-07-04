@@ -1,103 +1,108 @@
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Supabase client with service role key inside the function
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing required environment variables for Supabase');
-      return NextResponse.json({ 
-        error: 'Server configuration error' 
-      }, { status: 500 });
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { persistSession: false } }
-    );
-
-    const body = await request.json();
-    console.log('N8N callback received:', {
-      headers: Object.fromEntries(request.headers.entries()),
-      body: JSON.stringify(body, null, 2)
-    });
-
-    // Verify N8N callback secret (following documented pattern)
+    // Verify the callback secret
     const callbackSecret = request.headers.get('x-n8n-callback-secret');
-    if (callbackSecret && process.env.N8N_CALLBACK_SECRET && callbackSecret !== process.env.N8N_CALLBACK_SECRET) {
-      console.log('N8N callback secret mismatch:', { received: callbackSecret, expected: process.env.N8N_CALLBACK_SECRET });
+    if (callbackSecret !== process.env.N8N_CALLBACK_SECRET) {
+      console.error('Unauthorized callback attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { content_id, transcript, content_title, research, success, error, environment } = body;
+    const body = await request.json();
+    console.log('N8N callback received:', body);
 
-    // Log the callback for debugging (following documented pattern)
-    console.log(`N8N callback received from ${environment || 'unknown'}:`, {
-      content_id,
-      success,
-      error: error || 'none',
-      hasTranscript: !!transcript,
-      hasTitle: !!content_title,
-      hasResearch: !!research
+    const { 
+      content_id, 
+      content_asset_id,
+      success, 
+      error: workflowError 
+    } = body;
+
+    // Initialize Supabase client with service role key for N8N callbacks (bypasses RLS)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration for N8N callback');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(
+      supabaseUrl,
+      supabaseServiceKey,
+      { auth: { persistSession: false } }
+    );
+
+    // Handle different types of callbacks
+    
+    // Handle image regeneration callbacks (identified by presence of image_url + content_asset_id)
+    if (body.image_url && content_asset_id) {
+      console.log(`Processing image regeneration callback for asset ${content_asset_id}`);
+      console.log(`New image URL: ${body.image_url}`);
+      
+      // Store the new image URL in temporary_image_url field for user approval
+      // Do NOT update image_url directly - that happens only when user chooses to save
+      const { error: updateError } = await supabase
+        .from('content_assets')
+        .update({ 
+          temporary_image_url: body.image_url
+        })
+        .eq('id', content_asset_id);
+
+      if (updateError) {
+        console.error('Error updating content asset temporary image:', updateError);
+        return NextResponse.json({ error: 'Failed to store temporary image' }, { status: 500 });
+      }
+
+      console.log('Image regeneration callback processed successfully - stored in temporary_image_url');
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Temporary image stored for user approval' 
+      });
+    }
+
+    // Handle content processing callbacks (audio/video/content creation)
+    if (content_id) {
+      const newStatus = success ? 'draft' : 'failed';
+      
+      console.log(`Updating content ${content_id} status to ${newStatus}`);
+
+      const { error: updateError } = await supabase
+        .from('content')
+        .update({ 
+          status: newStatus,
+          error_message: success ? null : (workflowError || 'Workflow failed')
+        })
+        .eq('id', content_id);
+
+      if (updateError) {
+        console.error('Error updating content status:', updateError);
+        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
+      }
+
+      console.log(`Successfully updated content ${content_id} to ${newStatus}`);
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: `Content ${content_id} status updated to ${newStatus}` 
+      });
+    }
+
+    // If we get here, we don't know how to handle this callback
+    console.warn('Unknown callback type received:', body);
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Callback received but no action taken' 
     });
 
-    if (!content_id) {
-      console.error('Missing content_id in callback');
-      return NextResponse.json({ error: 'Missing content_id' }, { status: 400 });
-    }
-
-    // Handle both success and error cases
-    // If success field is not provided but we have transcript and title, assume success
-    const isSuccess = success !== false && transcript && content_title;
-    
-    const updateData: Record<string, unknown> = {};
-
-    if (isSuccess) {
-      // Success case - update with processed data
-      updateData.status = 'completed';
-      updateData.transcript = transcript;
-      updateData.content_title = content_title;
-      if (research) {
-        updateData.research = research;
-      }
-      // Clear any previous error
-      updateData.error_message = null;
-    } else {
-      // Error case - only update status and error message
-      updateData.status = 'processing'; // Keep as processing rather than unknown 'error' status
-      updateData.error_message = error || 'N8N workflow failed without specific error';
-    }
-
-    console.log('Updating content with data:', { content_id, updateData });
-
-    // Update content based on N8N callback
-    const { data, error: updateError } = await supabase
-      .from('content')
-      .update(updateData)
-      .eq('id', content_id)
-      .select();
-
-    if (updateError) {
-      console.error('Error updating content:', updateError);
-      return NextResponse.json({ 
-        error: 'Database update failed', 
-        details: updateError.message 
-      }, { status: 500 });
-    }
-
-    if (!data || data.length === 0) {
-      console.error('No content found with ID:', content_id);
-      return NextResponse.json({ error: 'Content not found' }, { status: 404 });
-    }
-
-    console.log(`Successfully updated content ${content_id} - Status: ${updateData.status}`);
-    return NextResponse.json({ success: true, updated: data[0] });
   } catch (error) {
-    console.error('N8N callback error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      details: error instanceof Error ? error.message : 'Unknown error' 
-    }, { status: 500 });
+    console.error('Error in N8N callback:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

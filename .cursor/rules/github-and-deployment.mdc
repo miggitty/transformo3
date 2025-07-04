@@ -1,5 +1,9 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+
+
+never deploy to github without asking for permission
+never commit to github without asking for permission

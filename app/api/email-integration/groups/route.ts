@@ -29,30 +29,30 @@ export async function GET() {
       );
     }
 
-    // Get the business with email integration settings
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('email_provider, email_secret_id')
-      .eq('id', profile.business_id)
+    // Get email integration using new table
+    const { data: emailIntegration, error: integrationError } = await supabase
+      .from('email_integrations')
+      .select('provider, secret_id')
+      .eq('business_id', profile.business_id)
+      .eq('status', 'active')
       .single();
 
-    if (businessError || !business) {
+    if (integrationError || !emailIntegration) {
       return NextResponse.json(
-        { success: false, error: 'Business settings not found' },
-        { status: 404 }
+        { success: false, error: 'Email integration not found. Please set up your email integration first.' },
+        { status: 400 }
       );
     }
 
-    // Check if email provider is configured
-    if (!business.email_provider || !business.email_secret_id) {
+    if (!emailIntegration.provider || !emailIntegration.secret_id) {
       return NextResponse.json(
         { success: false, error: 'Email provider not configured. Please set up your email integration first.' },
         { status: 400 }
       );
     }
 
-    // Get the API key from vault using RPC function
-    const { data: apiKey, error: secretError } = await supabase.rpc('get_email_secret', {
+    // Get the API key from vault using updated RPC function
+    const { data: apiKey, error: secretError } = await supabase.rpc('get_email_secret_v2', {
       p_business_id: profile.business_id
     });
 
@@ -66,7 +66,7 @@ export async function GET() {
 
     // Validate API key and fetch groups from the provider
     const result = await validateEmailProviderAndFetchGroups(
-      business.email_provider as 'mailerlite' | 'mailchimp' | 'brevo',
+      emailIntegration.provider as 'mailerlite' | 'mailchimp' | 'brevo',
       apiKey
     );
 
@@ -79,7 +79,7 @@ export async function GET() {
       return NextResponse.json({
         success: true,
         groups: [],
-        message: `No email groups found in your ${business.email_provider} account. Please create a group first.`
+        message: `No email groups found in your ${emailIntegration.provider} account. Please create a group first.`
       });
     }
 

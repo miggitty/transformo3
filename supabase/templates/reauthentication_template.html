@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confirm Reauthentication - Transformo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        background-color: #f8fafc;
+        margin: 0;
+        padding: 20px;
+        color: #1a202c;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+      }
+      .logo {
+        margin-bottom: 30px;
+      }
+      h2 {
+        color: #2d3748;
+        font-size: 24px;
+        margin-bottom: 20px;
+        font-weight: 600;
+      }
+      p {
+        line-height: 1.6;
+        margin-bottom: 16px;
+        color: #4a5568;
+      }
+      .code {
+        background-color: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 16px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        margin: 20px 0;
+        color: #2d3748;
+        letter-spacing: 2px;
+      }
+      .footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+        color: #718096;
+        font-size: 14px;
+      }
+      .security-notice {
+        background-color: #fed7d7;
+        border: 1px solid #fc8181;
+        border-radius: 4px;
+        padding: 16px;
+        margin: 20px 0;
+      }
+      .urgent {
+        background-color: #feb2b2;
+        color: #742a2a;
+        padding: 12px;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+      .instructions {
+        background-color: #e6fffa;
+        border: 1px solid #81e6d9;
+        border-radius: 4px;
+        padding: 16px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <img src="{{ .SiteURL }}/transformo-logo-dark.png" alt="Transformo Logo" width="150" />
+      </div>
+      
+      <h2>🔐 Confirm Reauthentication</h2>
+      
+      <div class="urgent">
+        ⚠️ SECURITY VERIFICATION REQUIRED
+      </div>
+      
+      <p>You're about to perform a sensitive action on your Transformo account that requires additional verification for your security.</p>
+      
+      <div class="instructions">
+        <p><strong>How to proceed:</strong></p>
+        <ol>
+          <li>Enter the code below in the verification form</li>
+          <li>Complete the verification within 5 minutes</li>
+          <li>Proceed with your sensitive action</li>
+        </ol>
+      </div>
+      
+      <p><strong>Your verification code:</strong></p>
+      <div class="code">{{ .Token }}</div>
+      
+      <div class="security-notice">
+        <p><strong>🛡️ Security Alert:</strong> This code is only valid for 5 minutes and can only be used once. If you didn't initiate this action, please:</p>
+        <ul>
+          <li>Do NOT enter this code anywhere</li>
+          <li>Change your password immediately</li>
+          <li>Contact our support team</li>
+        </ul>
+      </div>
+      
+      <div class="footer">
+        <p>Stay secure,<br>The Transformo Security Team</p>
+        <p><strong>Remember:</strong> We will never ask you to share this code via email, phone, or any other method. Only enter it directly in the Transformo application.</p>
+      </div>
+    </div>
+  </body>
+</html> 

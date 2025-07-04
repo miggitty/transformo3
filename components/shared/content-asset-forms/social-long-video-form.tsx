@@ -13,15 +13,19 @@ import { VideoPlayer } from '@/components/shared/video-player';
 interface SocialLongVideoFormProps {
   asset: ContentAsset;
   content: ContentWithBusiness;
+  disabled?: boolean;
 }
 
 export default function SocialLongVideoForm({
   asset,
   content,
+  disabled,
 }: SocialLongVideoFormProps) {
   const [postContent, setPostContent] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
+    if (disabled) return; // Prevent saving when disabled
+    
     const { success, error } = await updateContentAsset(asset.id, {
       [field]: value,
     });
@@ -36,6 +40,11 @@ export default function SocialLongVideoForm({
     <Card>
       <CardHeader>
         <CardTitle>Social Long Video</CardTitle>
+        {disabled && (
+          <p className="text-sm text-muted-foreground">
+            Content is being regenerated. Editing is temporarily disabled.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {content.video_long_url && (
@@ -51,6 +60,7 @@ export default function SocialLongVideoForm({
             value={postContent}
             onChange={e => setPostContent(e.target.value)}
             onBlur={e => handleSave('content', e.target.value)}
+            disabled={disabled}
           />
         </div>
       </CardContent>

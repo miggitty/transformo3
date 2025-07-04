@@ -13,15 +13,19 @@ import { VideoPlayer } from '@/components/shared/video-player';
 interface SocialShortVideoFormProps {
   asset: ContentAsset;
   content: ContentWithBusiness;
+  disabled?: boolean;
 }
 
 export default function SocialShortVideoForm({
   asset,
   content,
+  disabled,
 }: SocialShortVideoFormProps) {
   const [postContent, setPostContent] = useState(asset.content || '');
 
   const handleSave = async (field: string, value: string) => {
+    if (disabled) return; // Prevent saving when disabled
+    
     const { success, error } = await updateContentAsset(asset.id, {
       [field]: value,
     });
@@ -36,6 +40,11 @@ export default function SocialShortVideoForm({
     <Card>
       <CardHeader>
         <CardTitle>Social Short Video</CardTitle>
+        {disabled && (
+          <p className="text-sm text-muted-foreground">
+            Content is being regenerated. Editing is temporarily disabled.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {content.video_short_url && (
@@ -51,6 +60,7 @@ export default function SocialShortVideoForm({
             value={postContent}
             onChange={e => setPostContent(e.target.value)}
             onBlur={e => handleSave('content', e.target.value)}
+            disabled={disabled}
           />
         </div>
       </CardContent>

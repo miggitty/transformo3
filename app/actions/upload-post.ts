@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { createUserProfile, findProfileByUsername, generateJWTUrl, testConnection } from '@/lib/upload-post';
+import { createUserProfile, findProfileByUsername, generateJWTUrl, testConnection, generateUploadPostUsername, fetchFacebookPageId } from '@/lib/upload-post';
 
 /**
  * Test the upload-post API connection
@@ -83,6 +83,17 @@ export async function createUploadPostProfile() {
       return { error: 'Business profile not found' };
     }
 
+    // Get business details for username generation
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('business_name')
+      .eq('id', profile.business_id)
+      .single();
+
+    if (!business || !business.business_name) {
+      return { error: 'Business details not found' };
+    }
+
     // Check if profile already exists
     const { data: existingProfile } = await supabase
       .from('upload_post_profiles')
@@ -94,8 +105,8 @@ export async function createUploadPostProfile() {
       return { error: 'Upload-post profile already exists for this business' };
     }
 
-    // Generate username using business_id
-    const uploadPostUsername = `transformo_${profile.business_id}`;
+    // Generate username using business name and business_id
+    const uploadPostUsername = generateUploadPostUsername(business.business_name, profile.business_id);
 
     // Create profile on upload-post platform
     const uploadPostResponse = await createUserProfile(uploadPostUsername);
@@ -236,14 +247,51 @@ export async function syncSocialMediaAccounts() {
       return { error: 'Profile not found on upload-post platform' };
     }
 
-    // Update our database with fresh social accounts data
+    // Check if Facebook is connected and fetch Page ID if needed
+    const facebookAccount = uploadPostData.social_accounts?.facebook;
+    let facebookPageId = uploadPostProfile.facebook_page_id; // Keep existing if any
+    
+    console.log('🔍 Facebook Account Debug:', {
+      facebookAccount,
+      hasFacebookAccount: !!facebookAccount,
+      isObject: typeof facebookAccount === 'object',
+      hasUsername: facebookAccount && typeof facebookAccount === 'object' && 'username' in facebookAccount
+    });
+    
+    if (facebookAccount && typeof facebookAccount === 'object' && facebookAccount.username) {
+      // User has connected Facebook, fetch Page ID
+      console.log(`🔄 Attempting to fetch Facebook Page ID for ${uploadPostProfile.upload_post_username}...`);
+      try {
+        const fetchedPageId = await fetchFacebookPageId(uploadPostProfile.upload_post_username);
+        if (fetchedPageId) {
+          facebookPageId = fetchedPageId;
+          console.log(`✅ Facebook Page ID fetched for ${uploadPostProfile.upload_post_username}: ${fetchedPageId}`);
+        } else {
+          console.log(`⚠️ No Facebook Page ID returned for ${uploadPostProfile.upload_post_username}`);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching Facebook Page ID:', error);
+        // Continue without Page ID - not a critical error
+      }
+    } else {
+      console.log('ℹ️ Facebook not connected or missing username, skipping Page ID fetch');
+    }
+
+    // Update our database with fresh social accounts data and Facebook Page ID
+    const updateData: Record<string, unknown> = {
+      social_accounts: uploadPostData.social_accounts,
+      last_synced_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only update facebook_page_id if we have a new value
+    if (facebookPageId) {
+      updateData.facebook_page_id = facebookPageId;
+    }
+
     const { data: updatedProfile, error: updateError } = await supabase
       .from('upload_post_profiles')
-      .update({
-        social_accounts: uploadPostData.social_accounts,
-        last_synced_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', uploadPostProfile.id)
       .select()
       .single();

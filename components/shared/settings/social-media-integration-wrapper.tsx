@@ -7,7 +7,9 @@ import { SocialMediaIntegrationCard } from './social-media-integration-card';
 import { validateJWTRedirect } from '@/lib/upload-post';
 
 interface SocialMediaData {
-  profile: Record<string, unknown>;
+  profile: Record<string, unknown> & {
+    facebook_page_id?: string | null;
+  };
   social_accounts: Record<string, unknown>;
   synced: boolean;
   last_synced_at?: string;
@@ -232,6 +234,12 @@ export function SocialMediaIntegrationWrapper() {
       setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    if (refreshing) {
+      handleSync();
+    }
+  }, [refreshing, handleSync]);
 
   return (
     <SocialMediaIntegrationCard

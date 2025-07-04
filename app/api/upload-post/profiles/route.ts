@@ -7,7 +7,8 @@ import {
   sanitizeJsonData,
   UploadPostAuthError,
   UploadPostValidationError,
-  UploadPostRateLimitError
+  UploadPostRateLimitError,
+  generateUploadPostUsername
 } from '@/lib/upload-post';
 
 // Rate limiting cache (in production, use Redis or similar)
@@ -305,6 +306,21 @@ export async function POST(request: NextRequest) {
 
     validateBusinessProfile(profile);
 
+    // Get business details for username generation
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .select('business_name')
+      .eq('id', profile.business_id)
+      .single();
+
+    if (businessError || !business || !business.business_name) {
+      console.error('Database error fetching business:', businessError);
+      return NextResponse.json(
+        { error: 'Business details not found' },
+        { status: 404 }
+      );
+    }
+
     // Check if profile already exists
     const { data: existingProfile, error: existingError } = await supabase
       .from('upload_post_profiles')
@@ -327,9 +343,9 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
-    // Generate username using business_id with validation
+    // Generate username using business name and business_id
     const validatedBusinessId = validateBusinessId(profile.business_id);
-    const uploadPostUsername = `transformo_${validatedBusinessId}`;
+    const uploadPostUsername = generateUploadPostUsername(business.business_name, validatedBusinessId);
 
     try {
       // Create profile on upload-post platform
