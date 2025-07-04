@@ -69,7 +69,7 @@ export function validateRedirectUrl(url: string): string {
     }
     
     // Validate that the URL belongs to our domain or localhost
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (baseUrl) {
       const baseUrlObj = new URL(baseUrl);
       if (parsedUrl.hostname !== baseUrlObj.hostname && !parsedUrl.hostname.includes('localhost')) {
@@ -337,8 +337,8 @@ export async function generateJWTUrl(
   const validatedUsername = validateUsername(username);
   
   const {
-    redirectUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/settings/integrations?connected=true`,
-    logoImage = `${process.env.NEXT_PUBLIC_BASE_URL}/transformo-logo.webp`,
+            redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/settings/integrations?connected=true`,
+        logoImage = `${process.env.NEXT_PUBLIC_APP_URL}/transformo-logo.webp`,
     redirectButtonText = 'Return to Transformo',
     platforms = ['facebook', 'instagram', 'linkedin', 'tiktok', 'x', 'youtube']
   } = options;

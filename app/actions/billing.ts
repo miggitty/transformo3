@@ -122,8 +122,8 @@ export async function createCheckoutSession(plan: PlanType) {
           created_by: user.id,
         },
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
       metadata: {
         business_id: business.id,
         user_id: user.id,
@@ -168,7 +168,7 @@ export async function createPortalSession() {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: business.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing`,
     });
 
     return { success: true, url: session.url };
@@ -282,8 +282,8 @@ export async function createTrialSubscriptionSetup() {
           signup_flow: 'trial_with_payment_method',
         },
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/content?trial_setup=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?setup_canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/content/drafts?trial_setup=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?setup_canceled=true`,
       metadata: {
         business_id: business.id,
         user_id: user.id,
