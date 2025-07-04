@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, ArrowLeft, Mic, Video } from 'lucide-react';
+import { Check, ArrowLeft, Mic, Video, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
@@ -16,20 +16,9 @@ import { FieldConfig } from '@/types';
 import { updateContentField, updateContentAsset, toggleAssetApproval } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 
-// Cache busting utility - Enhanced for Vercel compatibility
-// Only applies cache busting to images that have been regenerated
-const addCacheBuster = (url: string | null, cacheBuster?: number): string => {
-  if (!url) return '';
-  
-  // Only add cache busting if a specific cacheBuster is provided
-  if (cacheBuster) {
-    const randomString = Math.random().toString(36).substring(2, 8);
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}v=${cacheBuster}&r=${randomString}`;
-  }
-  
-  // Return original URL without cache busting for non-regenerated images
-  return url;
+// Simple URL helper - no cache busting needed (handled server-side)
+const getImageUrl = (url: string | null): string => {
+  return url || '';
 };
 
 interface ContentClientPageProps {
@@ -49,26 +38,7 @@ export default function ContentClientPage({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [activeStep, setActiveStep] = useState('video-script');
   
-  // Cache busting state - tracks when images were last updated with persistence
-  const [imageCacheBusters, setImageCacheBusters] = useState<Record<string, number>>(() => {
-    // Initialize with cached values from sessionStorage
-    const cached: Record<string, number> = {};
-    if (typeof window !== 'undefined') {
-      try {
-        const keys = Object.keys(sessionStorage).filter(key => key.startsWith('imageCacheBuster_'));
-        keys.forEach(key => {
-          const contentType = key.replace('imageCacheBuster_', '');
-          const timestamp = parseInt(sessionStorage.getItem(key) || '0');
-          if (timestamp > 0) {
-            cached[contentType] = timestamp;
-          }
-        });
-      } catch {
-        // Ignore storage errors
-      }
-    }
-    return cached;
-  });
+// Cache busting now handled server-side - no client state needed
   
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -90,35 +60,15 @@ export default function ContentClientPage({
     { id: 'schedule', title: 'Schedule' }
   ];
 
-  // Force immediate image refresh for specific content types - Enhanced for Vercel
-  const forceImageRefresh = useCallback((contentType: string) => {
-    const timestamp = Date.now();
-    setImageCacheBusters(prev => ({
-      ...prev,
-      [contentType]: timestamp
-    }));
-    
-    // Also store in sessionStorage for persistence across reloads
-    try {
-      sessionStorage.setItem(`imageCacheBuster_${contentType}`, timestamp.toString());
-    } catch {
-      // Ignore storage errors
-    }
-    
-    console.log(`🔄 Forced image refresh for ${contentType} with timestamp ${timestamp}`);
-    
-    // Force preload the new image to bypass cache
-    const asset = contentAssets.find(a => a.content_type === contentType);
-    if (asset?.image_url) {
-      const img = new Image();
-      img.src = addCacheBuster(asset.image_url, timestamp);
-      img.onload = () => {
-        console.log(`✅ New image preloaded for ${contentType}`);
-        // Trigger a router refresh to update the UI
-        router.refresh();
-      };
-    }
-  }, [contentAssets, router]);
+  // Simplified refresh - updates the client state directly for instant feedback
+  const handleImageUpdated = useCallback((updatedAsset: ContentAsset) => {
+    setContentAssets(prevAssets => 
+      prevAssets.map(asset => 
+        asset.id === updatedAsset.id ? updatedAsset : asset
+      )
+    );
+    console.log(`🔄 Client-side image updated for ${updatedAsset.content_type}`);
+  }, []);
 
   const fetchContentAssets = useCallback(async () => {
     if (!supabase) {
@@ -355,40 +305,40 @@ export default function ContentClientPage({
 
     checkPermissionsAndFetch();
 
-    // Set up realtime subscription for immediate image updates
-    if (supabase) {
-      const imageUpdateChannel = supabase
-        .channel('content_assets_images')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'content_assets',
-            filter: `content_id=eq.${content.id}`,
-          },
-          (payload: Record<string, unknown>) => {
-            const updatedAsset = payload.new as ContentAsset;
-            const oldAsset = payload.old as ContentAsset | undefined;
-            
-            // Check if image_url was updated
-            if (updatedAsset.image_url && updatedAsset.image_url !== oldAsset?.image_url && updatedAsset.content_type) {
-              console.log(`🖼️ Image updated for ${updatedAsset.content_type}, forcing immediate refresh`);
-              forceImageRefresh(updatedAsset.content_type);
+    // Realtime updates are now handled by router.refresh() to prevent race conditions.
+    /* useEffect(() => {
+      if (supabase) {
+        const imageUpdateChannel = supabase
+          .channel(`content_assets_updates_for_${content.id}`)
+          .on<ContentAsset>(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'content_assets',
+              filter: `content_id=eq.${content.id}`,
+            },
+            (payload: Record<string, unknown>) => {
+              const updatedAsset = payload.new as ContentAsset;
               
-              // Also refresh the assets data
-              fetchContentAssets();
+              // Simple state update for realtime changes (cache busting handled server-side)
+              console.log(`🖼️ Asset updated via realtime`);
+              setContentAssets(prev => 
+                prev.map(asset => 
+                  asset.id === updatedAsset.id ? updatedAsset as ContentAsset : asset
+                )
+              );
             }
-          }
-        )
-        .subscribe();
+          )
+          .subscribe();
 
-      // Cleanup subscription on unmount
-      return () => {
-        supabase.removeChannel(imageUpdateChannel);
-      };
-    }
-  }, [content.id, supabase, forceImageRefresh, fetchContentAssets]);
+        // Cleanup subscription on unmount
+        return () => {
+          supabase.removeChannel(imageUpdateChannel);
+        };
+      }
+    }, [content.id, supabase]); */
+  }, [content.id, supabase]);
 
   return (
     <div className="min-h-screen bg-white px-4 md:px-6 lg:px-8 py-8">
@@ -646,10 +596,10 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={blogAsset}
                               className="block w-full"
-                              onImageUpdated={forceImageRefresh}
+                              onImageUpdated={handleImageUpdated}
                             >
                               <img 
-                                src={addCacheBuster(blogAsset.image_url, imageCacheBusters['blog_post'])} 
+                                src={getImageUrl(blogAsset.image_url)} 
                                 alt={blogAsset.headline || 'Blog post image'}
                                 className="w-full object-cover rounded-lg"
                               />
@@ -804,11 +754,11 @@ export default function ContentClientPage({
                                 src={content.video_long_url ?? undefined}
                                 className="w-full object-cover"
                                 controls
-                                poster={socialAsset.image_url ? addCacheBuster(socialAsset.image_url, imageCacheBusters['social_long_video']) : undefined}
+                                poster={getImageUrl(socialAsset.image_url)}
                               />
                             ) : (
                               <img 
-                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_long_video'])} 
+                                src={getImageUrl(socialAsset.image_url)} 
                                 alt="Social post content"
                                 className="w-full object-cover"
                               />
@@ -919,11 +869,11 @@ export default function ContentClientPage({
                                 src={content.video_short_url ?? undefined}
                                 className="w-full object-cover"
                                 controls
-                                poster={socialAsset.image_url ? addCacheBuster(socialAsset.image_url, imageCacheBusters['social_short_video']) : undefined}
+                                poster={getImageUrl(socialAsset.image_url)}
                               />
                             ) : (
                               <img 
-                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_short_video'])} 
+                                src={getImageUrl(socialAsset.image_url)} 
                                 alt="Social post content"
                                 className="w-full object-cover"
                               />
@@ -1032,10 +982,10 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={socialAsset}
                               className="block w-full"
-                              onImageUpdated={forceImageRefresh}
+                              onImageUpdated={handleImageUpdated}
                             >
                               <img 
-                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_rant_post'])} 
+                                src={getImageUrl(socialAsset.image_url)} 
                                 alt="Social post content"
                                 className="w-full object-cover rounded-lg"
                               />
@@ -1129,10 +1079,10 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={socialAsset}
                               className="block w-full"
-                              onImageUpdated={forceImageRefresh}
+                              onImageUpdated={handleImageUpdated}
                             >
                               <img 
-                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_blog_post'])} 
+                                src={getImageUrl(socialAsset.image_url)} 
                                 alt="Social post content"
                                 className="w-full object-cover rounded-lg"
                               />
@@ -1226,10 +1176,10 @@ export default function ContentClientPage({
                             <ImageWithRegeneration 
                               contentAsset={socialAsset}
                               className="block w-full"
-                              onImageUpdated={forceImageRefresh}
+                              onImageUpdated={handleImageUpdated}
                             >
                               <img 
-                                src={addCacheBuster(socialAsset.image_url, imageCacheBusters['social_quote_card'])} 
+                                src={getImageUrl(socialAsset.image_url)} 
                                 alt="Quote card visual"
                                 className="w-full object-cover rounded-lg"
                               />
@@ -1283,14 +1233,14 @@ export default function ContentClientPage({
                           {youtubeAsset.image_url ? (
                             <ImageWithRegeneration 
                               contentAsset={youtubeAsset}
-                              className="block w-full"
-                              onImageUpdated={forceImageRefresh}
+                              className="w-full h-full"
+                              onImageUpdated={handleImageUpdated}
                             >
                               <div className="relative">
                                 <img 
-                                  src={addCacheBuster(youtubeAsset.image_url, imageCacheBusters['youtube_video'])} 
+                                  src={getImageUrl(youtubeAsset.image_url)} 
                                   alt="YouTube video thumbnail"
-                                  className="w-full object-cover"
+                                  className="w-full h-full object-cover"
                                 />
                                 {/* YouTube Play Button */}
                                 <div className="absolute inset-0 flex items-center justify-center">
@@ -1307,54 +1257,28 @@ export default function ContentClientPage({
                           )}
                         </div>
 
-                        {/* Video Title */}
-                        <div className="relative group mb-3">
-                          <h1 className="text-xl font-semibold text-gray-900 leading-tight">
-                            {youtubeAsset.headline || 'YouTube Video Title'}
-                          </h1>
-                          <EditButton
-                            fieldConfig={{
-                              label: 'YouTube Title',
-                              value: youtubeAsset.headline || '',
-                              fieldKey: 'headline',
-                              inputType: 'text',
-                              placeholder: 'Enter YouTube title...',
-                              assetType: 'youtube_video',
-                            }}
-                            onEdit={handleEdit}
-                            disabled={isContentGenerating}
-                          />
-                        </div>
-
-                        {/* Simplified Channel Info - Skeleton Style */}
-                        <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-                          <div className="flex items-center space-x-4">
-                            {/* Channel Avatar Placeholder */}
-                            <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-                            
-                            {/* Channel Info Placeholder */}
-                            <div className="space-y-1">
-                              <div className="w-24 h-4 bg-gray-300 rounded"></div>
-                              <div className="w-16 h-3 bg-gray-200 rounded"></div>
-                            </div>
-                            
-                            {/* Subscribe Button Placeholder */}
-                            <div className="w-20 h-8 bg-gray-300 rounded-full"></div>
+                        {/* Text Content Section */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-6">
+                          <div className="relative group mb-4">
+                            <h3 className="text-lg font-semibold mb-2">Title</h3>
+                            <p className="text-gray-900 consistent-text">{youtubeAsset.headline}</p>
+                            <EditButton
+                              fieldConfig={{
+                                label: 'YouTube Title',
+                                value: youtubeAsset.headline || '',
+                                fieldKey: 'headline',
+                                inputType: 'text',
+                                placeholder: 'Enter YouTube title...',
+                                assetType: 'youtube_video',
+                              }}
+                              onEdit={handleEdit}
+                              disabled={isContentGenerating}
+                            />
                           </div>
 
-                          {/* Action Buttons Placeholder */}
-                          <div className="flex items-center space-x-2">
-                            <div className="w-16 h-8 bg-gray-200 rounded-full"></div>
-                            <div className="w-16 h-8 bg-gray-200 rounded-full"></div>
-                          </div>
-                        </div>
-
-                        {/* Video Description */}
-                        {youtubeAsset.content && (
-                          <div className="bg-gray-50 rounded-lg p-4 relative group">
-                            <div className="whitespace-pre-wrap text-gray-900 consistent-text">
-                              {youtubeAsset.content}
-                            </div>
+                          <div className="relative group">
+                            <h3 className="text-lg font-semibold mb-2">Description</h3>
+                            <p className="text-gray-900 whitespace-pre-wrap consistent-text">{youtubeAsset.content}</p>
                             <EditButton
                               fieldConfig={{
                                 label: 'YouTube Description',
@@ -1368,7 +1292,7 @@ export default function ContentClientPage({
                               disabled={isContentGenerating}
                             />
                           </div>
-                        )}
+                        </div>
                       </div>
                     );
                   })()}
@@ -1488,7 +1412,7 @@ export default function ContentClientPage({
                         )
                       );
                     }}
-                    onImageUpdated={forceImageRefresh}
+                    onImageUpdated={handleImageUpdated}
                   />
                 </div>
               )}

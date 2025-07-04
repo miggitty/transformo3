@@ -11,7 +11,7 @@ interface ImageWithRegenerationProps {
   children: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  onImageUpdated?: (contentType: string) => void;
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 export default function ImageWithRegeneration({
