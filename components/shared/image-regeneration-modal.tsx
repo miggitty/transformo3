@@ -146,6 +146,20 @@ export default function ImageRegenerationModal({
 
         console.log('✅ Image saved successfully, triggering cache refresh...');
         
+        // Force refresh the image on server-side to bypass Vercel cache
+        const updatedAsset = await response.json();
+        if (updatedAsset.image_url) {
+          try {
+            await fetch('/api/image-refresh', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageUrl: updatedAsset.image_url })
+            });
+          } catch (error) {
+            console.warn('Failed to refresh image cache:', error);
+          }
+        }
+        
         // Trigger immediate cache busting for this content type
         if (onImageUpdated && contentAsset.content_type) {
           onImageUpdated(contentAsset.content_type);
