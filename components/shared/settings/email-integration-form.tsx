@@ -71,6 +71,11 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [validationStatus, setValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
   const [groupsError, setGroupsError] = useState<string | null>(null);
+  const [providerInfo, setProviderInfo] = useState<{
+    provider: string;
+    groupCount: number;
+    validatedAt: string;
+  } | null>(null);
 
 
 
@@ -106,6 +111,15 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
   useEffect(() => {
     if (selectedProvider && isKeySet) {
       loadGroups();
+      // Set provider info for existing integration
+      if (!providerInfo) {
+        setProviderInfo({
+          provider: selectedProvider,
+          groupCount: 0, // Will be updated when groups are loaded
+          validatedAt: new Date().toISOString(),
+        });
+        setValidationStatus('valid');
+      }
     } else {
       setGroups([]);
     }
@@ -125,6 +139,11 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
       if (result.success) {
         setGroups(result.groups || []);
         setGroupsError(null);
+        
+        // Update provider info with group count
+        if (providerInfo) {
+          setProviderInfo(prev => prev ? { ...prev, groupCount: result.groups?.length || 0 } : null);
+        }
         
         if (result.groups?.length === 0) {
           setGroupsError(`No email groups found in your ${selectedProvider} account. Please create a group first.`);
@@ -193,6 +212,11 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
 
       setValidationStatus('valid');
       setIsKeySet(true);
+      setProviderInfo({
+        provider: provider,
+        groupCount: 0, // Will be updated when groups are loaded
+        validatedAt: new Date().toISOString(),
+      });
       toast.success('API key validated and saved successfully');
       
       // Load groups after successful validation
@@ -217,6 +241,7 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
       setIsKeySet(false);
       setValidationStatus('idle');
       setGroups([]);
+      setProviderInfo(null);
       form.resetField('email_api_key');
       form.resetField('email_selected_group_id');
       form.resetField('email_selected_group_name');
@@ -232,6 +257,7 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
       setIsKeySet(false);
       setValidationStatus('idle');
       setGroups([]);
+      setProviderInfo(null);
       form.resetField('email_api_key');
       form.resetField('email_sender_name');
       form.resetField('email_sender_email');
@@ -358,27 +384,6 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
             />
           )}
 
-          {/* Validation Status */}
-          {validationStatus !== 'idle' && (
-            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${
-                  validationStatus === 'validating' ? 'bg-yellow-400' :
-                  validationStatus === 'valid' ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                <span className="text-sm font-medium">
-                  {validationStatus === 'validating' ? 'Validating...' :
-                   validationStatus === 'valid' ? 'API Key Valid' : 'Invalid API Key'}
-                </span>
-              </div>
-              <div className="text-sm text-gray-600">
-                {validationStatus === 'validating' ? 'Checking API key and fetching available groups...' :
-                 validationStatus === 'valid' ? 'API key validated and groups loaded successfully.' :
-                 'Please check your credentials and try again.'}
-              </div>
-            </div>
-          )}
-
           {/* Sender Configuration */}
           {isKeySet && (
             <>
@@ -491,6 +496,62 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                 )}
               />
             </>
+          )}
+
+          {/* Validation Status */}
+          {validationStatus === 'validating' && (
+            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <span className="text-sm font-medium">Validating...</span>
+              </div>
+              <div className="text-sm text-gray-600">
+                Checking API key and fetching available groups...
+              </div>
+            </div>
+          )}
+          
+          {validationStatus === 'invalid' && (
+            <div className="flex items-center space-x-4 p-4 bg-red-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-sm font-medium text-red-800">Invalid API Key</span>
+              </div>
+              <div className="text-sm text-red-600">
+                Please check your credentials and try again.
+              </div>
+            </div>
+          )}
+
+          {/* Connection Valid Status */}
+          {validationStatus === 'valid' && providerInfo && (
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-sm font-medium text-green-800">Connection Valid</span>
+              </div>
+              <p className="text-sm text-green-600 mb-3">Connection validated successfully.</p>
+              
+              <div className="bg-white p-3 rounded-md border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">Connected Provider Information</h4>
+                <div className="space-y-1 text-sm">
+                  <div><strong>Provider:</strong> {providerInfo.provider.charAt(0).toUpperCase() + providerInfo.provider.slice(1)}</div>
+                  <div><strong>Available Groups:</strong> {providerInfo.groupCount}</div>
+                  <div><strong>Validated:</strong> {new Date(providerInfo.validatedAt).toLocaleString()}</div>
+                </div>
+                
+                <div className="mt-3 flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-green-600">Can Send Emails</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-green-600">Can Access Groups</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </CardContent>
         

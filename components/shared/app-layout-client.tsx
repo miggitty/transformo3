@@ -91,8 +91,8 @@ function DesktopSidebar({
   user: Tables<'profiles'> & { email: string };
 }) {
   return (
-    <div className="hidden border-r bg-muted/40 md:block">
-      <div className="flex h-full max-h-screen flex-col gap-2">
+    <div className="hidden md:block fixed left-0 top-0 h-screen w-[220px] lg:w-[280px] border-r bg-muted/40 z-10">
+      <div className="flex h-full flex-col gap-2">
         <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
           <Link href="/content" className="flex items-center gap-2 font-semibold">
             <Image
@@ -104,11 +104,11 @@ function DesktopSidebar({
             />
           </Link>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <SidebarNav />
         </div>
-        <div className="mt-auto p-4">
-          <div className="mb-2 border-t pt-4">
+        <div className="mt-auto p-4 border-t bg-muted/40">
+          <div className="mb-2 pt-2">
             <div className="text-sm text-muted-foreground truncate">
               {user.email}
             </div>
@@ -135,8 +135,8 @@ export default function AppLayoutClient({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="grid h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      {/* Desktop Sidebar */}
+    <div className="flex h-screen w-full">
+      {/* Desktop Sidebar - Fixed Position */}
       <DesktopSidebar user={user} />
       
       {/* Mobile Sidebar */}
@@ -146,8 +146,8 @@ export default function AppLayoutClient({
         onClose={() => setMobileMenuOpen(false)} 
       />
       
-      {/* Main Content Area */}
-      <div className="flex flex-col overflow-hidden">
+      {/* Main Content Area - Scrollable */}
+      <div className="flex flex-col w-full h-screen md:ml-[220px] lg:ml-[280px] md:w-auto">
         {/* Mobile Header */}
         <div className="flex h-14 items-center border-b px-4 md:hidden">
           <Button 
@@ -168,9 +168,9 @@ export default function AppLayoutClient({
           </Link>
         </div>
         
-        {/* Content Area with standardized width */}
-        <div className="flex-1 overflow-auto p-4 lg:p-6">
-          <main className="mx-auto max-w-6xl flex-1">{children}</main>
+        {/* Content Area - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          <main className="mx-auto max-w-6xl p-4 lg:p-6 pb-8">{children}</main>
         </div>
       </div>
     </div>

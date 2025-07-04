@@ -1,8 +1,13 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { Tables } from '@/types/supabase';
 import { SubscriptionProvider } from '@/components/providers/subscription-provider';
-import AppLayoutClient from '@/components/shared/app-layout-client';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/shared/app-sidebar';
+import { GlobalSubscriptionBanner } from '@/components/shared/global-subscription-banner';
+import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
+import { Toaster } from '@/components/ui/sonner';
 
 // Force dynamic rendering for this layout
 export const dynamic = 'force-dynamic';
@@ -28,9 +33,13 @@ export default async function AppLayout({
     .eq('id', user.id)
     .single();
 
-  const userWithProfile = {
+  if (!profile) {
+    return redirect('/sign-in');
+  }
+
+  const userWithEmail = {
     ...profile,
-    email: user.email!,
+    email: user.email || ''
   };
 
   // Get subscription data for the layout
@@ -49,11 +58,30 @@ export default async function AppLayout({
     }
   }
 
+  // Get sidebar state from cookies for persistence
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get('sidebar:state')?.value !== 'false'; // Default to true (open)
+
   return (
     <SubscriptionProvider initialSubscription={subscription}>
-      <AppLayoutClient user={userWithProfile as Tables<'profiles'> & { email: string }}>
-        {children}
-      </AppLayoutClient>
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AppSidebar user={userWithEmail as Tables<'profiles'> & { email: string }} />
+        <SidebarInset>
+          <header className="flex h-16 shrink-0 items-center gap-2 px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+            </div>
+          </header>
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            <GlobalSubscriptionBanner />
+            <TrialSuccessBanner />
+            <div className="flex-1 max-w-6xl mx-auto w-full">
+              {children}
+            </div>
+          </div>
+        </SidebarInset>
+        <Toaster />
+      </SidebarProvider>
     </SubscriptionProvider>
   );
 } 
