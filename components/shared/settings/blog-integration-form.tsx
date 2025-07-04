@@ -389,7 +389,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                 <FormDescription>
                   Choose your blog platform.
                 </FormDescription>
-                <FormMessage />
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -415,7 +417,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                         <FormDescription>
                           Your WordPress site URL (without trailing slash).
                         </FormDescription>
-                        <FormMessage />
+                        <div className="min-h-[1.25rem]">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -435,7 +439,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                         <FormDescription>
                           Your WordPress admin username.
                         </FormDescription>
-                        <FormMessage />
+                        <div className="min-h-[1.25rem]">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -475,7 +481,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                     <FormDescription>
                       This credential is stored securely and is write-only for security purposes.
                     </FormDescription>
-                    <FormMessage />
+                    <div className="min-h-[1.25rem]">
+                      <FormMessage />
+                    </div>
                   </FormItem>
                 )}
               />

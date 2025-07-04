@@ -239,7 +239,9 @@ export function HeygenSettingsForm({ business }: HeygenSettingsFormProps) {
                 <FormDescription>
                   This key is stored securely and is write-only for security purposes.
                 </FormDescription>
-                <FormMessage />
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -256,7 +258,9 @@ export function HeygenSettingsForm({ business }: HeygenSettingsFormProps) {
                 <FormDescription>
                   The default avatar to use for AI video generation.
                 </FormDescription>
-                <FormMessage />
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -273,7 +277,9 @@ export function HeygenSettingsForm({ business }: HeygenSettingsFormProps) {
                 <FormDescription>
                   The default voice to use for AI video generation.
                 </FormDescription>
-                <FormMessage />
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />

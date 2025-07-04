@@ -346,7 +346,9 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                 <FormDescription>
                   Choose your email service provider.
                 </FormDescription>
-                <FormMessage />
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -378,7 +380,9 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                   <FormDescription>
                     This key is stored securely and is write-only for security purposes.
                   </FormDescription>
-                  <FormMessage />
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -400,7 +404,9 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                       <FormDescription>
                         The name that appears in recipient inboxes.
                       </FormDescription>
-                      <FormMessage />
+                      <div className="min-h-[1.25rem]">
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -417,7 +423,9 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                       <FormDescription>
                         The email address used as the sender.
                       </FormDescription>
-                      <FormMessage />
+                      <div className="min-h-[1.25rem]">
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -491,7 +499,9 @@ export function EmailIntegrationForm({ business }: EmailIntegrationFormProps) {
                     <FormDescription>
                       Choose which email list to send campaigns to.
                     </FormDescription>
-                    <FormMessage />
+                    <div className="min-h-[1.25rem]">
+                      <FormMessage />
+                    </div>
                   </FormItem>
                 )}
               />

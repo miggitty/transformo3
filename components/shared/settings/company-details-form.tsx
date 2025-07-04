@@ -29,7 +29,23 @@ import { timezones } from '@/lib/timezones';
 
 const formSchema = z.object({
   business_name: z.string().min(2, 'Business name must be at least 2 characters.'),
-  website_url: z.string().url('Please enter a valid URL.').nullable().optional(),
+  website_url: z.string()
+    .optional()
+    .refine((val) => {
+      if (!val || val.trim() === '') return true; // Allow empty
+      return !/^https?:\/\//i.test(val.trim()); // Reject if it includes protocol
+    }, {
+      message: "Please enter just the domain (e.g., 'example.com'). Remove 'https://' as it's already included."
+    })
+    .refine((val) => {
+      if (!val || val.trim() === '') return true; // Allow empty
+      // Validate domain format - must have at least one dot and valid TLD
+      const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])*\.[a-zA-Z]{2,}(\.[a-zA-Z]{2,})*$/;
+      return domainRegex.test(val.trim());
+    }, {
+      message: "Please enter a valid domain name (e.g., 'example.com'). Make sure it includes a valid extension like .com, .org, etc."
+    })
+    .nullable(),
   contact_email: z.string().email('Please enter a valid email.').nullable().optional(),
   timezone: z.string().min(1, 'Please select a timezone.'),
 });
@@ -43,19 +59,33 @@ interface CompanyDetailsFormProps {
 export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
   const form = useForm<CompanyDetailsFormValues>({
     resolver: zodResolver(formSchema),
+    mode: 'onBlur',
     defaultValues: {
       business_name: business.business_name || '',
-      website_url: business.website_url || '',
+      website_url: business.website_url ? business.website_url.replace(/^https?:\/\//, '') : '',
       contact_email: business.contact_email || '',
       timezone: business.timezone || 'UTC',
     },
   });
 
   async function onSubmit(values: CompanyDetailsFormValues) {
-    // Ensure website_url starts with https:// if it exists
+    // Check if form has validation errors
+    const isValid = await form.trigger();
+    if (!isValid) {
+      toast.error('Please fix the validation errors before saving.');
+      return;
+    }
+
+    // Construct the full URL with https:// prefix if website_url exists
     let websiteUrl = values.website_url;
-    if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
+    if (websiteUrl && websiteUrl.trim() !== '') {
+      // Remove any protocol that might have been entered (shouldn't happen due to validation)
+      websiteUrl = websiteUrl.replace(/^https?:\/\//, '');
+      // Add https:// prefix
       websiteUrl = `https://${websiteUrl}`;
+    } else {
+      // If empty, set to null
+      websiteUrl = null;
     }
 
     const result = await updateBusinessSettings(
@@ -83,7 +113,12 @@ export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
                   <FormControl>
                     <Input placeholder="Your Company" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormDescription>
+                    Your company or brand name
+                  </FormDescription>
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -95,11 +130,11 @@ export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
                   <FormLabel>Website Address</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-sm">
                         https://
                       </span>
                       <Input
-                        placeholder="your-website.com"
+                        placeholder="example.com"
                         {...field}
                         value={field.value?.replace(/^https?:\/\//, '') ?? ''}
                         onChange={(e) => {
@@ -109,7 +144,12 @@ export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
                       />
                     </div>
                   </FormControl>
-                  <FormMessage />
+                  <FormDescription>
+                    Enter your domain name only (e.g., example.com)
+                  </FormDescription>
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -119,13 +159,15 @@ export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Business Email</FormLabel>
-                  <FormDescription>
-                    Enter the business email address
-                  </FormDescription>
                   <FormControl>
                     <Input placeholder="contact@example.com" {...field} value={field.value ?? ''} />
                   </FormControl>
-                  <FormMessage />
+                  <FormDescription>
+                    Enter the business email address
+                  </FormDescription>
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -135,9 +177,6 @@ export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Timezone</FormLabel>
-                   <FormDescription>
-                    Enter the timezone you will be scheduling your content in
-                  </FormDescription>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -152,14 +191,22 @@ export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  <FormDescription>
+                    Enter the timezone you will be scheduling your content in
+                  </FormDescription>
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button 
+            type="submit" 
+            disabled={form.formState.isSubmitting || !form.formState.isValid}
+          >
             {form.formState.isSubmitting ? 'Saving...' : 'Save'}
           </Button>
         </CardFooter>
