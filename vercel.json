@@ -1,26 +1,8 @@
 {
+  "public": true,
   "functions": {
     "app/api/stripe/webhooks/route.ts": {
       "maxDuration": 30
     }
-  },
-  "cleanUrls": true,
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex"
-        }
-      ]
-    }
-  ],
-  "redirects": [],
-  "rewrites": [
-    {
-      "source": "/api/stripe/webhooks",
-      "destination": "/api/stripe/webhooks"
-    }
-  ]
+  }
 } 
