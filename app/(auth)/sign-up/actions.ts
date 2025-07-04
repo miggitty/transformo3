@@ -55,7 +55,7 @@ export async function signup(prevState: SignupState, formData: FormData): Promis
     // Create Supabase client
     const supabase = await createClient();
 
-    // Attempt to create user
+    // Attempt to create user - don't require email confirmation for trial flow
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
