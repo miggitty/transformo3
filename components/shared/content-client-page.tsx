@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, ArrowLeft, Mic, Video, Pencil } from 'lucide-react';
+import { Check, ArrowLeft, Mic, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
 import VideoUploadSection from '@/components/shared/video-upload-section';
@@ -304,41 +304,7 @@ export default function ContentClientPage({
     };
 
     checkPermissionsAndFetch();
-
-    // Realtime updates are now handled by router.refresh() to prevent race conditions.
-    /* useEffect(() => {
-      if (supabase) {
-        const imageUpdateChannel = supabase
-          .channel(`content_assets_updates_for_${content.id}`)
-          .on<ContentAsset>(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'content_assets',
-              filter: `content_id=eq.${content.id}`,
-            },
-            (payload: Record<string, unknown>) => {
-              const updatedAsset = payload.new as ContentAsset;
-              
-              // Simple state update for realtime changes (cache busting handled server-side)
-              console.log(`🖼️ Asset updated via realtime`);
-              setContentAssets(prev => 
-                prev.map(asset => 
-                  asset.id === updatedAsset.id ? updatedAsset as ContentAsset : asset
-                )
-              );
-            }
-          )
-          .subscribe();
-
-        // Cleanup subscription on unmount
-        return () => {
-          supabase.removeChannel(imageUpdateChannel);
-        };
-      }
-    }, [content.id, supabase]); */
-  }, [content.id, supabase]);
+  }, [content.id, supabase, content.business_id]);
 
   return (
     <div className="min-h-screen bg-white px-4 md:px-6 lg:px-8 py-8">
