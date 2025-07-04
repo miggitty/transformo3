@@ -13,7 +13,7 @@ import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 interface SocialQuoteCardFormProps {
   asset: ContentAsset;
   disabled?: boolean;
-  onImageUpdated?: (contentType: string) => void;
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 export default function SocialQuoteCardForm({

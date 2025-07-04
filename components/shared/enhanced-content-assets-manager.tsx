@@ -45,7 +45,7 @@ interface EnhancedContentAssetsManagerProps {
   error: string | null;
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
-  onImageUpdated?: (contentType: string) => void;
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 interface CalendarEvent {

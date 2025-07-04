@@ -59,7 +59,7 @@ interface ContentAssetsManagerProps {
   onRefresh?: () => Promise<void>;
   onAssetUpdate?: (updatedAsset: ContentAsset) => void;
   defaultView?: 'list' | 'calendar';
-  onImageUpdated?: (contentType: string) => void;
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 interface CalendarEvent {

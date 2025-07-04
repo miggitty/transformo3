@@ -235,6 +235,12 @@ export function SocialMediaIntegrationWrapper() {
     }
   };
 
+  useEffect(() => {
+    if (refreshing) {
+      handleSync();
+    }
+  }, [refreshing, handleSync]);
+
   return (
     <SocialMediaIntegrationCard
       socialMediaData={socialMediaData}

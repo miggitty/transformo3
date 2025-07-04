@@ -17,7 +17,7 @@ interface YouTubeVideoFormProps {
   asset: ContentAsset;
   content: ContentWithBusiness;
   disabled?: boolean;
-  onImageUpdated?: (contentType: string) => void;
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 export default function YouTubeVideoForm({

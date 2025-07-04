@@ -14,7 +14,7 @@ import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
 interface SocialRantPostFormProps {
   asset: ContentAsset;
   disabled?: boolean;
-  onImageUpdated?: (contentType: string) => void;
+  onImageUpdated?: (updatedAsset: ContentAsset) => void;
 }
 
 export default function SocialRantPostForm({ asset, disabled, onImageUpdated }: SocialRantPostFormProps) {
