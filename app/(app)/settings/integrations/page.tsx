@@ -1,39 +1,28 @@
 import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { EmailIntegrationForm } from '@/components/shared/settings/email-integration-form';
-import { BlogIntegrationForm } from '@/components/shared/settings/blog-integration-form';
 import { HeygenSettingsForm } from '@/components/shared/settings/heygen-settings-form';
-import { SocialMediaIntegrationWrapper } from '@/components/shared/settings/social-media-integration-wrapper';
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import ErrorBoundary from '@/components/shared/error-boundary';
-
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
+import { BlogIntegrationForm } from '@/components/shared/settings/blog-integration-form';
+import { SocialMediaIntegrationWrapper } from '@/components/shared/settings/social-media-integration-wrapper';
 
 export default async function IntegrationsPage() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    // This case should be handled by middleware, but good to have a safeguard
-    return <div>User not found.</div>;
+    redirect('/sign-in');
   }
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('business_id')
+    .select('*')
     .eq('id', user.id)
     .single();
 
   if (!profile || !profile.business_id) {
-    return <div>Error: Business profile not found.</div>;
+    redirect('/sign-in');
   }
 
   const { data: business, error } = await supabase
@@ -43,7 +32,7 @@ export default async function IntegrationsPage() {
     .single();
 
   if (error || !business) {
-    return <div>Error: Could not load business data.</div>;
+    redirect('/sign-in');
   }
 
   // Get email integration data separately
@@ -96,8 +85,13 @@ export default async function IntegrationsPage() {
   };
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8">
-      <h1 className="text-3xl font-bold">Integrations</h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Integrations</h1>
+        <p className="text-muted-foreground mt-2">
+          Connect your favorite tools and services to streamline your workflow.
+        </p>
+      </div>
       
       <ErrorBoundary>
         <SocialMediaIntegrationWrapper />
@@ -120,14 +114,14 @@ export default async function IntegrationsPage() {
             Configure your HeyGen integration for AI avatar video generation with custom avatars and voices.
           </CardDescription>
         </CardHeader>
-                  <HeygenSettingsForm business={transformedBusiness} />
+        <HeygenSettingsForm business={transformedBusiness} />
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Blog Integration</CardTitle>
           <CardDescription>
-            Connect your blog platform to automatically publish blog posts and content.
+            Connect your blog or website to automatically publish your content.
           </CardDescription>
         </CardHeader>
         <BlogIntegrationForm business={transformedBusiness} />

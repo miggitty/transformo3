@@ -19,7 +19,7 @@ interface SocialAccount {
 interface SocialAccounts {
   facebook?: SocialAccount | "";
   instagram?: SocialAccount | "";
-  twitter?: SocialAccount | "";
+  x?: SocialAccount | "";
   youtube?: SocialAccount | "";
   linkedin?: SocialAccount | "";
   tiktok?: SocialAccount | "";
@@ -46,11 +46,11 @@ const socialPlatforms = [
     bgColor: 'bg-pink-50',
   },
   {
-    key: 'twitter',
-    name: 'Twitter',
+    key: 'x',
+    name: 'X',
     icon: Twitter,
-    color: 'text-sky-500',
-    bgColor: 'bg-sky-50',
+    color: 'text-black',
+    bgColor: 'bg-gray-50',
   },
   {
     key: 'youtube',
@@ -77,13 +77,17 @@ const socialPlatforms = [
 
 export function SocialMediaStatusIcons({ socialAccounts, className }: SocialMediaStatusIconsProps) {
   const isConnected = (platformKey: string): boolean => {
-    if (!socialAccounts) return false;
+    if (!socialAccounts) {
+      return false;
+    }
+    
     const account = socialAccounts[platformKey as keyof SocialAccounts];
     return !!(account && typeof account === 'object' && account.username);
   };
 
   const getDisplayName = (platformKey: string): string | null => {
     if (!socialAccounts) return null;
+    
     const account = socialAccounts[platformKey as keyof SocialAccounts];
     if (account && typeof account === 'object') {
       return account.display_name || account.username || null;

@@ -6,11 +6,26 @@ import { toast } from 'sonner';
 import { SocialMediaIntegrationCard } from './social-media-integration-card';
 import { validateJWTRedirect } from '@/lib/upload-post';
 
+interface SocialAccount {
+  display_name: string;
+  social_images: string;
+  username: string;
+}
+
+interface SocialAccounts {
+  facebook?: SocialAccount | "";
+  instagram?: SocialAccount | "";
+  x?: SocialAccount | "";
+  youtube?: SocialAccount | "";
+  linkedin?: SocialAccount | "";
+  tiktok?: SocialAccount | "";
+}
+
 interface SocialMediaData {
   profile: Record<string, unknown> & {
     facebook_page_id?: string | null;
   };
-  social_accounts: Record<string, unknown>;
+  social_accounts: SocialAccounts;
   synced: boolean;
   last_synced_at?: string;
   error?: string;

@@ -23,7 +23,7 @@ interface SocialAccount {
 interface SocialAccounts {
   facebook?: SocialAccount | "";
   instagram?: SocialAccount | "";
-  twitter?: SocialAccount | "";
+  x?: SocialAccount | "";  // Twitter data comes as 'x' from upload-post API
   youtube?: SocialAccount | "";
   linkedin?: SocialAccount | "";
   tiktok?: SocialAccount | "";
@@ -84,9 +84,20 @@ export function SocialMediaIntegrationCard({
 
   const getConnectedCount = (): number => {
     if (!socialMediaData?.social_accounts) return 0;
-    return Object.values(socialMediaData.social_accounts).filter(
-      (account): account is SocialAccount => account && typeof account === 'object' && 'username' in account
-    ).length;
+    
+    // Count connected platforms, treating 'x' as Twitter
+    const accounts = socialMediaData.social_accounts;
+    let count = 0;
+    
+         // Check each platform individually
+     if (accounts.facebook && typeof accounts.facebook === 'object' && accounts.facebook.username) count++;
+     if (accounts.instagram && typeof accounts.instagram === 'object' && accounts.instagram.username) count++;
+     if (accounts.x && typeof accounts.x === 'object' && accounts.x.username) count++;
+     if (accounts.youtube && typeof accounts.youtube === 'object' && accounts.youtube.username) count++;
+     if (accounts.linkedin && typeof accounts.linkedin === 'object' && accounts.linkedin.username) count++;
+     if (accounts.tiktok && typeof accounts.tiktok === 'object' && accounts.tiktok.username) count++;
+    
+    return count;
   };
 
   const connectedCount = getConnectedCount();

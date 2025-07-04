@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 interface BlogValidationRequest {
   provider: 'wordpress' | 'wix';
-  credential: string;
+  credential?: string;
   siteUrl?: string; // Required for WordPress
   username?: string; // Required for WordPress
+  skipCredentialCheck?: boolean; // For existing integrations, just get site info
 }
 
 interface SiteInfo {
@@ -20,11 +21,18 @@ interface SiteInfo {
 export async function POST(request: NextRequest) {
   try {
     const body: BlogValidationRequest = await request.json();
-    const { provider, credential, siteUrl, username } = body;
+    const { provider, credential, siteUrl, username, skipCredentialCheck } = body;
 
-    if (!provider || !credential) {
+    if (!provider) {
       return NextResponse.json(
-        { error: 'Provider and credential are required' },
+        { error: 'Provider is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!skipCredentialCheck && !credential) {
+      return NextResponse.json(
+        { error: 'Credential is required' },
         { status: 400 }
       );
     }
@@ -39,9 +47,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      siteInfo = await validateWordPress(credential, siteUrl, username);
+      if (skipCredentialCheck) {
+        siteInfo = await getWordPressSiteInfo(siteUrl);
+      } else {
+        siteInfo = await validateWordPress(credential!, siteUrl, username);
+      }
     } else if (provider === 'wix') {
-      siteInfo = await validateWix(credential);
+      if (skipCredentialCheck) {
+        return NextResponse.json(
+          { error: 'Cannot get site info for Wix without credentials' },
+          { status: 400 }
+        );
+      }
+      siteInfo = await validateWix(credential!);
     } else {
       return NextResponse.json(
         { error: 'Unsupported blog provider' },
@@ -204,5 +222,42 @@ async function validateWix(apiKey: string): Promise<SiteInfo> {
       throw error;
     }
     throw new Error('Failed to validate Wix site. Please check your API key.');
+  }
+}
+
+async function getWordPressSiteInfo(siteUrl: string): Promise<SiteInfo> {
+  // Get site info without authentication for existing integrations
+  const cleanUrl = siteUrl.replace(/\/$/, ''); // Remove trailing slash
+
+  try {
+    // Fetch basic site info without authentication
+    const siteResponse = await fetch(`${cleanUrl}/wp-json`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!siteResponse.ok) {
+      throw new Error(`Site not accessible: ${siteResponse.statusText}`);
+    }
+
+    const siteData = await siteResponse.json();
+
+    return {
+      name: siteData.name || 'WordPress Site',
+      description: siteData.description || undefined,
+      url: cleanUrl,
+      version: siteData.version || undefined,
+      platform: 'wordpress',
+      canPublishPosts: true, // Assume true for existing integrations
+      canUploadMedia: true, // Assume true for existing integrations
+    };
+
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to fetch WordPress site information.');
   }
 } 
