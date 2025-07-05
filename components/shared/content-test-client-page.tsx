@@ -159,7 +159,7 @@ export default function ContentClientPage({
     };
 
     checkPermissionsAndFetch();
-  }, []);
+  }, [content.business_id, content.id, supabase]);
 
   // Helper function to get content asset by type (currently unused)
   // const getAssetByType = (type: string) => {

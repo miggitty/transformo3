@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { useState } from 'react';
 import { 
   Settings, 
   LayoutGrid, 
@@ -19,7 +18,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NewContentButton } from '@/components/shared/new-content-button';
-import { Button } from '@/components/ui/button';
 import { signOut } from '@/app/(auth)/actions';
 import {
   Sidebar,
@@ -27,7 +25,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -90,12 +87,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(() => {
-    return pathname.startsWith('/settings') || pathname === '/billing';
-  });
-  const [isContentOpen, setIsContentOpen] = useState(() => {
-    return true; // Always open Content section by default
-  });
+  const isSettingsOpen = pathname.startsWith('/settings') || pathname === '/billing';
 
   const isSettingsActive = pathname.startsWith('/settings') || pathname === '/billing';
   const isContentActive = pathname.startsWith('/content');
