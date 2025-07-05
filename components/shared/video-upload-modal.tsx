@@ -174,7 +174,7 @@ export function VideoUploadModal({
       const upload = new tus.Upload(selectedFile, {
         endpoint: tusEndpoint,
         retryDelays: [0, 3000, 5000, 10000, 20000],
-        chunkSize: 512 * 1024, // 512KB chunks for maximum compatibility with Supabase
+        chunkSize: 8 * 1024 * 1024, // 8MB chunks - faster uploads for large files
         metadata: {
           filename: fileName,
           bucketName: bucketName,
