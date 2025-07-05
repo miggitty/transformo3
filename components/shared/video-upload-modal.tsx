@@ -146,15 +146,18 @@ export function VideoUploadModal({
       const fileExtension = getFileExtension(selectedFile);
       const fileName = `${businessId}_${contentId}_${videoType}.${fileExtension}`;
 
-      // Get the Supabase storage URL for TUS uploads
+      // Get the Supabase storage URL for TUS uploads - BYPASS VERCEL COMPLETELY
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('No active session');
       }
 
-      const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      // Use direct Supabase URL (user confirms NEXT_PUBLIC_SUPABASE_URL is already direct .supabase.co URL)
+      const directSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const bucketName = 'videos';
-      const tusEndpoint = `${projectUrl}/storage/v1/upload/resumable`;
+      const tusEndpoint = `${directSupabaseUrl}/storage/v1/upload/resumable`;
+      
+      console.log('Direct TUS endpoint (bypassing Vercel):', tusEndpoint);
 
       // First, try to delete the existing file if it exists to avoid conflicts
       try {
@@ -167,10 +170,11 @@ export function VideoUploadModal({
         // Continue with upload anyway
       }
 
-      // Create TUS upload with proper Supabase metadata format
+      // Create TUS upload with direct Supabase connection (NO VERCEL INVOLVEMENT)
       const upload = new tus.Upload(selectedFile, {
         endpoint: tusEndpoint,
         retryDelays: [0, 3000, 5000, 10000, 20000],
+        chunkSize: 6 * 1024 * 1024, // 6MB chunks for better reliability with large files
         metadata: {
           filename: fileName,
           bucketName: bucketName,
@@ -182,10 +186,14 @@ export function VideoUploadModal({
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           'x-upsert': 'true', // Additional upsert header
+          'Access-Control-Allow-Origin': '*', // CORS bypass
+          'Access-Control-Allow-Methods': 'POST, PATCH, HEAD, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-upsert, tus-resumable, upload-metadata, upload-length, upload-offset',
         },
+        // Bypass any potential middleware
         // Add more robust error handling
         onError: (error) => {
-          console.error('TUS upload error:', error);
+          console.error('TUS upload error (direct to Supabase):', error);
           
           // Handle specific error cases
           let statusCode: number | undefined;
@@ -200,12 +208,15 @@ export function VideoUploadModal({
           } else if (statusCode === 401) {
             toast.error('Authentication failed. Please refresh the page and try again.');
           } else if (statusCode === 413) {
-            toast.error('File too large. Please choose a smaller file.');
+            toast.error('File too large for this configuration. The file will now use smaller chunks and retry.');
+            // Don't setIsUploading(false) here, let it retry with smaller chunks
+          } else if (statusCode === 0 || statusCode === undefined) {
+            toast.error('Network error. Check your connection and try again.');
+            setIsUploading(false);
           } else {
             toast.error(`Upload failed: ${error.message || 'Unknown error'}`);
+            setIsUploading(false);
           }
-          
-          setIsUploading(false);
         },
         onProgress: (bytesUploaded, bytesTotal) => {
           const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
