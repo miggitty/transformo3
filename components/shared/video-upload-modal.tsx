@@ -26,6 +26,9 @@ interface VideoUploadModalProps {
   isVideoUploadProject?: boolean; // Flag for video upload projects
 }
 
+const ACCEPTED_FORMATS = ['video/mp4', 'video/webm', 'video/quicktime'];
+const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB
+
 export function VideoUploadModal({
   open,
   onOpenChange,
@@ -58,10 +61,9 @@ export function VideoUploadModal({
     }
   }, [open]);
 
-  const ACCEPTED_FORMATS = ['video/mp4', 'video/webm', 'video/quicktime'];
-  const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB
 
-  const validateFile = (file: File): string | null => {
+
+  const validateFile = useCallback((file: File): string | null => {
     if (!ACCEPTED_FORMATS.includes(file.type)) {
       return 'Please select a valid video file (MP4, WebM, or MOV)';
     }
@@ -69,7 +71,7 @@ export function VideoUploadModal({
       return 'File size must be under 400MB. Please select a smaller file.';
     }
     return null;
-  };
+  }, []);
 
   const getFileExtension = (file: File): string => {
     if (file.type === 'video/mp4') return 'mp4';
@@ -78,7 +80,7 @@ export function VideoUploadModal({
     return 'mp4'; // fallback
   };
 
-  const handleFileSelect = async (file: File) => {
+  const handleFileSelect = useCallback(async (file: File) => {
     if (!file) return;
     
     const error = validateFile(file);
@@ -89,7 +91,7 @@ export function VideoUploadModal({
     setSelectedFile(file);
     setUploadComplete(false);
     setUploadProgress(0);
-  };
+  }, [validateFile]);
 
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
