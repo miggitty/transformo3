@@ -174,7 +174,7 @@ export function VideoUploadModal({
       const upload = new tus.Upload(selectedFile, {
         endpoint: tusEndpoint,
         retryDelays: [0, 3000, 5000, 10000, 20000],
-        chunkSize: 6 * 1024 * 1024, // 6MB chunks for better reliability with large files
+        chunkSize: 512 * 1024, // 512KB chunks for maximum compatibility with Supabase
         metadata: {
           filename: fileName,
           bucketName: bucketName,
@@ -208,8 +208,8 @@ export function VideoUploadModal({
           } else if (statusCode === 401) {
             toast.error('Authentication failed. Please refresh the page and try again.');
           } else if (statusCode === 413) {
-            toast.error('File too large for this configuration. The file will now use smaller chunks and retry.');
-            // Don't setIsUploading(false) here, let it retry with smaller chunks
+            toast.error('File too large for Supabase configuration. Please check your storage bucket settings or choose a smaller file.');
+            setIsUploading(false);
           } else if (statusCode === 0 || statusCode === undefined) {
             toast.error('Network error. Check your connection and try again.');
             setIsUploading(false);
