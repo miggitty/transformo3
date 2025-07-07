@@ -437,7 +437,7 @@ export async function scheduleContentAssets({
           .from('content_assets')
           .update({ 
             asset_scheduled_at: update.asset_scheduled_at,
-            asset_status: 'scheduled'
+            asset_status: 'Scheduled'
           })
           .eq('id', update.id);
 
@@ -469,7 +469,7 @@ export async function updateAssetSchedule({
   const supabase = await createClient();
 
   // Determine the asset status based on whether we're scheduling or clearing
-  const asset_status = newDateTime ? 'scheduled' : 'draft';
+  const asset_status = newDateTime ? 'Scheduled' : 'Draft';
 
   const { data, error } = await supabase
     .from('content_assets')
@@ -547,7 +547,7 @@ export async function resetContentAssetSchedules({
     .from('content_assets')
     .update({ 
       asset_scheduled_at: null,
-      asset_status: 'draft'
+      asset_status: 'Draft'
     })
     .eq('content_id', contentId)
     .not('asset_scheduled_at', 'is', null);
@@ -587,7 +587,7 @@ export async function saveBatchScheduleChanges({
         .from('content_assets')
         .update({ 
           asset_scheduled_at: change.newDateTime,
-          asset_status: 'scheduled'
+          asset_status: 'Scheduled'
         })
         .eq('id', change.assetId)
         .select('content_id')
