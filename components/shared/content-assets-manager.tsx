@@ -488,7 +488,7 @@ export default function ContentAssetsManager({
       setPendingChanges(prev => new Map(prev.set(originalAsset.id, updatedAsset)));
       setHasUnsavedChanges(true);
       
-      toast.success('Asset moved (not saved yet - click Schedule to save changes)');
+      toast.success('📅 Content moved! Click "Schedule" to confirm changes.');
     } catch (error) {
       console.error('Drag drop error:', error);
       info.revert();
@@ -549,7 +549,7 @@ export default function ContentAssetsManager({
   const handleResetChanges = () => {
     setPendingChanges(new Map());
     setHasUnsavedChanges(false);
-    toast.success('Changes reset to saved state');
+    toast.success('🔄 All changes cancelled - schedule restored!');
   };
 
   // FEATURE: Batch Scheduling - Schedule Changes Handler with error handling and rollback

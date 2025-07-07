@@ -294,7 +294,7 @@ export function EnhancedContentAssetsManager({
     setPendingChanges(prev => new Map(prev.set(assetId, updatedAsset)));
     setHasUnsavedChanges(true);
     
-    toast.success('Change staged - click &quot;Schedule&quot; to save');
+    toast.success('📅 Schedule updated! Click "Schedule" to confirm changes.');
   };
 
   // Handle calendar date select (for unscheduled assets)
@@ -330,7 +330,7 @@ export function EnhancedContentAssetsManager({
     setPendingChanges(prev => new Map(prev.set(unscheduledAsset.id, updatedAsset)));
     setHasUnsavedChanges(true);
     
-    toast.success('Asset scheduled - click &quot;Schedule&quot; to save');
+    toast.success('✅ Content added to schedule! Click "Schedule" to confirm.');
   };
 
   // Handle event click (for time editing or navigation)
@@ -390,7 +390,7 @@ export function EnhancedContentAssetsManager({
     setPendingChanges(prev => new Map(prev.set(editingEvent.assetId, updatedAsset)));
     setHasUnsavedChanges(true);
     
-    toast.success('Time change staged - click &quot;Schedule&quot; to save');
+    toast.success('🕐 Time updated! Click "Schedule" to confirm changes.');
     setIsEditModalOpen(false);
     setEditingEvent(null);
   };
@@ -442,7 +442,7 @@ export function EnhancedContentAssetsManager({
   const handleResetPendingChanges = () => {
     setPendingChanges(new Map());
     setHasUnsavedChanges(false);
-    toast.success('Changes reset to saved state');
+    toast.success('🔄 All changes cancelled - schedule restored!');
   };
 
   // Handle Schedule All (add to pending changes, don't save immediately)
@@ -501,7 +501,7 @@ export function EnhancedContentAssetsManager({
     if (scheduledCount > 0) {
       setPendingChanges(newPendingChanges);
       setHasUnsavedChanges(true);
-      toast.success(`${scheduledCount} assets staged for scheduling - click &quot;Schedule&quot; to save`);
+      toast.success(`🗓️ ${scheduledCount} assets ready to schedule! Click "Schedule" to confirm.`);
     } else {
       toast.info('No assets available to schedule');
     }

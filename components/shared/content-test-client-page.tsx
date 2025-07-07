@@ -255,6 +255,17 @@ export default function ContentClientPage({
 
           {!permissionError && (
             <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+              {/* Approve Button - Top Right */}
+              <div className="flex justify-end mb-6">
+                <Button
+                  onClick={() => handleApprove(activeStep)}
+                  disabled={approvedSteps.has(activeStep)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {approvedSteps.has(activeStep) ? 'Approved' : 'Approve'}
+                </Button>
+              </div>
+
               {/* Video Script Section */}
               {activeStep === 'video-script' && (
                 <div>
@@ -972,14 +983,6 @@ export default function ContentClientPage({
                   variant="outline"
                 >
                   Previous
-                </Button>
-
-                <Button
-                  onClick={() => handleApprove(activeStep)}
-                  disabled={approvedSteps.has(activeStep)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {approvedSteps.has(activeStep) ? 'Approved' : 'Approve'}
                 </Button>
 
                 <Button
