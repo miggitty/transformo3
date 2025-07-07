@@ -15,6 +15,7 @@ import { createClientSafe } from '@/utils/supabase/client';
 import { updateVideoUrl } from '@/app/(app)/content/[id]/actions';
 import { finalizeVideoUploadRecord } from '@/app/(app)/video-upload/actions';
 import { Upload, X, Video, Loader2, CheckCircle } from 'lucide-react';
+import * as tus from 'tus-js-client';
 
 interface VideoUploadModalProps {
   open: boolean;
@@ -25,6 +26,9 @@ interface VideoUploadModalProps {
   onVideoUploaded: (videoType: 'long' | 'short', videoUrl: string) => void;
   isVideoUploadProject?: boolean; // Flag for video upload projects
 }
+
+const ACCEPTED_FORMATS = ['video/mp4', 'video/webm', 'video/quicktime'];
+const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB
 
 export function VideoUploadModal({
   open,
@@ -40,6 +44,7 @@ export function VideoUploadModal({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [tusUpload, setTusUpload] = useState<tus.Upload | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClientSafe();
 
@@ -51,6 +56,7 @@ export function VideoUploadModal({
       setIsUploading(false);
       setUploadComplete(false);
       setIsDragOver(false);
+      setTusUpload(null);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -58,10 +64,16 @@ export function VideoUploadModal({
     }
   }, [open]);
 
-  const ACCEPTED_FORMATS = ['video/mp4', 'video/webm', 'video/quicktime'];
-  const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB
+  // Cleanup TUS upload on unmount or when modal closes
+  useEffect(() => {
+    return () => {
+      if (tusUpload) {
+        tusUpload.abort();
+      }
+    };
+  }, [tusUpload]);
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     if (!ACCEPTED_FORMATS.includes(file.type)) {
       return 'Please select a valid video file (MP4, WebM, or MOV)';
     }
@@ -69,7 +81,7 @@ export function VideoUploadModal({
       return 'File size must be under 400MB. Please select a smaller file.';
     }
     return null;
-  };
+  }, []);
 
   const getFileExtension = (file: File): string => {
     if (file.type === 'video/mp4') return 'mp4';
@@ -78,7 +90,7 @@ export function VideoUploadModal({
     return 'mp4'; // fallback
   };
 
-  const handleFileSelect = async (file: File) => {
+  const handleFileSelect = useCallback(async (file: File) => {
     if (!file) return;
     
     const error = validateFile(file);
@@ -89,7 +101,8 @@ export function VideoUploadModal({
     setSelectedFile(file);
     setUploadComplete(false);
     setUploadProgress(0);
-  };
+    setTusUpload(null);
+  }, [validateFile]);
 
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -133,88 +146,184 @@ export function VideoUploadModal({
       const fileExtension = getFileExtension(selectedFile);
       const fileName = `${businessId}_${contentId}_${videoType}.${fileExtension}`;
 
-      // Simulate progress for better UX (since Supabase doesn't provide real progress)
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 5, 90));
-      }, 200);
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('videos')
-        .upload(fileName, selectedFile, {
-          upsert: true, // Replace existing file if it exists
-        });
-
-      clearInterval(progressInterval);
-
-      if (uploadError) {
-        console.error('Upload error details:', uploadError);
-        toast.error(`Unable to save video: ${uploadError.message || 'Please try again.'}`);
-        return;
+      // Get the Supabase storage URL for TUS uploads - BYPASS VERCEL COMPLETELY
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
       }
 
-      // Get the public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('videos')
-        .getPublicUrl(fileName);
+      // Use direct Supabase URL (user confirms NEXT_PUBLIC_SUPABASE_URL is already direct .supabase.co URL)
+      const directSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const bucketName = 'videos';
+      const tusEndpoint = `${directSupabaseUrl}/storage/v1/upload/resumable`;
+      
+      console.log('Direct TUS endpoint (bypassing Vercel):', tusEndpoint);
 
-      let publicUrl = publicUrlData.publicUrl;
-
-      // In local development, convert local Supabase URLs to external Supabase URLs for external services access
-      if (process.env.NODE_ENV === 'development' && publicUrl.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
-        // Extract the path from the local Supabase URL and construct external Supabase URL
-        const urlPath = publicUrl.replace('http://127.0.0.1:54321', '');
-        publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+      // First, try to delete the existing file if it exists to avoid conflicts
+      try {
+        await supabase.storage
+          .from('videos')
+          .remove([fileName]);
+        console.log('Existing file removed successfully');
+      } catch (deleteError) {
+        console.log('No existing file to remove or removal failed:', deleteError);
+        // Continue with upload anyway
       }
 
-      // Update the content record using server action
-      const { success, error: updateError } = await updateVideoUrl({
-        contentId,
-        videoType,
-        videoUrl: publicUrl,
+      // Create TUS upload with direct Supabase connection (NO VERCEL INVOLVEMENT)
+      const upload = new tus.Upload(selectedFile, {
+        endpoint: tusEndpoint,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        chunkSize: 8 * 1024 * 1024, // 8MB chunks - faster uploads for large files
+        metadata: {
+          filename: fileName,
+          bucketName: bucketName,
+          objectName: fileName,
+          contentType: selectedFile.type || 'video/mp4',
+          cacheControl: '3600',
+          upsert: 'true', // Enable upsert for conflicts
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'x-upsert': 'true', // Additional upsert header
+          'Access-Control-Allow-Origin': '*', // CORS bypass
+          'Access-Control-Allow-Methods': 'POST, PATCH, HEAD, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-upsert, tus-resumable, upload-metadata, upload-length, upload-offset',
+        },
+        // Bypass any potential middleware
+        // Add more robust error handling
+        onError: (error) => {
+          console.error('TUS upload error (direct to Supabase):', error);
+          
+          // Handle specific error cases
+          let statusCode: number | undefined;
+          
+          // Check if it's a DetailedError with originalResponse
+          if ('originalResponse' in error && error.originalResponse) {
+            statusCode = error.originalResponse.getStatus();
+          }
+          
+          if (statusCode === 409) {
+            toast.error('File already exists. Please try again or choose a different file.');
+          } else if (statusCode === 401) {
+            toast.error('Authentication failed. Please refresh the page and try again.');
+          } else if (statusCode === 413) {
+            toast.error('File too large for Supabase configuration. Please check your storage bucket settings or choose a smaller file.');
+            setIsUploading(false);
+          } else if (statusCode === 0 || statusCode === undefined) {
+            toast.error('Network error. Check your connection and try again.');
+            setIsUploading(false);
+          } else {
+            toast.error(`Upload failed: ${error.message || 'Unknown error'}`);
+            setIsUploading(false);
+          }
+        },
+        onProgress: (bytesUploaded, bytesTotal) => {
+          const percentage = Math.round((bytesUploaded / bytesTotal) * 100);
+          setUploadProgress(percentage);
+        },
+        onSuccess: async () => {
+          try {
+            console.log('TUS upload completed successfully');
+            
+            // Wait a moment for the file to be fully processed
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Get the public URL
+            const { data: publicUrlData } = supabase.storage
+              .from('videos')
+              .getPublicUrl(fileName);
+
+            let publicUrl = publicUrlData.publicUrl;
+
+            // In local development, convert local Supabase URLs to external Supabase URLs for external services access
+            if (process.env.NODE_ENV === 'development' && publicUrl.includes('127.0.0.1:54321') && process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL) {
+              const urlPath = publicUrl.replace('http://127.0.0.1:54321', '');
+              publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_EXTERNAL_URL}${urlPath}`;
+            }
+
+            // Update the content record using server action
+            const { success, error: updateError } = await updateVideoUrl({
+              contentId,
+              videoType,
+              videoUrl: publicUrl,
+            });
+
+            if (!success) {
+              toast.error(updateError || 'Video uploaded but failed to save. Please contact support.');
+              return;
+            }
+
+            setUploadComplete(true);
+            toast.success(`${videoType === 'long' ? 'Long' : 'Short'} video uploaded successfully!`);
+            
+            // If this is a video upload project, trigger the video transcription workflow
+            if (isVideoUploadProject && videoType === 'long') {
+              console.log('Triggering video transcription for video upload project');
+              try {
+                const finalizeResult = await finalizeVideoUploadRecord(contentId, publicUrl);
+                if (finalizeResult.error) {
+                  console.error('Failed to trigger video transcription:', finalizeResult.error);
+                  toast.warning('Video uploaded successfully, but transcription may need to be retried.');
+                } else {
+                  console.log('Video transcription triggered successfully');
+                }
+              } catch (error) {
+                console.error('Error triggering video transcription:', error);
+                toast.warning('Video uploaded successfully, but transcription may need to be retried.');
+              }
+            }
+
+            // Call the callback with the video URL
+            onVideoUploaded(videoType, publicUrl);
+            
+          } catch (error) {
+            console.error('Post-upload processing error:', error);
+            toast.error('Upload completed but failed to process. Please contact support.');
+          } finally {
+            setIsUploading(false);
+          }
+        },
       });
 
-      if (!success) {
-        toast.error(updateError || 'Video uploaded but failed to save. Please contact support.');
-        return;
-      }
+      // Store the upload instance for potential cancellation
+      setTusUpload(upload);
 
-      setUploadProgress(100);
-      setUploadComplete(true);
-      toast.success(`${videoType === 'long' ? 'Long' : 'Short'} video uploaded successfully!`);
-      
-      // If this is a video upload project, trigger the video transcription workflow
-      if (isVideoUploadProject && videoType === 'long') {
-        console.log('Triggering video transcription for video upload project');
-        try {
-          const finalizeResult = await finalizeVideoUploadRecord(contentId, publicUrl);
-          if (finalizeResult.error) {
-            console.error('Failed to trigger video transcription:', finalizeResult.error);
-            toast.warning('Video uploaded successfully, but transcription may need to be retried.');
-          } else {
-            console.log('Video transcription triggered successfully');
-          }
-        } catch (error) {
-          console.error('Error triggering video transcription:', error);
-          toast.warning('Video uploaded successfully, but transcription may need to be retried.');
-        }
-      }
-
-      // Call the callback with the video URL
-      onVideoUploaded(videoType, publicUrl);
+      // Start the upload
+      upload.start();
       
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Upload failed. Please try again or contact support if the problem persists.');
-    } finally {
+      console.error('Upload setup error:', error);
+      toast.error('Failed to start upload. Please try again or contact support if the problem persists.');
       setIsUploading(false);
     }
   };
 
+  const handleCancel = () => {
+    if (tusUpload && isUploading) {
+      tusUpload.abort();
+      setTusUpload(null);
+      setIsUploading(false);
+      setUploadProgress(0);
+      toast.info('Upload cancelled');
+    }
+    setSelectedFile(null);
+  };
+
   const handleClose = () => {
-    if (!isUploading) {
+    if (isUploading) {
+      // Ask user if they want to cancel the upload
+      if (confirm('Upload is in progress. Are you sure you want to cancel?')) {
+        if (tusUpload) {
+          tusUpload.abort();
+        }
+        setIsUploading(false);
+        setUploadProgress(0);
+        setTusUpload(null);
+        onOpenChange(false);
+      }
+    } else {
       onOpenChange(false);
-      // State will be reset by useEffect when modal opens again
     }
   };
 
@@ -235,7 +344,7 @@ export function VideoUploadModal({
             Upload {videoType === 'long' ? 'Long' : 'Short'} Video
           </DialogTitle>
           <DialogDescription>
-            Upload a video file (MP4, WebM, or MOV) up to 400MB.
+            Upload a video file (MP4, WebM, or MOV) up to 400MB. Large files use resumable uploads for better reliability.
           </DialogDescription>
         </DialogHeader>
 
@@ -282,6 +391,7 @@ export function VideoUploadModal({
               <div className="text-xs text-muted-foreground">
                 <p>Supported formats: MP4 (recommended), WebM, MOV</p>
                 <p>Maximum file size: 400MB</p>
+                <p>Large files will use resumable uploads for better reliability</p>
               </div>
             </>
           ) : (
@@ -313,7 +423,7 @@ export function VideoUploadModal({
                 {isUploading && (
                   <div className="mt-4 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Uploading...</span>
+                      <span>Uploading... (resumable)</span>
                       <span>{uploadProgress}%</span>
                     </div>
                     <Progress value={uploadProgress} />
@@ -334,8 +444,8 @@ export function VideoUploadModal({
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => setSelectedFile(null)}
-                    disabled={isUploading}
+                    onClick={handleCancel}
+                    disabled={false}
                     className="flex-1"
                   >
                     Cancel

@@ -79,7 +79,7 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
           
           const { data: integration, error } = await supabase
             .from('blog_integrations')
-            .select('id, provider, username, site_url')
+            .select('id, provider, username, site_url, validated_at')
             .eq('business_id', business.id)
             .eq('status', 'active')
             .maybeSingle();
@@ -93,6 +93,13 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
               blog_credential: '', // Always keep empty for security
               blog_site_url: integration.site_url || '',
             });
+            
+            // If integration was previously validated, show as valid
+            if (integration.validated_at) {
+              setConnectionStatus('valid');
+              // Re-validate to get site info for display
+              validateExistingIntegration(integration.provider as 'wordpress' | 'wix', integration.site_url || '', integration.username || '');
+            }
           } else if (error) {
             console.error('Error fetching existing integration:', error);
           }
@@ -169,6 +176,37 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
       return false;
     } finally {
       setIsValidating(false);
+    }
+  };
+
+  // Validate existing integration to get site info for display
+  const validateExistingIntegration = async (
+    provider: 'wordpress' | 'wix',
+    siteUrl?: string,
+    username?: string
+  ) => {
+    try {
+      const response = await fetch('/api/blog-integration/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider,
+          siteUrl,
+          username,
+          skipCredentialCheck: true, // Just get site info, don't validate credentials
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.siteInfo) {
+        setSiteInfo(result.siteInfo);
+      }
+    } catch (error) {
+      console.error('Error fetching site info for existing integration:', error);
+      // Don't show error toast for this, it's just for display purposes
     }
   };
 
@@ -273,6 +311,8 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
         if (data.blog_credential) {
           setIsKeySet(true);
           form.resetField('blog_credential');
+          // Preserve the validation state and site info after saving
+          // connectionStatus and siteInfo remain unchanged
         }
       }
     } catch (error) {
@@ -349,7 +389,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                 <FormDescription>
                   Choose your blog platform.
                 </FormDescription>
-                <FormMessage />
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -375,7 +417,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                         <FormDescription>
                           Your WordPress site URL (without trailing slash).
                         </FormDescription>
-                        <FormMessage />
+                        <div className="min-h-[1.25rem]">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -395,7 +439,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                         <FormDescription>
                           Your WordPress admin username.
                         </FormDescription>
-                        <FormMessage />
+                        <div className="min-h-[1.25rem]">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -435,7 +481,9 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
                     <FormDescription>
                       This credential is stored securely and is write-only for security purposes.
                     </FormDescription>
-                    <FormMessage />
+                    <div className="min-h-[1.25rem]">
+                      <FormMessage />
+                    </div>
                   </FormItem>
                 )}
               />
@@ -445,43 +493,62 @@ export function BlogIntegrationForm({ business }: BlogIntegrationFormProps) {
             </>
           )}
 
-          {/* Connection Status */}
-          {connectionStatus !== 'idle' && (
+          {/* Validation Status */}
+          {connectionStatus === 'validating' && (
             <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${
-                  connectionStatus === 'validating' ? 'bg-yellow-400' :
-                  connectionStatus === 'valid' ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                <span className="text-sm font-medium">
-                  {connectionStatus === 'validating' ? 'Validating...' :
-                   connectionStatus === 'valid' ? 'Connection Valid' : 'Invalid Credentials'}
-                </span>
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <span className="text-sm font-medium">Validating...</span>
               </div>
               <div className="text-sm text-gray-600">
-                {connectionStatus === 'validating' ? 'Testing connection and fetching site information...' :
-                 connectionStatus === 'valid' ? 'Connection validated successfully.' :
-                 'Please check your credentials and try again.'}
+                Testing connection and fetching site information...
+              </div>
+            </div>
+          )}
+          
+          {connectionStatus === 'invalid' && (
+            <div className="flex items-center space-x-4 p-4 bg-red-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-sm font-medium text-red-800">Invalid Credentials</span>
+              </div>
+              <div className="text-sm text-red-600">
+                Please check your credentials and try again.
               </div>
             </div>
           )}
 
-          {/* Site Information Display */}
-          {siteInfo && connectionStatus === 'valid' && (
-            <div className="p-4 bg-green-50 rounded-lg space-y-2">
-              <h4 className="font-medium text-green-800">Connected Site Information</h4>
-              <div className="text-sm space-y-1">
-                <div><strong>Site Name:</strong> {siteInfo.name}</div>
-                <div><strong>URL:</strong> <a href={siteInfo.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{siteInfo.url}</a></div>
-                <div><strong>Platform:</strong> {siteInfo.platform === 'wordpress' ? 'WordPress' : 'Wix'}</div>
-                {siteInfo.version && <div><strong>Version:</strong> {siteInfo.version}</div>}
-                <div className="flex items-center gap-4">
-                  <span className={`text-xs px-2 py-1 rounded ${siteInfo.canPublishPosts ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {siteInfo.canPublishPosts ? '✓ Can Publish Posts' : '✗ Cannot Publish Posts'}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded ${siteInfo.canUploadMedia ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {siteInfo.canUploadMedia ? '✓ Can Upload Media' : '✗ Cannot Upload Media'}
-                  </span>
+          {/* Connection Valid Status */}
+          {connectionStatus === 'valid' && siteInfo && (
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-sm font-medium text-green-800">Connection Valid</span>
+              </div>
+              <p className="text-sm text-green-600 mb-3">Connection validated successfully.</p>
+              
+              <div className="bg-white p-3 rounded-md border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">Connected Site Information</h4>
+                <div className="space-y-1 text-sm">
+                  <div><strong>Site Name:</strong> {siteInfo.name}</div>
+                  <div><strong>URL:</strong> <a href={siteInfo.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{siteInfo.url}</a></div>
+                  <div><strong>Platform:</strong> {siteInfo.platform === 'wordpress' ? 'WordPress' : 'Wix'}</div>
+                  {siteInfo.version && <div><strong>Version:</strong> {siteInfo.version}</div>}
+                </div>
+                
+                <div className="mt-3 flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${siteInfo.canPublishPosts ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className={`text-xs ${siteInfo.canPublishPosts ? 'text-green-600' : 'text-red-600'}`}>
+                      {siteInfo.canPublishPosts ? 'Can Publish Posts' : 'Cannot Publish Posts'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${siteInfo.canUploadMedia ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className={`text-xs ${siteInfo.canUploadMedia ? 'text-green-600' : 'text-red-600'}`}>
+                      {siteInfo.canUploadMedia ? 'Can Upload Media' : 'Cannot Upload Media'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -65,13 +65,15 @@ export function CallToActionsForm({ business }: CallToActionsFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>YouTube Call To Action</FormLabel>
-                <FormDescription>
-                  This is the first line of the YouTube description, which should have a call to action to your next step
-                </FormDescription>
                 <FormControl>
                   <Textarea {...field} value={field.value ?? ''} />
                 </FormControl>
-                <FormMessage />
+                <FormDescription>
+                  This is the first line of the YouTube description, which should have a call to action to your next step
+                </FormDescription>
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -81,13 +83,15 @@ export function CallToActionsForm({ business }: CallToActionsFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Email Call To Action</FormLabel>
-                <FormDescription>
-                  This is the main call to action you want a reader of your emails to take after reading your email.
-                </FormDescription>
                 <FormControl>
                   <Textarea {...field} value={field.value ?? ''} />
                 </FormControl>
-                <FormMessage />
+                <FormDescription>
+                  This is the main call to action you want a reader of your emails to take after reading your email.
+                </FormDescription>
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -97,13 +101,15 @@ export function CallToActionsForm({ business }: CallToActionsFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Social Media Long Video Call To Action</FormLabel>
-                <FormDescription>
-                  This is a call to action you want to place on every long video on social media. (Optional)
-                </FormDescription>
                 <FormControl>
                   <Textarea {...field} value={field.value ?? ''} />
                 </FormControl>
-                <FormMessage />
+                <FormDescription>
+                  This is a call to action you want to place on every long video on social media. (Optional)
+                </FormDescription>
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -113,13 +119,15 @@ export function CallToActionsForm({ business }: CallToActionsFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Social Media Short Video Call To Action</FormLabel>
-                <FormDescription>
-                  This is a call to action you want to place on every short video on social media. (Optional)
-                </FormDescription>
                 <FormControl>
                   <Textarea {...field} value={field.value ?? ''} />
                 </FormControl>
-                <FormMessage />
+                <FormDescription>
+                  This is a call to action you want to place on every short video on social media. (Optional)
+                </FormDescription>
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />
@@ -129,13 +137,15 @@ export function CallToActionsForm({ business }: CallToActionsFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Booking Link</FormLabel>
-                <FormDescription>
-                  This is the link where someone can book an appointment with you
-                </FormDescription>
                 <FormControl>
                   <Input placeholder="https://your-booking-link.com" {...field} value={field.value ?? ''} />
                 </FormControl>
-                <FormMessage />
+                <FormDescription>
+                  This is the link where someone can book an appointment with you
+                </FormDescription>
+                <div className="min-h-[1.25rem]">
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />

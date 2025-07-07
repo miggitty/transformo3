@@ -1,0 +1,281 @@
+{
+  "name": "Transformo Content Creation v2 - With Compression",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "9f7984ae-c10a-4039-a8c4-d724635f2759",
+        "options": {}
+      },
+      "id": "6a896d27-36dd-4e95-ab6e-2ddf7760ccc6",
+      "name": "Generate Video Script",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1920, 1300],
+      "webhookId": "9f7984ae-c10a-4039-a8c4-d724635f2759"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {"name": "content_id"},
+            {"name": "business_id"},
+            {"name": "transcript"},
+            {"name": "video_script"}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-1760, 2620],
+      "id": "dc0bd1ce-b550-4766-8915-67e659f3a86d",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/content?id=eq.{{$json.content_id}}&select=*,businesses(*)",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "apikey", "value": "={{$env.SUPABASE_ANON_KEY}}"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=representation"}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1300, 2600],
+      "id": "66043163-bc6c-47a7-82d6-463388cb4c5c",
+      "name": "Get Content Data"
+    },
+    
+    // NEW COMPRESSION WORKFLOW NODES
+    {
+      "parameters": {
+        "workflowId": "COMPRESSION_WORKFLOW_ID", // Replace with actual compression workflow ID
+        "waitForExecution": true,
+        "source": {
+          "values": {
+            "image_data": "={{ $binary.data }}",
+            "image_type": "image",
+            "output_format": "webp",
+            "quality": 85,
+            "max_width": 1920,
+            "max_height": 1080
+          }
+        }
+      },
+      "id": "compress-blog-image",
+      "name": "Compress Blog Image",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [2000, 1040]
+    },
+    {
+      "parameters": {
+        "workflowId": "COMPRESSION_WORKFLOW_ID",
+        "waitForExecution": true,
+        "source": {
+          "values": {
+            "image_data": "={{ $binary.data }}",
+            "image_type": "image", 
+            "output_format": "webp",
+            "quality": 85,
+            "max_width": 1920,
+            "max_height": 1080
+          }
+        }
+      },
+      "id": "compress-youtube-image",
+      "name": "Compress YouTube Image",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [2120, 1580]
+    },
+    {
+      "parameters": {
+        "workflowId": "COMPRESSION_WORKFLOW_ID",
+        "waitForExecution": true,
+        "source": {
+          "values": {
+            "image_data": "={{ $binary.data }}",
+            "image_type": "image",
+            "output_format": "webp", 
+            "quality": 90,
+            "max_width": 1080,
+            "max_height": 1080
+          }
+        }
+      },
+      "id": "compress-social-rant-image",
+      "name": "Compress Social Rant Image",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1540, 2100]
+    },
+    {
+      "parameters": {
+        "workflowId": "COMPRESSION_WORKFLOW_ID",
+        "waitForExecution": true,
+        "source": {
+          "values": {
+            "image_data": "={{ $binary.data }}",
+            "image_type": "image",
+            "output_format": "webp",
+            "quality": 90,
+            "max_width": 1080,
+            "max_height": 1080
+          }
+        }
+      },
+      "id": "compress-quote-card-image", 
+      "name": "Compress Quote Card Image",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1560, 2620]
+    },
+    {
+      "parameters": {
+        "workflowId": "COMPRESSION_WORKFLOW_ID",
+        "waitForExecution": true,
+        "source": {
+          "values": {
+            "image_data": "={{ $binary.data }}",
+            "image_type": "image",
+            "output_format": "webp",
+            "quality": 85,
+            "max_width": 1920,
+            "max_height": 1080
+          }
+        }
+      },
+      "id": "compress-social-blog-image",
+      "name": "Compress Social Blog Image", 
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1780, 3160]
+    },
+
+    // ... (All other existing nodes remain the same, just updating connections)
+    
+    // UPDATED UPLOAD NODES TO USE COMPRESSED DATA
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/storage/v1/object/images/{{ $('Get Content Data').item.json.id }}_blog.webp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "x-upsert", "value": "true"},
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Content-Type", "value": "image/webp"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "compressed_image",
+        "options": {}
+      },
+      "id": "eb32d061-f037-4315-bed3-a055aa112faf",
+      "name": "Upload Compressed Blog Image to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 1120]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SUPABASE_URL}}/storage/v1/object/images/{{ $('Get Content Data').item.json.id }}_youtube.webp",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "x-upsert", "value": "true"},
+            {"name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Authorization", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}"},
+            {"name": "Content-Type", "value": "image/webp"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "compressed_image",
+        "options": {}
+      },
+      "id": "03491d13-b1ed-4406-954f-683ba5bbae54",
+      "name": "Upload Compressed YouTube Image to Supabase",
+      "type": "n8n-nodes-base.httpRequest", 
+      "typeVersion": 4.2,
+      "position": [2320, 1720]
+    }
+    // ... (Similar updates for other upload nodes)
+  ],
+  
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [[{"node": "Get Content Data", "type": "main", "index": 0}]]
+    },
+    "Get Content Data": {
+      "main": [[{"node": "Create Blog Post", "type": "main", "index": 0}]]
+    },
+    
+    // UPDATED CONNECTIONS FOR COMPRESSION INTEGRATION
+    "Download Blog Image": {
+      "main": [[
+        {"node": "Compress Blog Image", "type": "main", "index": 0},
+        {"node": "Edit Fields", "type": "main", "index": 0}
+      ]]
+    },
+    "Compress Blog Image": {
+      "main": [[{"node": "Upload Compressed Blog Image to Supabase", "type": "main", "index": 0}]]
+    },
+    
+    "Download Quote Card Image1": {
+      "main": [[
+        {"node": "Compress YouTube Image", "type": "main", "index": 0},
+        {"node": "Edit Fields1", "type": "main", "index": 0}
+      ]]
+    },
+    "Compress YouTube Image": {
+      "main": [[{"node": "Upload Compressed YouTube Image to Supabase", "type": "main", "index": 0}]]
+    },
+    
+    "Download Social Rant": {
+      "main": [[
+        {"node": "Compress Social Rant Image", "type": "main", "index": 0},
+        {"node": "Edit Fields2", "type": "main", "index": 0}
+      ]]
+    },
+    "Compress Social Rant Image": {
+      "main": [[{"node": "Upload Image to Supabase2", "type": "main", "index": 0}]]
+    },
+    
+    "Download Quote Card Image": {
+      "main": [[
+        {"node": "Compress Quote Card Image", "type": "main", "index": 0},
+        {"node": "Edit Fields3", "type": "main", "index": 0}
+      ]]
+    },
+    "Compress Quote Card Image": {
+      "main": [[{"node": "Upload Image to Supabase3", "type": "main", "index": 0}]]
+    },
+    
+    "Download Social Blog": {
+      "main": [[
+        {"node": "Compress Social Blog Image", "type": "main", "index": 0},
+        {"node": "Edit Fields4", "type": "main", "index": 0}
+      ]]
+    },
+    "Compress Social Blog Image": {
+      "main": [[{"node": "Upload Image to Supabase4", "type": "main", "index": 0}]]
+    }
+    
+    // ... (All other existing connections remain the same)
+  },
+  
+  "active": true,
+  "settings": {"executionOrder": "v1"},
+  "versionId": "compression-integrated-v1"
+} 

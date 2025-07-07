@@ -62,11 +62,13 @@ export function SpeakerDetailsForm({ business }: SpeakerDetailsFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
-                  <FormDescription>This is the name of the person speaking in the videos</FormDescription>
                   <FormControl>
                     <Input placeholder="John" {...field} value={field.value ?? ''} />
                   </FormControl>
-                  <FormMessage />
+                  <FormDescription>This is the name of the person speaking in the videos</FormDescription>
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -79,7 +81,12 @@ export function SpeakerDetailsForm({ business }: SpeakerDetailsFormProps) {
                   <FormControl>
                     <Input placeholder="Doe" {...field} value={field.value ?? ''} />
                   </FormControl>
-                  <FormMessage />
+                  <FormDescription>
+                    Last name of the speaker
+                  </FormDescription>
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -89,7 +96,6 @@ export function SpeakerDetailsForm({ business }: SpeakerDetailsFormProps) {
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
                   <FormLabel>Writing Style Guide</FormLabel>
-                   <FormDescription>Enter your writing style, which the AI writer will use to mimic your writing</FormDescription>
                   <FormControl>
                     <Textarea
                       className="min-h-[150px]"
@@ -98,7 +104,10 @@ export function SpeakerDetailsForm({ business }: SpeakerDetailsFormProps) {
                       value={field.value ?? ''}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormDescription>Enter your writing style, which the AI writer will use to mimic your writing</FormDescription>
+                  <div className="min-h-[1.25rem]">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />

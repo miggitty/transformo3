@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Mic, StopCircle, UploadCloud, Hourglass } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   createContentRecord,
@@ -52,7 +52,7 @@ export function AudioRecorder() {
     }
   };
 
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     if (!permission) {
       await getMicrophonePermission();
       return;
@@ -83,7 +83,7 @@ export function AudioRecorder() {
       toast.error('Failed to start recording.');
       setStatus('idle');
     }
-  };
+  }, [permission]);
 
   const stopRecording = () => {
     if (!mediaRecorder.current) return;
@@ -165,7 +165,7 @@ export function AudioRecorder() {
     if (process.env.NODE_ENV === 'development' && permission && streamRef.current && status === 'idle' && !mediaRecorder.current) {
       startRecording();
     }
-  }, [permission, status]);
+  }, [permission, status, startRecording]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);

@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { Tables } from '@/types/supabase';
 import { SubscriptionProvider } from '@/components/providers/subscription-provider';
-import AppLayoutClient from '@/components/shared/app-layout-client';
+import { SidebarLayoutWrapper } from '@/components/shared/sidebar-layout-wrapper';
 
 // Force dynamic rendering for this layout
 export const dynamic = 'force-dynamic';
@@ -28,9 +28,13 @@ export default async function AppLayout({
     .eq('id', user.id)
     .single();
 
-  const userWithProfile = {
+  if (!profile) {
+    return redirect('/sign-in');
+  }
+
+  const userWithEmail = {
     ...profile,
-    email: user.email!,
+    email: user.email || ''
   };
 
   // Get subscription data for the layout
@@ -51,9 +55,9 @@ export default async function AppLayout({
 
   return (
     <SubscriptionProvider initialSubscription={subscription}>
-      <AppLayoutClient user={userWithProfile as Tables<'profiles'> & { email: string }}>
+      <SidebarLayoutWrapper user={userWithEmail as Tables<'profiles'> & { email: string }}>
         {children}
-      </AppLayoutClient>
+      </SidebarLayoutWrapper>
     </SubscriptionProvider>
   );
 } 

@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       supabaseServiceKey,
       { auth: { persistSession: false } }
     );
+
     // 1. Secure the endpoint with existing N8N secret
     const callbackSecret = process.env.N8N_CALLBACK_SECRET;
     const authHeader = req.headers.get('authorization');
@@ -40,58 +41,60 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Get business email configuration using new email_integrations table
-    const { data: emailIntegration, error: integrationError } = await supabase
-      .from('email_integrations')
+    // 3. Get blog integration using the new table structure
+    const { data: blogIntegration, error: integrationError } = await supabase
+      .from('blog_integrations')
       .select(`
         provider,
-        sender_name,
-        sender_email,
-        selected_group_id,
-        selected_group_name,
+        username,
+        site_url,
         status
       `)
       .eq('business_id', business_id)
       .eq('status', 'active')
       .single();
 
-    if (integrationError || !emailIntegration) {
-      console.error('Error fetching email integration:', integrationError);
+    if (integrationError || !blogIntegration) {
+      console.error('Error fetching blog integration:', integrationError);
       return NextResponse.json(
-        { error: 'Email integration not found or not active' },
+        { error: 'Blog integration not found or not active' },
         { status: 404 }
       );
     }
 
-    // 4. Retrieve API key using updated RPC function
-    const { data: apiKey, error: secretError } = await supabase.rpc('get_email_secret_v2', {
-      p_business_id: business_id
-    });
+    // 4. Retrieve app password using the new database function
+    const { data: appPassword, error: secretError } = await supabase
+      .rpc('get_blog_secret_v2', { p_business_id: business_id });
 
-    if (secretError || !apiKey) {
-      console.error('Error retrieving email API key:', secretError);
+    if (secretError) {
+      console.error('Error retrieving blog secret:', secretError);
       return NextResponse.json(
-        { error: 'Unable to retrieve email API key' },
+        { error: 'Unable to retrieve blog credentials' },
         { status: 500 }
       );
     }
 
-    // 5. Return email configuration for N8N
+    if (!appPassword) {
+      return NextResponse.json(
+        { error: 'Blog credentials not found' },
+        { status: 404 }
+      );
+    }
+
+    // 5. Return blog configuration for N8N
     return NextResponse.json({
       success: true,
-      email_config: {
-        provider: emailIntegration.provider,
-        api_key: apiKey, // Decrypted API key from vault
-        sender_name: emailIntegration.sender_name,
-        sender_email: emailIntegration.sender_email,
-        selected_group_id: emailIntegration.selected_group_id,
-        selected_group_name: emailIntegration.selected_group_name,
+      blog_config: {
+        provider: blogIntegration.provider,
+        site_url: blogIntegration.site_url,
+        username: blogIntegration.username,
+        app_password: appPassword, // Decrypted app password from vault
       },
       business_id: business_id,
     });
 
   } catch (error) {
-    console.error('Email credentials API error:', error);
+    console.error('Blog credentials API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

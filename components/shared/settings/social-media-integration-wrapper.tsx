@@ -1,16 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { SocialMediaIntegrationCard } from './social-media-integration-card';
 import { validateJWTRedirect } from '@/lib/upload-post';
 
+interface SocialAccount {
+  display_name: string;
+  social_images: string;
+  username: string;
+}
+
+interface SocialAccounts {
+  facebook?: SocialAccount | "";
+  instagram?: SocialAccount | "";
+  x?: SocialAccount | "";
+  youtube?: SocialAccount | "";
+  linkedin?: SocialAccount | "";
+  tiktok?: SocialAccount | "";
+}
+
 interface SocialMediaData {
   profile: Record<string, unknown> & {
     facebook_page_id?: string | null;
   };
-  social_accounts: Record<string, unknown>;
+  social_accounts: SocialAccounts;
   synced: boolean;
   last_synced_at?: string;
   error?: string;
@@ -23,6 +38,52 @@ export function SocialMediaIntegrationWrapper() {
   const [refreshing, setRefreshing] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // Handle manual sync with enhanced error handling
+  const handleSync = useCallback(async () => {
+    if (refreshing) return;
+    
+    setRefreshing(true);
+    
+    try {
+      const response = await fetch('/api/upload-post/profiles/sync', {
+        method: 'POST',
+        credentials: 'include', // Include cookies for authentication
+      });
+      
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Sync rate limit reached. Please wait before trying again.');
+        }
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please refresh the page and try again.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Sync failed`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setSocialMediaData({
+          profile: result.data.profile,
+          social_accounts: result.data.social_accounts,
+          synced: true,
+          last_synced_at: result.data.synced_at,
+        });
+      } else {
+        throw new Error('Invalid sync response received');
+      }
+      
+    } catch (error) {
+      console.error('Error syncing social media accounts:', error);
+      toast.error('Sync Failed', {
+        description: error instanceof Error ? error.message : 'Failed to sync social media accounts',
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshing]);
 
   // Handle return from upload-post with enhanced security validation
   useEffect(() => {
@@ -68,7 +129,7 @@ export function SocialMediaIntegrationWrapper() {
     };
 
     handleReturnFromUploadPost();
-  }, [searchParams, router]);
+  }, [searchParams, router, handleSync]);
 
   // Fetch social media data
   const fetchSocialMediaData = async () => {
@@ -186,52 +247,6 @@ export function SocialMediaIntegrationWrapper() {
       });
     } finally {
       setConnecting(false);
-    }
-  };
-
-  // Handle manual sync with enhanced error handling
-  const handleSync = async () => {
-    if (refreshing) return;
-    
-    setRefreshing(true);
-    
-    try {
-      const response = await fetch('/api/upload-post/profiles/sync', {
-        method: 'POST',
-        credentials: 'include', // Include cookies for authentication
-      });
-      
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error('Sync rate limit reached. Please wait before trying again.');
-        }
-        if (response.status === 401) {
-          throw new Error('Authentication failed. Please refresh the page and try again.');
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: Sync failed`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        setSocialMediaData({
-          profile: result.data.profile,
-          social_accounts: result.data.social_accounts,
-          synced: true,
-          last_synced_at: result.data.synced_at,
-        });
-      } else {
-        throw new Error('Invalid sync response received');
-      }
-      
-    } catch (error) {
-      console.error('Error syncing social media accounts:', error);
-      toast.error('Sync Failed', {
-        description: error instanceof Error ? error.message : 'Failed to sync social media accounts',
-      });
-    } finally {
-      setRefreshing(false);
     }
   };
 

@@ -499,6 +499,36 @@ export default function ContentClientPage({
 
           {!permissionError && (
             <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+              {/* Approve Button - Top Right */}
+              <div className="flex justify-end mb-6">
+                {(() => {
+                  const contentType = stepToContentType[activeStep];
+                  const isApproved = isStepApproved(activeStep);
+                  const canToggleApproval = contentType && contentAssets.find(asset => asset.content_type === contentType);
+                  
+                  if (!canToggleApproval) {
+                    return (
+                      <Button
+                        disabled
+                        variant="outline"
+                        className="text-gray-500"
+                      >
+                        No approval needed
+                      </Button>
+                    );
+                  }
+                  
+                  return (
+                    <Button
+                      onClick={() => handleApprovalToggle(contentType, !isApproved)}
+                      className={isApproved ? "bg-gray-600 hover:bg-gray-700" : "bg-green-600 hover:bg-green-700"}
+                    >
+                      {isApproved ? 'Unapprove' : 'Approve'}
+                    </Button>
+                  );
+                })()}
+              </div>
+
               {/* Video Script Section */}
               {activeStep === 'video-script' && (
                 <div>
@@ -1392,33 +1422,6 @@ export default function ContentClientPage({
                 >
                   Previous
                 </Button>
-
-                {(() => {
-                  const contentType = stepToContentType[activeStep];
-                  const isApproved = isStepApproved(activeStep);
-                  const canToggleApproval = contentType && contentAssets.find(asset => asset.content_type === contentType);
-                  
-                  if (!canToggleApproval) {
-                    return (
-                      <Button
-                        disabled
-                        variant="outline"
-                        className="text-gray-500"
-                      >
-                        No approval needed
-                      </Button>
-                    );
-                  }
-                  
-                  return (
-                    <Button
-                      onClick={() => handleApprovalToggle(contentType, !isApproved)}
-                      className={isApproved ? "bg-gray-600 hover:bg-gray-700" : "bg-green-600 hover:bg-green-700"}
-                    >
-                      {isApproved ? 'Unapprove' : 'Approve'}
-                    </Button>
-                  );
-                })()}
 
                 <Button
                   onClick={goToNext}
