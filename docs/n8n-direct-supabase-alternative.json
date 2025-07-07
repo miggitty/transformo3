@@ -2,7 +2,7 @@
   "name": "Get Email Credentials (Direct Supabase)",
   "parameters": {
     "method": "POST",
-    "url": "={{ $env.SUPABASE_REST_URL }}/rpc/get_email_secret",
+    "url": "={{ $env.SUPABASE_REST_URL }}/rpc/get_email_secret_v2",
     "authentication": "none",
     "sendHeaders": true,
     "headerParameters": {
