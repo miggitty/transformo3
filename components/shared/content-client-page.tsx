@@ -10,11 +10,12 @@ import { EnhancedContentAssetsManager } from '@/components/shared/enhanced-conte
 import { ContentWithBusiness, ContentAsset, PROJECT_TYPES, ProjectType } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
-import EditButton from '@/components/shared/edit-button';
+import TextActionButtons from '@/components/shared/text-action-buttons';
 import ContentEditModal from '@/components/shared/content-edit-modal';
 import { FieldConfig } from '@/types';
 import { updateContentField, updateContentAsset, toggleAssetApproval } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
+import { DocumentGenerator } from '@/lib/document-generator';
 
 // Simple URL helper - no cache busting needed (handled server-side)
 const getImageUrl = (url: string | null): string => {
@@ -180,6 +181,80 @@ export default function ContentClientPage({
     setIsEditModalOpen(true);
   };
 
+  // Copy handler
+  const handleCopy = async (fieldConfig: FieldConfig) => {
+    try {
+      const text = fieldConfig.value || '';
+      
+      // For HTML content, copy both HTML and plain text
+      if (fieldConfig.inputType === 'html') {
+        // Create a temporary div to convert HTML to plain text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = text;
+        const plainText = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Try to copy with both formats
+        if (navigator.clipboard && navigator.clipboard.write) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': new Blob([text], { type: 'text/html' }),
+              'text/plain': new Blob([plainText], { type: 'text/plain' })
+            })
+          ]);
+        } else {
+          // Fallback to plain text
+          await navigator.clipboard.writeText(plainText);
+        }
+      } else {
+        // For plain text content
+        await navigator.clipboard.writeText(text);
+      }
+      
+      toast.success('Text copied to clipboard!');
+    } catch (error) {
+      console.error('Copy failed:', error);
+      // Fallback for older browsers
+      try {
+        fallbackCopyTextToClipboard(fieldConfig.value || '');
+      } catch {
+        toast.error('Failed to copy text');
+      }
+    }
+  };
+
+  // Download handler
+  const handleDownload = async (fieldConfig: FieldConfig) => {
+    try {
+      await DocumentGenerator.downloadAsDocx(fieldConfig, content.content_title || undefined);
+      toast.success('Document downloaded successfully!');
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('Failed to download document');
+    }
+  };
+
+  // Fallback copy function for older browsers
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      toast.success('Text copied to clipboard!');
+    } catch (error) {
+      console.error('Fallback copy failed:', error);
+      toast.error('Failed to copy text');
+    }
+    
+    document.body.removeChild(textArea);
+  };
+
   const handleSaveEdit = async (value: string) => {
     if (!currentEditField) return;
 
@@ -337,7 +412,7 @@ export default function ContentClientPage({
         
         <div className="relative group mb-6">
           <h1 className="text-4xl font-bold text-gray-900">{content.content_title || 'Untitled Content'}</h1>
-          <EditButton
+          <TextActionButtons
             fieldConfig={{
               label: 'Content Title',
               value: content.content_title || '',
@@ -345,7 +420,10 @@ export default function ContentClientPage({
               inputType: 'text',
               placeholder: 'Enter content title...',
             }}
+            contentTitle={content.content_title || undefined}
             onEdit={handleEdit}
+            onCopy={handleCopy}
+            onDownload={handleDownload}
             disabled={isContentGenerating}
           />
         </div>
@@ -412,7 +490,7 @@ export default function ContentClientPage({
               <div className="whitespace-pre-wrap text-gray-900 text-sm max-h-32 overflow-y-auto">
                 {content.research}
               </div>
-                             <EditButton
+                             <TextActionButtons
                  fieldConfig={{
                    label: 'Research Notes',
                    value: content.research ?? '',
@@ -420,7 +498,10 @@ export default function ContentClientPage({
                    inputType: 'textarea',
                    placeholder: 'Enter research notes...',
                  }}
+                 contentTitle={content.content_title || undefined}
                  onEdit={handleEdit}
+                 onCopy={handleCopy}
+                 onDownload={handleDownload}
                  disabled={isContentGenerating}
                />
             </div>
@@ -541,7 +622,7 @@ export default function ContentClientPage({
                     ) : (
                       <p className="text-gray-500">No video script has been generated yet.</p>
                     )}
-                    <EditButton
+                    <TextActionButtons
                       fieldConfig={{
                         label: 'Video Script',
                         value: content.video_script || '',
@@ -550,8 +631,11 @@ export default function ContentClientPage({
                         placeholder: 'Enter video script...',
                       }}
                       onEdit={handleEdit}
-                      disabled={isContentGenerating}
-                    />
+                      
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                   </div>
                 </div>
               )}
@@ -612,7 +696,7 @@ export default function ContentClientPage({
                             <h1 className="text-3xl font-bold text-gray-900">
                               {blogAsset.headline}
                             </h1>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Blog Title',
                                 value: blogAsset.headline || '',
@@ -622,8 +706,11 @@ export default function ContentClientPage({
                                 assetType: 'blog_post',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
                         
@@ -634,7 +721,7 @@ export default function ContentClientPage({
                               className="content-display text-gray-700"
                               dangerouslySetInnerHTML={{ __html: blogAsset.content }}
                             />
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Blog Content',
                                 value: blogAsset.content || '',
@@ -644,8 +731,11 @@ export default function ContentClientPage({
                                 assetType: 'blog_post',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
                         
@@ -654,7 +744,7 @@ export default function ContentClientPage({
                           <div className="mb-6 p-4 bg-gray-50 rounded-lg relative group">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Meta Description</h3>
                             <p className="text-gray-700">{blogAsset.blog_meta_description}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Meta Description',
                                 value: blogAsset.blog_meta_description || '',
@@ -664,8 +754,11 @@ export default function ContentClientPage({
                                 assetType: 'blog_post',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
                         
@@ -674,7 +767,7 @@ export default function ContentClientPage({
                           <div className="p-4 bg-gray-50 rounded-lg relative group">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">URL</h3>
                             <p className="text-blue-600 font-mono">{blogAsset.blog_url}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Blog URL',
                                 value: blogAsset.blog_url || '',
@@ -684,8 +777,11 @@ export default function ContentClientPage({
                                 assetType: 'blog_post',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
                       </div>
@@ -730,7 +826,7 @@ export default function ContentClientPage({
                         {socialAsset.content && (
                           <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap" style={{ fontSize: '15px', lineHeight: '24px' }}>{socialAsset.content}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Social Long Video Content',
                                 value: socialAsset.content || '',
@@ -740,8 +836,11 @@ export default function ContentClientPage({
                                 assetType: 'social_long_video',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
 
@@ -845,7 +944,7 @@ export default function ContentClientPage({
                         {socialAsset.content && (
                           <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap" style={{ fontSize: '15px', lineHeight: '24px' }}>{socialAsset.content}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Social Short Video Content',
                                 value: socialAsset.content || '',
@@ -855,8 +954,11 @@ export default function ContentClientPage({
                                 assetType: 'social_short_video',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
 
@@ -960,7 +1062,7 @@ export default function ContentClientPage({
                         {socialAsset.content && (
                           <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Social Rant Post Content',
                                 value: socialAsset.content || '',
@@ -970,8 +1072,11 @@ export default function ContentClientPage({
                                 assetType: 'social_rant_post',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
 
@@ -1060,7 +1165,7 @@ export default function ContentClientPage({
                         {socialAsset.content && (
                           <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Social Blog Post Content',
                                 value: socialAsset.content || '',
@@ -1070,8 +1175,11 @@ export default function ContentClientPage({
                                 assetType: 'social_blog_post',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
 
@@ -1160,7 +1268,7 @@ export default function ContentClientPage({
                         {socialAsset.content && (
                           <div className="px-4 pb-3 relative group">
                             <p className="text-gray-900 whitespace-pre-wrap consistent-text">{socialAsset.content}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'Social Quote Card Content',
                                 value: socialAsset.content || '',
@@ -1170,8 +1278,11 @@ export default function ContentClientPage({
                                 assetType: 'social_quote_card',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         )}
 
@@ -1273,7 +1384,7 @@ export default function ContentClientPage({
                           <div className="relative group mb-4">
                             <h3 className="text-lg font-semibold mb-2">Title</h3>
                             <p className="text-gray-900 consistent-text">{youtubeAsset.headline}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'YouTube Title',
                                 value: youtubeAsset.headline || '',
@@ -1283,14 +1394,17 @@ export default function ContentClientPage({
                                 assetType: 'youtube_video',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
 
                           <div className="relative group">
                             <h3 className="text-lg font-semibold mb-2">Description</h3>
                             <p className="text-gray-900 whitespace-pre-wrap consistent-text">{youtubeAsset.content}</p>
-                            <EditButton
+                            <TextActionButtons
                               fieldConfig={{
                                 label: 'YouTube Description',
                                 value: youtubeAsset.content || '',
@@ -1300,8 +1414,11 @@ export default function ContentClientPage({
                                 assetType: 'youtube_video',
                               }}
                               onEdit={handleEdit}
-                              disabled={isContentGenerating}
-                            />
+                              
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                           </div>
                         </div>
                       </div>
@@ -1354,7 +1471,7 @@ export default function ContentClientPage({
                                 <span className="text-sm font-semibold text-gray-900">
                                   {emailAsset.headline || 'Email Subject'}
                                 </span>
-                                <EditButton
+                                <TextActionButtons
                                   fieldConfig={{
                                     label: 'Email Subject',
                                     value: emailAsset.headline || '',
@@ -1364,8 +1481,11 @@ export default function ContentClientPage({
                                     assetType: 'email',
                                   }}
                                   onEdit={handleEdit}
-                                  disabled={isContentGenerating}
-                                />
+                                  
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                               </div>
                             </div>
                           </div>
@@ -1379,7 +1499,7 @@ export default function ContentClientPage({
                               dangerouslySetInnerHTML={{ __html: emailAsset.content }}
                             />
                           )}
-                          <EditButton
+                          <TextActionButtons
                             fieldConfig={{
                               label: 'Email Content',
                               value: emailAsset.content || '',
@@ -1389,8 +1509,11 @@ export default function ContentClientPage({
                               assetType: 'email',
                             }}
                             onEdit={handleEdit}
-                            disabled={isContentGenerating}
-                          />
+                            
+                      contentTitle={content.content_title || undefined}
+                      onCopy={handleCopy}
+                      onDownload={handleDownload}
+                      disabled={isContentGenerating}/>
                         </div>
 
                         {/* Email Footer */}
