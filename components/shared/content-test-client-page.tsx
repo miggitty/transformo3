@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+// Removed unused import
 
 import { VideoSectionV2 } from '@/components/shared/video-section-v2';
 import ContentAssetsManager from '@/components/shared/content-assets-manager';
@@ -21,7 +21,6 @@ export default function ContentClientPage({
   const [contentAssets, setContentAssets] = useState<ContentAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [permissionError, setPermissionError] = useState(false);
   const [isContentGenerating, setIsContentGenerating] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [approvedSteps, setApprovedSteps] = useState<Set<string>>(new Set());
@@ -133,7 +132,6 @@ export default function ContentClientPage({
           .single();
 
         if (profile && profile.business_id !== content.business_id) {
-          setPermissionError(true);
           setIsLoading(false);
           return;
         }

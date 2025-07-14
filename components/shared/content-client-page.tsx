@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, ArrowLeft, Mic, Video } from 'lucide-react';
+import { ArrowLeft, Mic, Video } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { VideoSectionV2 } from '@/components/shared/video-section-v2';
 import { EnhancedContentAssetsManager } from '@/components/shared/enhanced-content-assets-manager';
