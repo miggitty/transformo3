@@ -1408,9 +1408,11 @@ export default function ContentClientPage({
                                 />
                                 {/* YouTube Play Button */}
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                  <div className="w-20 h-14 bg-red-600 bg-opacity-90 hover:bg-opacity-100 transition-all duration-200 flex items-center justify-center cursor-pointer" style={{clipPath: 'polygon(0 0, 100% 50%, 0 100%)'}}>
-                                    <div className="w-0 h-0 border-l-8 border-l-white border-t-6 border-b-6 border-t-transparent border-b-transparent ml-1"></div>
-                                  </div>
+                                  <img 
+                                    src="/YouTube_play_button_icon.png"
+                                    alt="YouTube play button"
+                                    className="w-20 h-14 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                                  />
                                 </div>
                               </div>
                             </ImageWithRegeneration>
