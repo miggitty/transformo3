@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 
-import { HeygenVideoSection } from '@/components/shared/heygen-video-section';
-import VideoUploadSection from '@/components/shared/video-upload-section';
+import { VideoSectionV2 } from '@/components/shared/video-section-v2';
 import ContentAssetsManager from '@/components/shared/content-assets-manager';
 import { ContentWithBusiness, ContentAsset } from '@/types';
 import { createClient } from '@/utils/supabase/client';
@@ -70,12 +69,23 @@ export default function ContentClientPage({
     }));
   };
 
-  const handleContentUpdate = (updatedFields: Partial<ContentWithBusiness>) => {
-    setContent(prev => ({
-      ...prev,
-      ...updatedFields,
-    }));
+  const handleNavigateToScript = (scriptType: 'main' | 'short') => {
+    const targetTab = scriptType === 'main' ? 'video-script' : 'short-video-script';
+    setActiveStep(targetTab);
+    
+    // Smooth scroll to script section after navigation
+    setTimeout(() => {
+      const scriptElement = document.getElementById(`${targetTab}-content`);
+      if (scriptElement) {
+        scriptElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 100);
   };
+
+  // Note: handleContentUpdate was removed as it's no longer needed with VideoSectionV2
 
   const goToStep = (stepId: string) => {
     if (isTransitioning) return;
@@ -287,17 +297,11 @@ export default function ContentClientPage({
               {activeStep === 'create-video' && (
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Create Video</h2>
-                  <HeygenVideoSection 
+                  <VideoSectionV2 
                     content={content} 
-                    onContentUpdate={handleContentUpdate}
+                    onVideoUpdate={handleVideoUpdate}
+                    onNavigateToScript={handleNavigateToScript}
                   />
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold mb-4">Upload Videos</h3>
-                    <VideoUploadSection
-                      content={content}
-                      onVideoUpdate={handleVideoUpdate}
-                    />
-                  </div>
                 </div>
               )}
 
