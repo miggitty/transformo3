@@ -10,7 +10,7 @@ import { EnhancedContentTable } from '@/components/shared/enhanced-content-table
 import { AccessGate } from '@/components/shared/access-gate';
 import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
 import { deleteContent, retryContentProcessing } from '../[id]/actions';
-import { Tables } from '@/types/supabase';
+import { determineContentStatus } from '@/lib/content-status';
 import { Suspense } from 'react';
 
 // Force dynamic rendering
@@ -50,24 +50,11 @@ export default async function PartiallyPublishedPage() {
     return <div>Error loading content.</div>;
   }
 
-  // Filter for partially published content using simplified status logic
+  // Filter for partially published content using centralized status logic
   const partiallyPublishedContent = content?.filter(item => {
     const assets = item.content_assets || [];
-    
-    // Skip processing/failed content
-    if (item.status === 'processing' || item.status === 'failed') {
-      return false;
-    }
-    
-    // For draft content, check if it has partially published assets
-    if (item.status === 'draft') {
-      const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
-      
-      // Partially Published: Some assets sent, some pending/failed
-      return sentAssets.length > 0 && sentAssets.length < assets.length;
-    }
-    
-    return false;
+    const status = determineContentStatus(item, assets);
+    return status === 'partially-published';
   }) || [];
   
   return (
@@ -97,7 +84,7 @@ export default async function PartiallyPublishedPage() {
         </CardHeader>
         <CardContent>
           <EnhancedContentTable
-            serverContent={partiallyPublishedContent.map(item => ({ ...item, content_assets: undefined }))}
+            serverContent={partiallyPublishedContent}
             businessId={businessId || ''}
             variant="partially-published"
             showPagination={true}

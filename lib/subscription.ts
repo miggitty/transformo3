@@ -18,6 +18,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
     return {
       hasAccess: false,
       status: 'no_subscription',
+      showBanner: false,
       message: 'Start your 7-day free trial to access all features',
     };
   }
@@ -45,7 +46,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
           hasAccess: true,
           status: 'trialing',
           daysLeft: Math.max(0, daysLeft),
-          showBanner: daysLeft <= 3, // Show banner in last 3 days of trial
+          showBanner: daysLeft > 0 && daysLeft <= 3, // Show banner only in last 3 days of active trial
           bannerType: 'trial',
           message: daysLeft > 0 
             ? `${Math.max(0, daysLeft)} days left in your free trial`
@@ -64,6 +65,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
       return {
         hasAccess: true,
         status: 'active',
+        showBanner: false,
       };
 
     case 'past_due':
@@ -84,6 +86,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
       return {
         hasAccess: false,
         status: 'access_denied',
+        showBanner: false,
         message: 'Access suspended due to payment failure. Please update your payment method.',
       };
 
@@ -104,6 +107,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
       return {
         hasAccess: false,
         status: 'access_denied',
+        showBanner: false,
         message: 'Subscription expired. Please subscribe to continue using the platform.',
       };
 
@@ -112,6 +116,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
       return {
         hasAccess: false,
         status: 'access_denied',
+        showBanner: false,
         message: 'Payment incomplete. Please complete your subscription setup.',
       };
 
@@ -119,6 +124,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
       return {
         hasAccess: false,
         status: 'access_denied',
+        showBanner: false,
         message: 'Subscription unpaid. Please update your payment method.',
       };
 
@@ -126,6 +132,7 @@ export function checkSubscriptionAccess(subscription: Tables<'subscriptions'> | 
       return {
         hasAccess: false,
         status: 'access_denied',
+        showBanner: false,
         message: 'Subscription status unknown. Please contact support.',
       };
   }

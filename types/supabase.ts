@@ -234,6 +234,7 @@ export type Database = {
           video_long_url: string | null
           video_script: string | null
           video_short_url: string | null
+          short_video_script: string | null
         }
         Insert: {
           audio_url?: string | null
@@ -256,6 +257,7 @@ export type Database = {
           video_long_url?: string | null
           video_script?: string | null
           video_short_url?: string | null
+          short_video_script?: string | null
         }
         Update: {
           audio_url?: string | null
@@ -278,6 +280,7 @@ export type Database = {
           video_long_url?: string | null
           video_script?: string | null
           video_short_url?: string | null
+          short_video_script?: string | null
         }
         Relationships: [
           {

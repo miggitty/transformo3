@@ -9,7 +9,7 @@ import { createClient } from '@/utils/supabase/server';
 import { EnhancedContentTable } from '@/components/shared/enhanced-content-table';
 import { AccessGate } from '@/components/shared/access-gate';
 import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
-import { Tables } from '@/types/supabase';
+import { determineContentStatus } from '@/lib/content-status';
 import { Suspense } from 'react';
 
 // Force dynamic rendering
@@ -49,24 +49,11 @@ export default async function CompletedPage() {
     return <div>Error loading content.</div>;
   }
 
-  // Filter for completed content using simplified status logic
+  // Filter for completed content using centralized status logic
   const completedContent = content?.filter(item => {
     const assets = item.content_assets || [];
-    
-    // Skip processing/failed content
-    if (item.status === 'processing' || item.status === 'failed') {
-      return false;
-    }
-    
-    // For draft content, check if all assets have been sent
-    if (item.status === 'draft') {
-      const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
-      
-      // Completed: All assets have been sent successfully
-      return assets.length > 0 && sentAssets.length === assets.length;
-    }
-    
-    return false;
+    const status = determineContentStatus(item, assets);
+    return status === 'completed';
   }) || [];
   
   return (
@@ -96,7 +83,7 @@ export default async function CompletedPage() {
         </CardHeader>
         <CardContent>
           <EnhancedContentTable
-            serverContent={completedContent.map(item => ({ ...item, content_assets: undefined }))}
+            serverContent={completedContent}
             businessId={businessId || ''}
             variant="completed"
             showPagination={true}

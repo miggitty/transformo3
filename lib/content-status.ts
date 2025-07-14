@@ -33,7 +33,7 @@ export function determineContentStatus(
     case 'draft':
       // Asset-based sub-status determination for draft content
       const scheduledAssets = assets.filter(asset => asset.asset_scheduled_at);
-      const sentAssets = assets.filter(asset => asset.asset_status === 'Sent');
+      const sentAssets = assets.filter(asset => asset.asset_status === 'Published' || asset.asset_status === 'Sent');
       
       // All assets sent successfully
       if (sentAssets.length === assets.length && assets.length > 0) {

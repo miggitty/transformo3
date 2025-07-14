@@ -335,15 +335,15 @@ export function EnhancedContentTable({
       />
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border w-full">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden md:table-cell">Created At</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[40%] min-w-0">Title</TableHead>
+              <TableHead className="w-[15%] hidden sm:table-cell">Type</TableHead>
+              <TableHead className="w-[20%]">Status</TableHead>
+              <TableHead className="w-[15%] hidden md:table-cell">Created At</TableHead>
+              <TableHead className="w-[10%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -358,46 +358,46 @@ export function EnhancedContentTable({
                       : ''
                   }`}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium w-[40%] min-w-0">
                     <div className="space-y-1">
-                      <div>
+                      <div className="truncate pr-2">
                         {item.status === 'processing'
                           ? (item.project_type === 'video_upload' ? 'Processing Video...' : 'Processing Audio...')
                           : item.content_title || 'Untitled'}
                       </div>
                       {item.status === 'failed' && (
-                        <div className="flex items-center gap-2 text-xs text-red-600">
-                          <AlertTriangle className="h-3 w-3" />
-                          Content generation failed
+                        <div className="flex items-center gap-1 text-xs text-red-600">
+                          <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Failed</span>
                         </div>
                       )}
                       {item.isStuck && (
-                        <div className="flex items-center gap-2 text-xs text-orange-600">
-                          <AlertTriangle className="h-3 w-3" />
-                          Processing for {Math.round((new Date().getTime() - new Date(item.created_at || Date.now()).getTime()) / (1000 * 60))} minutes - may be stuck
+                        <div className="flex items-center gap-1 text-xs text-orange-600">
+                          <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Stuck</span>
                         </div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="w-[15%] hidden sm:table-cell">
                     {getProjectTypeDisplay(item.project_type as ProjectType)}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(item.status)}>
+                  <TableCell className="w-[20%]">
+                    <Badge variant={getStatusBadgeVariant(item.status)} className="text-xs whitespace-nowrap">
                       {formatStatus(item.status, !!item.isStuck)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
+                  <TableCell className="w-[15%] hidden md:table-cell text-xs">
                     {new Date(item.created_at || Date.now()).toLocaleDateString(
                       'en-AU',
                       {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
+                        day: '2-digit',
+                        month: 'short',
+                        year: '2-digit',
                       }
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="w-[10%] text-right">
                     <div className="flex items-center justify-end space-x-1">
                       {getActionButtons(item)}
                     </div>
