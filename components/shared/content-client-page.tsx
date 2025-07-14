@@ -703,7 +703,7 @@ export default function ContentClientPage({
                         {/* Blog Post Title */}
                         {blogAsset.headline && (
                           <div className="relative group mb-6">
-                            <h1 className="text-3xl font-bold text-gray-900">
+                            <h1 className="text-4xl font-extrabold text-gray-900 my-6 leading-tight">
                               {blogAsset.headline}
                             </h1>
                             <TextActionButtons
@@ -1408,11 +1408,9 @@ export default function ContentClientPage({
                                 />
                                 {/* YouTube Play Button */}
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                  <img 
-                                    src="/YouTube_play_button_icon.png"
-                                    alt="YouTube play button"
-                                    className="w-20 h-14 cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                                  />
+                                  <div className="w-20 h-14 bg-red-600 bg-opacity-90 hover:bg-opacity-100 transition-all duration-200 flex items-center justify-center cursor-pointer" style={{clipPath: 'polygon(0 0, 100% 50%, 0 100%)'}}>
+                                    <div className="w-0 h-0 border-l-8 border-l-white border-t-6 border-b-6 border-t-transparent border-b-transparent ml-1"></div>
+                                  </div>
                                 </div>
                               </div>
                             </ImageWithRegeneration>
