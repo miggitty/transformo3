@@ -593,6 +593,9 @@ export default function ContentClientPage({
                               contentAsset={blogAsset}
                               className="block w-full"
                               onImageUpdated={handleImageUpdated}
+                              enableDownload={true}
+                              enableUpload={true}
+                              enableRegeneration={true}
                             >
                               <img 
                                 src={getImageUrl(blogAsset.image_url)} 
@@ -979,6 +982,9 @@ export default function ContentClientPage({
                               contentAsset={socialAsset}
                               className="block w-full"
                               onImageUpdated={handleImageUpdated}
+                              enableDownload={true}
+                              enableUpload={true}
+                              enableRegeneration={true}
                             >
                               <img 
                                 src={getImageUrl(socialAsset.image_url)} 
@@ -1076,6 +1082,9 @@ export default function ContentClientPage({
                               contentAsset={socialAsset}
                               className="block w-full"
                               onImageUpdated={handleImageUpdated}
+                              enableDownload={true}
+                              enableUpload={true}
+                              enableRegeneration={true}
                             >
                               <img 
                                 src={getImageUrl(socialAsset.image_url)} 
@@ -1173,6 +1182,9 @@ export default function ContentClientPage({
                               contentAsset={socialAsset}
                               className="block w-full"
                               onImageUpdated={handleImageUpdated}
+                              enableDownload={true}
+                              enableUpload={true}
+                              enableRegeneration={true}
                             >
                               <img 
                                 src={getImageUrl(socialAsset.image_url)} 
@@ -1231,6 +1243,9 @@ export default function ContentClientPage({
                               contentAsset={youtubeAsset}
                               className="w-full h-full"
                               onImageUpdated={handleImageUpdated}
+                              enableDownload={true}
+                              enableUpload={true}
+                              enableRegeneration={true}
                             >
                               <div className="relative">
                                 <img 
