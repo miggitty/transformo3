@@ -536,6 +536,21 @@ The `VideoPlayer` component was showing placeholder "Click to load and play vide
 #### **Result**: 
 The Create Video page now shows actual video thumbnails (first frames) immediately when loaded, matching the behavior of the social video sections.
 
+### **Video Upload Modal Filename Overflow Fix**
+
+#### **Issue**: Long Filenames Breaking Modal Layout
+Long video filenames were extending outside the modal boundaries, creating a poor user experience.
+
+#### **Solution**: Intelligent Filename Truncation
+- **Increased modal width** from `max-w-md` to `max-w-lg` for better space utilization
+- **Added intelligent filename truncation** that preserves the file extension
+- **Smart truncation logic** shows beginning of filename + "..." + extension (e.g., "Long_Video_Name...mp4")
+- **Tooltip on hover** shows full filename when truncated
+- **Improved layout constraints** with proper flexbox constraints
+
+#### **Result**: 
+Filenames now stay within modal boundaries with intelligent truncation that preserves the most important information (name start + extension).
+
 ### **Complete Cache Busting Solution**
 
 #### **1. Client-Side Video URL Cache Busting**
