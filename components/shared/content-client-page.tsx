@@ -504,7 +504,7 @@ export default function ContentClientPage({
           <div className="mt-4">
             <span className="text-sm text-gray-600 block mb-1">Research Notes</span>
             <div className="bg-gray-50 rounded-lg p-4 relative group">
-              <div className="whitespace-pre-wrap text-gray-900 text-sm max-h-32 overflow-y-auto">
+              <div className="whitespace-pre-wrap text-gray-900 text-sm">
                 {content.research}
               </div>
                              <TextActionButtons
