@@ -54,7 +54,7 @@ export default function ContentClientPage({
   const supabase = createClient();
 
   const steps = [
-    { id: 'video-script', title: 'Video Script' },
+    { id: 'video-script', title: 'Video Scripts' },
     { id: 'create-video', title: 'Create Video' },
     { id: 'blog', title: 'Blog' },
     { id: 'email', title: 'Email' },
@@ -630,29 +630,131 @@ export default function ContentClientPage({
               {/* Video Script Section */}
               {activeStep === 'video-script' && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-6">Video Script</h2>
-                  <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative group">
-                    {content.video_script ? (
-                      <div className="text-gray-900 whitespace-pre-wrap">
-                        {content.video_script}
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Video Scripts</h2>
+                    <p className="text-gray-600">Review and edit your video scripts for different formats</p>
+                  </div>
+                  
+                  {/* Scripts Grid Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Long Video Script */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Video className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Long Video Script</h3>
+                          <p className="text-sm text-gray-500">For detailed content and tutorials</p>
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-gray-500">No video script has been generated yet.</p>
-                    )}
-                    <TextActionButtons
-                      fieldConfig={{
-                        label: 'Video Script',
-                        value: content.video_script || '',
-                        fieldKey: 'video_script',
-                        inputType: 'textarea',
-                        placeholder: 'Enter video script...',
-                      }}
-                      onEdit={handleEdit}
                       
-                      contentTitle={content.content_title || undefined}
-                      onCopy={handleCopy}
-                      onDownload={handleDownload}
-                      disabled={isContentGenerating}/>
+                      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative group min-h-[300px]">
+                        {content.video_script ? (
+                          <div className="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed">
+                            {content.video_script}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                              <Video className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                              <p className="text-gray-500 text-sm">No long video script generated yet</p>
+                            </div>
+                          </div>
+                        )}
+                        <TextActionButtons
+                          fieldConfig={{
+                            label: 'Long Video Script',
+                            value: content.video_script || '',
+                            fieldKey: 'video_script',
+                            inputType: 'textarea',
+                            placeholder: 'Enter long video script...',
+                          }}
+                          onEdit={handleEdit}
+                          contentTitle={content.content_title || undefined}
+                          onCopy={handleCopy}
+                          onDownload={handleDownload}
+                          disabled={isContentGenerating}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Short Video Script */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <Video className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Short Video Script</h3>
+                          <p className="text-sm text-gray-500">For social media and quick highlights</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative group min-h-[300px]">
+                        {content.short_video_script ? (
+                          <div className="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed">
+                            {content.short_video_script}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                              <Video className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                              <p className="text-gray-500 text-sm">No short video script generated yet</p>
+                            </div>
+                          </div>
+                        )}
+                        <TextActionButtons
+                          fieldConfig={{
+                            label: 'Short Video Script',
+                            value: content.short_video_script || '',
+                            fieldKey: 'short_video_script',
+                            inputType: 'textarea',
+                            placeholder: 'Enter short video script...',
+                          }}
+                          onEdit={handleEdit}
+                          contentTitle={content.content_title || undefined}
+                          onCopy={handleCopy}
+                          onDownload={handleDownload}
+                          disabled={isContentGenerating}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Script Statistics */}
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Long Script Length</span>
+                        <span className="text-sm text-gray-600">
+                          {content.video_script ? `${content.video_script.trim().split(/\s+/).length} words` : '0 words'}
+                        </span>
+                      </div>
+                      {content.video_script && (
+                        <div className="mt-1">
+                          <span className="text-xs text-gray-500">
+                            ~{Math.ceil(content.video_script.trim().split(/\s+/).length / 150)} min read
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Short Script Length</span>
+                        <span className="text-sm text-gray-600">
+                          {content.short_video_script ? `${content.short_video_script.trim().split(/\s+/).length} words` : '0 words'}
+                        </span>
+                      </div>
+                      {content.short_video_script && (
+                        <div className="mt-1">
+                          <span className="text-xs text-gray-500">
+                            ~{Math.ceil(content.short_video_script.trim().split(/\s+/).length / 150)} min read
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
