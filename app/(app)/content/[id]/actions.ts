@@ -81,9 +81,16 @@ export async function updateVideoUrl({
     return { success: false, error: 'Invalid video field name.' };
   }
 
+  // Add cache busting to video URL for immediate UI updates (similar to image handling)
+  let cacheBustedVideoUrl = videoUrl;
+  if (videoUrl) {
+    const separator = videoUrl.includes('?') ? '&' : '?';
+    cacheBustedVideoUrl = `${videoUrl}${separator}v=${Date.now()}`;
+  }
+
   const { error } = await supabase
     .from('content')
-    .update({ [parsedFieldName.data]: videoUrl })
+    .update({ [parsedFieldName.data]: cacheBustedVideoUrl })
     .eq('id', contentId);
 
   if (error) {

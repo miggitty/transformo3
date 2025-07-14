@@ -10,6 +10,7 @@ import { EnhancedContentAssetsManager } from '@/components/shared/enhanced-conte
 import { ContentWithBusiness, ContentAsset, PROJECT_TYPES, ProjectType } from '@/types';
 import { createClient } from '@/utils/supabase/client';
 import ImageWithRegeneration from '@/components/shared/image-with-regeneration';
+import VideoWithUploadDownload from '@/components/shared/video-with-upload-download';
 import TextActionButtons from '@/components/shared/text-action-buttons';
 import ContentEditModal from '@/components/shared/content-edit-modal';
 import { FieldConfig } from '@/types';
@@ -20,6 +21,15 @@ import { DocumentGenerator } from '@/lib/document-generator';
 // Simple URL helper - no cache busting needed (handled server-side)
 const getImageUrl = (url: string | null): string => {
   return url || '';
+};
+
+// Video URL helper with cache busting for immediate UI updates
+const getVideoUrl = (url: string | null): string => {
+  if (!url) return '';
+  
+  // Add cache busting parameter to force browser to reload video
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${Date.now()}`;
 };
 
 interface ContentClientPageProps {
@@ -848,18 +858,34 @@ export default function ContentClientPage({
                         {(content.video_long_url || socialAsset.image_url) && (
                           <div className="relative">
                             {content.video_long_url ? (
-                              <video 
-                                src={content.video_long_url ?? undefined}
-                                className="w-full object-cover"
-                                controls
-                                poster={getImageUrl(socialAsset.image_url)}
-                              />
+                              <VideoWithUploadDownload
+                                content={content}
+                                videoType="long"
+                                onVideoUpdated={handleVideoUpdate}
+                              >
+                                <video 
+                                  key={content.video_long_url} 
+                                  src={getVideoUrl(content.video_long_url)}
+                                  className="w-full object-cover"
+                                  controls
+                                  poster={getImageUrl(socialAsset.image_url)}
+                                />
+                              </VideoWithUploadDownload>
                             ) : (
-                              <img 
-                                src={getImageUrl(socialAsset.image_url)} 
-                                alt="Social post content"
-                                className="w-full object-cover"
-                              />
+                              <ImageWithRegeneration 
+                                contentAsset={socialAsset}
+                                className="block w-full"
+                                onImageUpdated={handleImageUpdated}
+                                enableDownload={true}
+                                enableUpload={true}
+                                enableRegeneration={true}
+                              >
+                                <img 
+                                  src={getImageUrl(socialAsset.image_url)} 
+                                  alt="Social post content"
+                                  className="w-full object-cover"
+                                />
+                              </ImageWithRegeneration>
                             )}
                             {/* Play button overlay for video thumbnails */}
                             {!content.video_long_url && socialAsset.image_url && (
@@ -966,18 +992,34 @@ export default function ContentClientPage({
                         {(content.video_short_url || socialAsset.image_url) && (
                           <div className="relative">
                             {content.video_short_url ? (
-                              <video 
-                                src={content.video_short_url ?? undefined}
-                                className="w-full object-cover"
-                                controls
-                                poster={getImageUrl(socialAsset.image_url)}
-                              />
+                              <VideoWithUploadDownload
+                                content={content}
+                                videoType="short"
+                                onVideoUpdated={handleVideoUpdate}
+                              >
+                                <video 
+                                  key={content.video_short_url} 
+                                  src={getVideoUrl(content.video_short_url)}
+                                  className="w-full object-cover"
+                                  controls
+                                  poster={getImageUrl(socialAsset.image_url)}
+                                />
+                              </VideoWithUploadDownload>
                             ) : (
-                              <img 
-                                src={getImageUrl(socialAsset.image_url)} 
-                                alt="Social post content"
-                                className="w-full object-cover"
-                              />
+                              <ImageWithRegeneration 
+                                contentAsset={socialAsset}
+                                className="block w-full"
+                                onImageUpdated={handleImageUpdated}
+                                enableDownload={true}
+                                enableUpload={true}
+                                enableRegeneration={true}
+                              >
+                                <img 
+                                  src={getImageUrl(socialAsset.image_url)} 
+                                  alt="Social post content"
+                                  className="w-full object-cover"
+                                />
+                              </ImageWithRegeneration>
                             )}
                             {/* Play button overlay for video thumbnails */}
                             {!content.video_short_url && socialAsset.image_url && (

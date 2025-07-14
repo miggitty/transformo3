@@ -16,7 +16,7 @@ interface TextActionButtonsProps {
 
 export default function TextActionButtons({
   fieldConfig,
-  contentTitle: _,
+  contentTitle: _contentTitle, // eslint-disable-line @typescript-eslint/no-unused-vars
   onEdit,
   onCopy,
   onDownload,

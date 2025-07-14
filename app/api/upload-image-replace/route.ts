@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const fileBuffer = await file.arrayBuffer();
 
     // Step 3: Upload to Supabase storage (using service role to bypass RLS)
-    const { data, error: uploadError } = await getSupabaseAdmin().storage
+    const { error: uploadError } = await getSupabaseAdmin().storage
       .from('images')
       .upload(filename, fileBuffer, {
         contentType: file.type || 'image/jpeg',
