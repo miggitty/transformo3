@@ -39,10 +39,26 @@ export function VideoUploadCard({
   return (
     <Card className="p-4 sm:p-6">
       <CardHeader className="p-0 mb-4">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Video className="h-5 w-5" />
-          {title}
-        </CardTitle>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+            videoType === 'long' ? 'bg-blue-100' : 'bg-purple-100'
+          }`}>
+            <Video className={`w-4 h-4 ${
+              videoType === 'long' ? 'text-blue-600' : 'text-purple-600'
+            }`} />
+          </div>
+          <div>
+            <CardTitle className="text-lg font-semibold text-gray-900 mb-1">
+              {title}
+            </CardTitle>
+            <p className="text-sm text-gray-500">
+              {videoType === 'long' 
+                ? 'For YouTube, LinkedIn, and other long-form content'
+                : 'For YouTube Shorts, TikTok, and other short-form content'
+              }
+            </p>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-0 space-y-4">
         {/* Video display area */}

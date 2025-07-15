@@ -738,7 +738,7 @@ export default function ContentClientPage({
                             </div>
                             <div>
                               <h3 className="text-lg font-semibold text-gray-900">Long Video Script</h3>
-                              <p className="text-sm text-gray-500">For detailed content and tutorials</p>
+                              <p className="text-sm text-gray-500">For YouTube, LinkedIn, and other long-form content</p>
                             </div>
                           </div>
                           
@@ -780,7 +780,7 @@ export default function ContentClientPage({
                             </div>
                             <div>
                               <h3 className="text-lg font-semibold text-gray-900">Short Video Script</h3>
-                              <p className="text-sm text-gray-500">For social media and quick highlights</p>
+                              <p className="text-sm text-gray-500">For Shorts, TikTok, and other short-form content</p>
                             </div>
                           </div>
                           
@@ -855,7 +855,10 @@ export default function ContentClientPage({
                   {/* Create Video Section */}
                   {activeStep === 'create-video' && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-6">Video</h2>
+                      <div className="mb-8">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Video</h2>
+                        <p className="text-gray-600">Create and manage your video content for different platforms</p>
+                      </div>
                       <VideoSectionV2 
                         content={content} 
                         onVideoUpdate={handleVideoUpdate}
