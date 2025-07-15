@@ -25,7 +25,7 @@ import { CardContent, CardFooter } from '@/components/ui/card';
 import { Tables } from '@/types/supabase';
 import { updateBusinessSettings } from '@/app/(app)/settings/business/actions';
 import { toast } from 'sonner';
-import { timezones } from '@/lib/timezones';
+import { timezoneGroups } from '@/lib/timezones';
 
 const formSchema = z.object({
   business_name: z.string().min(2, 'Business name must be at least 2 characters.'),
@@ -183,16 +183,23 @@ export function CompanyDetailsForm({ business }: CompanyDetailsFormProps) {
                         <SelectValue placeholder="Select a timezone" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      {timezones.map((tz: { value: string; label: string }) => (
-                        <SelectItem key={tz.value} value={tz.value}>
-                          {tz.label}
-                        </SelectItem>
+                    <SelectContent className="max-h-[300px]">
+                      {timezoneGroups.map((group) => (
+                        <div key={group.label}>
+                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                            {group.label}
+                          </div>
+                          {group.options.map((tz) => (
+                            <SelectItem key={tz.value} value={tz.value} className="pl-6">
+                              {tz.label}
+                            </SelectItem>
+                          ))}
+                        </div>
                       ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Enter the timezone you will be scheduling your content in
+                    Select the timezone you will be scheduling your content in
                   </FormDescription>
                   <div className="min-h-[1.25rem]">
                     <FormMessage />
