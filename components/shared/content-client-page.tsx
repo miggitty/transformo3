@@ -55,7 +55,7 @@ export default function ContentClientPage({
 
   const steps = [
     { id: 'video-script', title: 'Video Scripts' },
-    { id: 'create-video', title: 'Create Video' },
+    { id: 'create-video', title: 'Video' },
     { id: 'blog', title: 'Blog' },
     { id: 'email', title: 'Email' },
     { id: 'youtube', title: 'YouTube' },
@@ -164,7 +164,10 @@ export default function ContentClientPage({
       if (stepId === 'schedule') {
         return contentAssets.length > 0 && contentAssets.every(asset => asset.asset_scheduled_at);
       }
-      // For steps without content assets (video-script, create-video)
+      // For video-script and create-video steps, no approval required
+      if (stepId === 'video-script' || stepId === 'create-video') {
+        return true;
+      }
       return false;
     }
     
@@ -545,13 +548,13 @@ export default function ContentClientPage({
                   {/* Circle */}
                   <div className="relative z-10">
                     <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                      isStepApproved(step.id)
+                      isStepApproved(step.id) || step.id === 'video-script' || step.id === 'create-video'
                         ? 'bg-green-500 border-green-500 text-white'
                         : activeStep === step.id
                           ? 'bg-blue-500 border-blue-500 text-white'
                           : 'bg-white border-gray-300 text-gray-400'
                     }`}>
-                      {isStepApproved(step.id) ? (
+                      {isStepApproved(step.id) || step.id === 'video-script' || step.id === 'create-video' ? (
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -665,22 +668,27 @@ export default function ContentClientPage({
                       // Get section title
                       const sectionTitle = steps.find(step => step.id === activeStep)?.title || 'Section';
                       
+                      // Check if this is a video step that doesn't require approval
+                      const isVideoStep = activeStep === 'video-script' || activeStep === 'create-video';
+                      
                       return (
                         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-2">
                                 <div className={`w-3 h-3 rounded-full ${
-                                  isApproved ? 'bg-green-500' : 'bg-orange-500'
+                                  isVideoStep ? 'bg-green-500' : (isApproved ? 'bg-green-500' : 'bg-orange-500')
                                 }`}></div>
                                 <span className="text-sm font-medium text-gray-900">{sectionTitle}</span>
                               </div>
                               <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                isApproved 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-orange-100 text-orange-800'
+                                isVideoStep 
+                                  ? 'bg-green-100 text-green-800'
+                                  : (isApproved 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-orange-100 text-orange-800')
                               }`}>
-                                {isApproved ? 'Approved' : 'Pending Review'}
+                                {isVideoStep ? 'No approval required' : (isApproved ? 'Approved' : 'Pending Review')}
                               </span>
                             </div>
                             
@@ -700,9 +708,11 @@ export default function ContentClientPage({
                           
                           {/* Optional description */}
                           <p className="text-sm text-gray-600 mt-2">
-                            {isApproved 
-                              ? `${sectionTitle} has been approved and is ready for publishing.`
-                              : `Review and approve ${sectionTitle} content before publishing.`
+                            {isVideoStep 
+                              ? `${sectionTitle} does not need to be approved to schedule content.`
+                              : (isApproved 
+                                ? `${sectionTitle} has been approved and is ready for publishing.`
+                                : `Review and approve ${sectionTitle} content before publishing.`)
                             }
                           </p>
                         </div>
@@ -845,7 +855,7 @@ export default function ContentClientPage({
                   {/* Create Video Section */}
                   {activeStep === 'create-video' && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-6">Create Video</h2>
+                      <h2 className="text-2xl font-bold mb-6">Video</h2>
                       <VideoSectionV2 
                         content={content} 
                         onVideoUpdate={handleVideoUpdate}
