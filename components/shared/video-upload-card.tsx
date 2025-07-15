@@ -37,56 +37,74 @@ export function VideoUploadCard({
   const canGenerate = canGenerateAI && !!scriptContent;
   
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <CardHeader className="p-0 mb-4">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Video className="h-5 w-5" />
-          {title}
-        </CardTitle>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+            videoType === 'long' ? 'bg-blue-100' : 'bg-purple-100'
+          }`}>
+            <Video className={`w-4 h-4 ${
+              videoType === 'long' ? 'text-blue-600' : 'text-purple-600'
+            }`} />
+          </div>
+          <div>
+            <CardTitle className="text-lg font-semibold text-gray-900 mb-1">
+              {title}
+            </CardTitle>
+            <p className="text-sm text-gray-500">
+              {videoType === 'long' 
+                ? 'For YouTube, LinkedIn, and other long-form content'
+                : 'For YouTube Shorts, TikTok, and other short-form content'
+              }
+            </p>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-0 space-y-4">
         {/* Video display area */}
-        {videoUrl ? (
-          <div className="space-y-4 animate-in fade-in-50 duration-300">
-            <VideoPlayer src={videoUrl} />
-          </div>
-        ) : (
-          <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${
-            isGenerating 
-              ? 'border-purple-400 bg-purple-50 animate-pulse' 
-              : 'border-gray-300 hover:border-gray-400'
-          }`}>
-            <Video className={`mx-auto h-12 w-12 mb-4 transition-colors duration-300 ${
-              isGenerating ? 'text-purple-500' : 'text-gray-400'
-            }`} />
-            <p className={`transition-colors duration-300 ${
-              isGenerating ? 'text-purple-700' : 'text-gray-500'
+        <div className="w-full">
+          {videoUrl ? (
+            <div className="animate-in fade-in-50 duration-300">
+              <VideoPlayer src={videoUrl} />
+            </div>
+          ) : (
+            <div className={`h-48 border-2 border-dashed rounded-lg p-8 text-center flex flex-col items-center justify-center transition-all duration-300 ${
+              isGenerating 
+                ? 'border-purple-400 bg-purple-50 animate-pulse' 
+                : 'border-gray-300 hover:border-gray-400'
             }`}>
-              {isGenerating ? 'AI video generating...' : 'No video uploaded'}
-            </p>
-            {isGenerating && (
-              <div className="mt-3">
-                <Loader2 className="mx-auto h-5 w-5 text-purple-600 animate-spin" />
-              </div>
-            )}
-          </div>
-        )}
+              <Video className={`h-12 w-12 mb-4 transition-colors duration-300 ${
+                isGenerating ? 'text-purple-500' : 'text-gray-400'
+              }`} />
+              <p className={`transition-colors duration-300 ${
+                isGenerating ? 'text-purple-700' : 'text-gray-500'
+              }`}>
+                {isGenerating ? 'AI video generating...' : 'No video uploaded'}
+              </p>
+              {isGenerating && (
+                <div className="mt-3">
+                  <Loader2 className="h-5 w-5 text-purple-600 animate-spin" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         
         {/* Action buttons */}
-        <div className="flex gap-2" role="group" aria-label={`${title} actions`}>
+        <div className="flex flex-col xl:flex-row gap-3 xl:gap-2" role="group" aria-label={`${title} actions`}>
           <Button 
             onClick={onUpload} 
-            className="flex-1 transition-all duration-200 hover:scale-105"
+            className="flex-1 h-11 xl:h-10 transition-all duration-200 hover:scale-105 text-sm"
             aria-label={videoUrl ? `Upload new ${videoType} video` : `Upload ${videoType} video`}
           >
             <Upload className="w-4 h-4 mr-2" />
-            {videoUrl ? 'Upload New' : 'Upload Video'}
+            Upload
           </Button>
           
           <Button 
             onClick={onGenerate}
             disabled={isGenerating || !canGenerate}
-            className={`flex-1 transition-all duration-300 hover:scale-105 disabled:hover:scale-100 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white border-0 shadow-lg hover:shadow-xl disabled:from-purple-600 disabled:to-purple-700 disabled:opacity-60 ${
+            className={`flex-1 h-11 xl:h-10 transition-all duration-300 hover:scale-105 disabled:hover:scale-100 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white border-0 shadow-lg hover:shadow-xl disabled:from-purple-600 disabled:to-purple-700 disabled:opacity-60 text-sm ${
               isGenerating ? 'animate-pulse ring-2 ring-purple-300 ring-opacity-60' : ''
             }`}
             aria-label={`Generate AI ${videoType} video`}
@@ -95,12 +113,12 @@ export function VideoUploadCard({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating AI Video
+                Creating AI
               </>
             ) : (
               <>
                 <Bot className="w-4 h-4 mr-2" />
-                Generate AI Video
+                Generate AI
               </>
             )}
           </Button>
@@ -109,8 +127,7 @@ export function VideoUploadCard({
             <Button 
               onClick={onDelete} 
               variant="destructive" 
-              size="sm"
-              className="transition-all duration-200 hover:scale-105"
+              className="transition-all duration-200 hover:scale-105 flex-shrink-0 h-11 xl:h-10 px-4 xl:px-3"
               aria-label={`Delete ${videoType} video`}
             >
               <Trash2 className="w-4 h-4" />

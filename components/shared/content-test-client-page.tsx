@@ -30,7 +30,7 @@ export default function ContentClientPage({
 
   const steps = [
     { id: 'video-script', title: 'Video Script' },
-    { id: 'create-video', title: 'Create Video' },
+    { id: 'create-video', title: 'Video' },
     { id: 'blog', title: 'Blog' },
     { id: 'email', title: 'Email' },
     { id: 'youtube', title: 'YouTube' },
@@ -213,13 +213,13 @@ export default function ContentClientPage({
                 {/* Circle */}
                 <div className="relative z-10">
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                    approvedSteps.has(step.id)
+                    approvedSteps.has(step.id) || step.id === 'video-script' || step.id === 'create-video'
                       ? 'bg-green-500 border-green-500 text-white'
                       : activeStep === step.id
                         ? 'bg-blue-500 border-blue-500 text-white'
                         : 'bg-white border-gray-300 text-gray-400'
                   }`}>
-                    {approvedSteps.has(step.id) ? (
+                    {approvedSteps.has(step.id) || step.id === 'video-script' || step.id === 'create-video' ? (
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -364,7 +364,7 @@ export default function ContentClientPage({
       {/* Create Video Section */}
       {activeStep === 'create-video' && (
         <div>
-          <h2 className="text-2xl font-bold mb-6">Create Video</h2>
+          <h2 className="text-2xl font-bold mb-6">Video</h2>
           <VideoSectionV2 
             content={content} 
             onVideoUpdate={handleVideoUpdate}

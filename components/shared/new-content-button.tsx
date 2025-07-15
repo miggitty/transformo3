@@ -42,7 +42,7 @@ export function NewContentButton({
         <Button 
           variant={variant} 
           size={size}
-          className={`flex items-center gap-2 ${className}`}
+          className={`flex items-center justify-between ${className}`}
         >
           New Content
           <ChevronDown className="h-4 w-4" />

@@ -78,7 +78,7 @@ export function SidebarNav() {
       <div className="mb-2">
         <NewContentButton 
           variant="default" 
-          className="w-full justify-start"
+          className="w-full"
         />
       </div>
 
