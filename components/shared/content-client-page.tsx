@@ -422,13 +422,64 @@ export default function ContentClientPage({
         </Button>
       </div>
 
-      {/* Page Title */}
-      <div className="mb-6">
-        {/* Video Title - Above main heading */}
-        <span className="text-sm font-medium text-gray-600 block mb-2">Video Name</span>
+      {/* Compact Header */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
+        {/* Video Title Label */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm font-medium text-gray-600">Video Name</span>
+          <div className="flex items-center gap-3">
+            {/* Content Status */}
+            {(() => {
+              const allAssetsScheduled = contentAssets.length > 0 && 
+                contentAssets.every(asset => asset.asset_scheduled_at);
+              const allAssetsApproved = contentAssets.length > 0 && 
+                contentAssets.every(asset => asset.approved);
+              
+              if (allAssetsScheduled) {
+                return (
+                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-full">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    Ready to Publish
+                  </span>
+                );
+              } else if (allAssetsApproved) {
+                return (
+                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    Ready to Schedule
+                  </span>
+                );
+              } else {
+                return (
+                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-orange-100 text-orange-800 rounded-full">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                    Draft
+                  </span>
+                );
+              }
+            })()}
+            
+            {/* Project Type */}
+            <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 rounded-full">
+              {(() => {
+                const projectType = content.project_type as ProjectType;
+                const Icon = projectType === 'video_upload' ? Video : Mic;
+                const label = PROJECT_TYPES[projectType] || projectType || 'Voice Recording';
+                
+                return (
+                  <>
+                    <Icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">{label}</span>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
         
-        <div className="relative group mb-6">
-          <h1 className="text-4xl font-bold text-gray-900">{content.content_title || 'Untitled Content'}</h1>
+        {/* Main Title with Actions */}
+        <div className="relative group mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">{content.content_title || 'Untitled Content'}</h1>
           <TextActionButtons
             fieldConfig={{
               label: 'Content Title',
@@ -444,145 +495,93 @@ export default function ContentClientPage({
             disabled={isContentGenerating}
           />
         </div>
-        
-        {/* Status and Project Type - Side by side with consistent styling */}
-        <div className="flex items-start gap-8 mb-6">
-          {/* Content Status */}
-          <div>
-            <span className="text-sm font-medium text-gray-600 block mb-2">Status</span>
-            {(() => {
-              // Determine content status
-              const allAssetsScheduled = contentAssets.length > 0 && 
-                contentAssets.every(asset => asset.asset_scheduled_at);
-              const allAssetsApproved = contentAssets.length > 0 && 
-                contentAssets.every(asset => asset.approved);
-              
-              if (allAssetsScheduled) {
-                return (
-                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-lg">
-                    Ready to Publish
-                  </span>
-                );
-              } else if (allAssetsApproved) {
-                return (
-                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-lg">
-                    Ready to Schedule
-                  </span>
-                );
-              } else {
-                return (
-                  <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-orange-100 text-orange-800 rounded-lg">
-                    Draft
-                  </span>
-                );
-              }
-            })()}
-          </div>
-          
-          {/* Project Type */}
-          <div>
-            <span className="text-sm font-medium text-gray-600 block mb-2">Project Type</span>
-            <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg">
-              {(() => {
-                const projectType = content.project_type as ProjectType;
-                const Icon = projectType === 'video_upload' ? Video : Mic;
-                const label = PROJECT_TYPES[projectType] || projectType || 'Voice Recording';
-                
-                return (
-                  <>
-                    <Icon className="h-4 w-4 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-900">{label}</span>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
 
         {/* Research Section */}
         {content.research && (
-          <div className="mt-4">
-            <span className="text-sm text-gray-600 block mb-1">Research Notes</span>
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <span className="text-sm text-gray-600 block mb-2">Research Notes</span>
             <div className="bg-gray-50 rounded-lg p-4 relative group">
               <div className="whitespace-pre-wrap text-gray-900 text-sm">
                 {content.research}
               </div>
-                             <TextActionButtons
-                 fieldConfig={{
-                   label: 'Research Notes',
-                   value: content.research ?? '',
-                   fieldKey: 'research',
-                   inputType: 'textarea',
-                   placeholder: 'Enter research notes...',
-                 }}
-                 contentTitle={content.content_title || undefined}
-                 onEdit={handleEdit}
-                 onCopy={handleCopy}
-                 onDownload={handleDownload}
-                 disabled={isContentGenerating}
-               />
+              <TextActionButtons
+                fieldConfig={{
+                  label: 'Research Notes',
+                  value: content.research ?? '',
+                  fieldKey: 'research',
+                  inputType: 'textarea',
+                  placeholder: 'Enter research notes...',
+                }}
+                contentTitle={content.content_title || undefined}
+                onEdit={handleEdit}
+                onCopy={handleCopy}
+                onDownload={handleDownload}
+                disabled={isContentGenerating}
+              />
             </div>
           </div>
         )}
         
         {isContentGenerating && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mt-3">
+          <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm mt-4">
             <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-800"></div>
             Generating...
           </div>
         )}
       </div>
 
-      <div className="flex">
+      <div className="flex gap-8">
         {/* Stepper Navigation - Hidden on mobile */}
-        <div className="hidden lg:block w-56">
-          <div className="relative">
-            {steps.map((step, index) => (
-              <div
-                key={step.id}
-                className="flex items-center cursor-pointer group relative"
-                onClick={() => goToStep(step.id)}
-                style={{ paddingBottom: index < steps.length - 1 ? '16px' : '0' }}
-              >
-                {/* Circle */}
-                <div className="relative z-10">
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                    isStepApproved(step.id)
-                      ? 'bg-green-500 border-green-500 text-white'
-                      : activeStep === step.id
-                        ? 'bg-blue-500 border-blue-500 text-white'
-                        : 'bg-white border-gray-300 text-gray-400'
-                  }`}>
-                    {isStepApproved(step.id) ? (
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <span className="text-xs font-medium">{index + 1}</span>
-                    )}
+        <div className="hidden lg:block w-64 flex-shrink-0">
+          <div className="sticky top-8">
+            <div className="relative">
+              {steps.map((step, index) => (
+                <div
+                  key={step.id}
+                  className="flex items-center cursor-pointer group relative"
+                  onClick={() => goToStep(step.id)}
+                  style={{ paddingBottom: index < steps.length - 1 ? '20px' : '0' }}
+                >
+                  {/* Circle */}
+                  <div className="relative z-10">
+                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                      isStepApproved(step.id)
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : activeStep === step.id
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : 'bg-white border-gray-300 text-gray-400'
+                    }`}>
+                      {isStepApproved(step.id) ? (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <span className="text-xs font-medium">{index + 1}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Label */}
-                <div className="ml-3 flex-1">
-                  <div className={`text-sm font-medium transition-colors duration-200 ${
-                    activeStep === step.id ? 'text-blue-600' : 'text-gray-600'
-                  }`}>
-                    {step.title}
+                  {/* Label */}
+                  <div className="ml-4 flex-1">
+                    <div className={`text-sm font-medium transition-colors duration-200 ${
+                      activeStep === step.id ? 'text-blue-600' : 'text-gray-600'
+                    }`}>
+                      {step.title}
+                    </div>
                   </div>
-                </div>
 
-                {/* Connecting Line */}
-                {index < steps.length - 1 && (
-                  <div className="absolute left-3 top-6 w-0.5 h-4 bg-gray-200"></div>
-                )}
-              </div>
-            ))}
+                  {/* Connecting Line */}
+                  {index < steps.length - 1 && (
+                    <div className="absolute left-4 top-8 w-0.5 h-5 bg-gray-200"></div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 lg:ml-8">
+        <div className="flex-1 min-w-0">
           {/* Mobile Bottom Navigation */}
           <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
             {/* Progress Bar */}
@@ -656,32 +655,57 @@ export default function ContentClientPage({
 
               {!permissionError && (
                 <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-                  {/* Approve Button - Top Right */}
-                  <div className="flex justify-end mb-6">
+                  {/* Section Status Cards - Modern integrated approach */}
+                  <div className="mb-6">
                     {(() => {
                       const contentType = stepToContentType[activeStep];
                       const isApproved = isStepApproved(activeStep);
                       const canToggleApproval = contentType && contentAssets.find(asset => asset.content_type === contentType);
                       
-                      if (!canToggleApproval) {
-                        return (
-                          <Button
-                            disabled
-                            variant="outline"
-                            className="text-gray-500"
-                          >
-                            No approval needed
-                          </Button>
-                        );
-                      }
+                      // Get section title
+                      const sectionTitle = steps.find(step => step.id === activeStep)?.title || 'Section';
                       
                       return (
-                        <Button
-                          onClick={() => handleApprovalToggle(contentType, !isApproved)}
-                          className={isApproved ? "bg-gray-600 hover:bg-gray-700" : "bg-green-600 hover:bg-green-700"}
-                        >
-                          {isApproved ? 'Unapprove' : 'Approve'}
-                        </Button>
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  isApproved ? 'bg-green-500' : 'bg-orange-500'
+                                }`}></div>
+                                <span className="text-sm font-medium text-gray-900">{sectionTitle}</span>
+                              </div>
+                              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                                isApproved 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}>
+                                {isApproved ? 'Approved' : 'Pending Review'}
+                              </span>
+                            </div>
+                            
+                            {canToggleApproval && (
+                              <Button
+                                onClick={() => handleApprovalToggle(contentType, !isApproved)}
+                                size="sm"
+                                className={isApproved 
+                                  ? "bg-gray-600 hover:bg-gray-700" 
+                                  : "bg-green-600 hover:bg-green-700"
+                                }
+                              >
+                                {isApproved ? 'Unapprove' : 'Approve'}
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {/* Optional description */}
+                          <p className="text-sm text-gray-600 mt-2">
+                            {isApproved 
+                              ? `${sectionTitle} has been approved and is ready for publishing.`
+                              : `Review and approve ${sectionTitle} content before publishing.`
+                            }
+                          </p>
+                        </div>
                       );
                     })()}
                   </div>
@@ -830,18 +854,27 @@ export default function ContentClientPage({
                     </div>
                   )}
 
-                  {/* Blog Section - Custom Display */}
+                  {/* Blog Section - Modern Card Layout */}
                   {activeStep === 'blog' && (
-                    <div>
-                      <h2 className="text-2xl font-bold mb-6">Blog</h2>
+                    <div className="space-y-6">
                       {(() => {
                         const blogAsset = contentAssets.find(asset => asset.content_type === 'blog_post');
                         if (!blogAsset) {
-                          return <p className="text-gray-500">No blog post found for this content.</p>;
+                          return (
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-center">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Blog Post Found</h3>
+                              <p className="text-gray-500">No blog post has been generated for this content yet.</p>
+                            </div>
+                          );
                         }
                         
                         return (
-                          <div className="max-w-4xl bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
                             {/* Blog Post Image */}
                             {blogAsset.image_url && (
                               <div className="mb-6">
@@ -962,14 +995,23 @@ export default function ContentClientPage({
                     </div>
                   )}
 
-                  {/* Social Long Video Section - Custom Display */}
+                  {/* Social Long Video Section - Modern Card Layout */}
                   {activeStep === 'social-long-video' && (
-                    <div>
-                      <h2 className="text-2xl font-bold mb-6">Social Long Video</h2>
+                    <div className="space-y-6">
                       {(() => {
                         const socialAsset = contentAssets.find(asset => asset.content_type === 'social_long_video');
                         if (!socialAsset) {
-                          return <p className="text-gray-500">No social long video found for this content.</p>;
+                          return (
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-center">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Social Long Video Found</h3>
+                              <p className="text-gray-500">No social long video content has been generated yet.</p>
+                            </div>
+                          );
                         }
                         
                         return (
@@ -1096,14 +1138,23 @@ export default function ContentClientPage({
                     </div>
                   )}
 
-                  {/* Social Short Video Section - Custom Display */}
+                  {/* Social Short Video Section - Modern Card Layout */}
                   {activeStep === 'social-short-video' && (
-                    <div>
-                      <h2 className="text-2xl font-bold mb-6">Social Short Video</h2>
+                    <div className="space-y-6">
                       {(() => {
                         const socialAsset = contentAssets.find(asset => asset.content_type === 'social_short_video');
                         if (!socialAsset) {
-                          return <p className="text-gray-500">No social short video found for this content.</p>;
+                          return (
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 text-center">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h4a1 1 0 011 1v2h4a1 1 0 011 1v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a1 1 0 011-1h4zM9 12l3-2v4l-3-2z" />
+                                </svg>
+                              </div>
+                              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Social Short Video Found</h3>
+                              <p className="text-gray-500">No social short video content has been generated yet.</p>
+                            </div>
+                          );
                         }
                         
                         return (
