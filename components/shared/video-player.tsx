@@ -18,7 +18,6 @@ export function VideoPlayer({ src, className = '' }: VideoPlayerProps) {
         controls
         preload="metadata"
         className="w-full rounded-lg shadow-sm border"
-        style={{ aspectRatio: '16/9' }}
       >
         Your browser does not support the video tag.
       </video>
