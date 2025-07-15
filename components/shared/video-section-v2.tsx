@@ -8,6 +8,7 @@ import { generateHeygenVideo } from '@/app/actions/settings';
 import { VideoUploadCard } from '@/components/shared/video-upload-card';
 import { VideoUploadModal } from './video-upload-modal';
 import { DeleteVideoDialog } from './delete-video-dialog';
+import { HeygenWarningDialog } from './heygen-warning-dialog';
 import { useVideoGeneration } from '@/hooks/use-video-generation';
 
 interface VideoSectionV2Props {
@@ -21,6 +22,8 @@ interface VideoSectionState {
   uploadType: 'long' | 'short';
   deleteDialogOpen: boolean;
   deleteType: 'long' | 'short';
+  warningDialogOpen: boolean;
+  warningVideoType: 'long' | 'short';
 }
 
 export function VideoSectionV2({ content, onVideoUpdate, onNavigateToScript }: VideoSectionV2Props) {
@@ -29,6 +32,8 @@ export function VideoSectionV2({ content, onVideoUpdate, onNavigateToScript }: V
     uploadType: 'long',
     deleteDialogOpen: false,
     deleteType: 'long',
+    warningDialogOpen: false,
+    warningVideoType: 'long',
   });
 
   const router = useRouter();
@@ -87,7 +92,29 @@ export function VideoSectionV2({ content, onVideoUpdate, onNavigateToScript }: V
     }));
   };
 
-  const handleGenerateAI = async (videoType: 'long' | 'short') => {
+  const handleGenerateAI = (videoType: 'long' | 'short') => {
+    const script = videoType === 'long' ? content.video_script : content.short_video_script;
+    
+    if (!script) {
+      toast.error(`${videoType === 'long' ? 'Main' : 'Short'} video script is required`);
+      return;
+    }
+
+    if (!canGenerateAI) {
+      toast.error('HeyGen integration is not properly configured');
+      return;
+    }
+
+    // Show warning dialog instead of directly generating
+    setState(prev => ({
+      ...prev,
+      warningDialogOpen: true,
+      warningVideoType: videoType,
+    }));
+  };
+
+  const handleGenerateAIConfirmed = async () => {
+    const videoType = state.warningVideoType;
     const script = videoType === 'long' ? content.video_script : content.short_video_script;
     const generation = videoType === 'long' ? longVideoGeneration : shortVideoGeneration;
     
@@ -152,6 +179,10 @@ export function VideoSectionV2({ content, onVideoUpdate, onNavigateToScript }: V
     setState(prev => ({ ...prev, deleteDialogOpen: open }));
   };
 
+  const handleCloseWarningDialog = (open: boolean) => {
+    setState(prev => ({ ...prev, warningDialogOpen: open }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Two-column layout for long and short videos */}
@@ -207,6 +238,15 @@ export function VideoSectionV2({ content, onVideoUpdate, onNavigateToScript }: V
         businessId={content.business_id!}
         videoType={state.deleteType}
         onVideoDeleted={handleVideoDelete}
+      />
+
+      {/* HeyGen Warning Dialog */}
+      <HeygenWarningDialog
+        open={state.warningDialogOpen}
+        onOpenChange={handleCloseWarningDialog}
+        videoType={state.warningVideoType}
+        isGenerating={state.warningVideoType === 'long' ? longVideoGeneration.isGenerating : shortVideoGeneration.isGenerating}
+        onConfirm={handleGenerateAIConfirmed}
       />
     </div>
   );
