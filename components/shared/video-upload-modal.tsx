@@ -335,9 +335,31 @@ export function VideoUploadModal({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const truncateFilename = (filename: string, maxLength: number = 30): string => {
+    if (filename.length <= maxLength) return filename;
+    
+    // Find the last dot to separate name and extension
+    const lastDotIndex = filename.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+      // No extension, just truncate from the end
+      return filename.substring(0, maxLength - 3) + '...';
+    }
+    
+    const name = filename.substring(0, lastDotIndex);
+    const extension = filename.substring(lastDotIndex);
+    
+    // Keep the extension and truncate the name
+    const availableLength = maxLength - extension.length - 3; // 3 for "..."
+    if (availableLength <= 0) {
+      return '...' + extension;
+    }
+    
+    return name.substring(0, availableLength) + '...' + extension;
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg w-full mx-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -398,11 +420,13 @@ export function VideoUploadModal({
             <>
               {/* Selected File Info */}
               <div className="border rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
                     <Video className="h-8 w-8 text-primary flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{selectedFile.name}</p>
+                    <div className="flex-1 min-w-0 overflow-hidden max-w-xs">
+                      <p className="font-medium text-sm truncate" title={selectedFile.name}>
+                        {truncateFilename(selectedFile.name, 25)}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {formatFileSize(selectedFile.size)}
                       </p>

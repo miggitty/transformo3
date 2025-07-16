@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 // Define a schema for the updatable fields
-const updatableFields = z.enum(['transcript', 'research', 'video_script', 'content_title']);
+const updatableFields = z.enum(['transcript', 'research', 'video_script', 'short_video_script', 'content_title']);
 const videoFields = z.enum(['video_long_url', 'video_short_url']);
 
 export async function updateContentField({
@@ -81,9 +81,16 @@ export async function updateVideoUrl({
     return { success: false, error: 'Invalid video field name.' };
   }
 
+  // Add cache busting to video URL for immediate UI updates (similar to image handling)
+  let cacheBustedVideoUrl = videoUrl;
+  if (videoUrl) {
+    const separator = videoUrl.includes('?') ? '&' : '?';
+    cacheBustedVideoUrl = `${videoUrl}${separator}v=${Date.now()}`;
+  }
+
   const { error } = await supabase
     .from('content')
-    .update({ [parsedFieldName.data]: videoUrl })
+    .update({ [parsedFieldName.data]: cacheBustedVideoUrl })
     .eq('id', contentId);
 
   if (error) {
@@ -105,6 +112,7 @@ export async function generateContent(payload: {
   transcript: string | null;
   research: string | null;
   video_script: string | null;
+  short_video_script: string | null;
   keyword: string | null;
   // Business fields
   business_name: string;
@@ -173,6 +181,7 @@ export async function generateContent(payload: {
       transcript: sanitizeText(payload.transcript),
       research: sanitizeText(payload.research),
       video_script: sanitizeText(payload.video_script),
+      short_video_script: sanitizeText(payload.short_video_script),
       keyword: sanitizeText(payload.keyword),
       website_url: sanitizeText(payload.website_url),
       writing_style_guide: sanitizeText(payload.writing_style_guide),

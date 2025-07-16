@@ -202,8 +202,8 @@ export function EnhancedContentAssetsManager({
           id: `current-${asset.id}`,
           title: `${formatContentType(asset.content_type || 'Content')}${hasPendingChanges ? ' (pending)' : ''}`,
           date: format(scheduledDate, 'yyyy-MM-dd'),
-          backgroundColor: hasPendingChanges ? '#f97316' : '#ef4444', // Orange for pending, red for saved
-          borderColor: hasPendingChanges ? '#ea580c' : '#dc2626',
+          backgroundColor: hasPendingChanges ? '#f97316' : '#16a34a', // Orange for pending, green for saved (green-600)
+          borderColor: hasPendingChanges ? '#ea580c' : '#15803d',
           textColor: '#ffffff',
           extendedProps: {
             assetType: asset.content_type || 'unknown',
@@ -638,8 +638,8 @@ export function EnhancedContentAssetsManager({
           <div className="mb-4 text-sm text-muted-foreground">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-red-500 rounded"></div>
-                <span>Saved Content</span>
+                <div className="w-4 h-4 bg-green-500 rounded"></div>
+                <span>Scheduled Content</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-orange-500 rounded"></div>
@@ -656,7 +656,7 @@ export function EnhancedContentAssetsManager({
                 : 'All approved assets are scheduled'
               }
             </p>
-            <p>Drag and drop to reschedule. Changes are saved when you click &quot;Schedule&quot;.</p>
+            <p>Drag and drop to make changes. Click &quot;Schedule&quot; to save changes to the database.</p>
           </div>
 
           {/* Calendar */}

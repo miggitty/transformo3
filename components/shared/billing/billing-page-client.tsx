@@ -86,8 +86,8 @@ export function BillingPageClient({ business, subscription: initialSubscription 
   return (
     <Elements stripe={stripePromise}>
       <div className="space-y-6">
-        {/* Status Banner - only show for non-canceled subscriptions */}
-        {accessStatus.showBanner && !subscription?.cancel_at_period_end && (
+        {/* Status Banner - only show for non-canceled and non-active subscriptions */}
+        {accessStatus.showBanner && !subscription?.cancel_at_period_end && subscription?.status !== 'active' && (
           <SubscriptionBanner 
             message={accessStatus.message || ''}
             type={accessStatus.bannerType || 'trial'}
@@ -109,6 +109,7 @@ export function BillingPageClient({ business, subscription: initialSubscription 
         <PlanSelectionCard 
           business={business} 
           subscription={subscription}
+          accessStatus={accessStatus}
         />
       </div>
     </Elements>

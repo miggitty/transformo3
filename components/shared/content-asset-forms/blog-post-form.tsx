@@ -96,6 +96,9 @@ export default function BlogPostForm({ asset, disabled, onImageUpdated }: BlogPo
               disabled={disabled}
               className="inline-block"
               onImageUpdated={onImageUpdated}
+              enableDownload={true}
+              enableUpload={true}
+              enableRegeneration={true}
             >
               <Image
                 src={asset.image_url}

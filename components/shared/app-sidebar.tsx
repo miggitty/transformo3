@@ -115,7 +115,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               <SidebarMenuItem>
                 <NewContentButton 
                   variant="default" 
-                  className="w-full justify-start h-10"
+                  className="w-full h-10"
                 />
               </SidebarMenuItem>
             </SidebarMenu>

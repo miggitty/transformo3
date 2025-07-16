@@ -104,10 +104,15 @@ export async function checkSubscriptionAccess(request: NextRequest): Promise<Sub
     // Check subscription access based on status and dates
     const accessResult = evaluateSubscriptionAccess(subscription);
 
+    // Be more permissive for active and trialing subscriptions
+    const hasAccess = accessResult.hasAccess || 
+                      subscription.status === 'active' || 
+                      subscription.status === 'trialing';
+
     return {
-      hasAccess: accessResult.hasAccess,
-      shouldRedirectToBilling: !accessResult.hasAccess,
-      redirectPath: accessResult.hasAccess ? undefined : '/billing',
+      hasAccess,
+      shouldRedirectToBilling: !hasAccess,
+      redirectPath: hasAccess ? undefined : '/billing',
       user,
       profile,
       subscription,
@@ -185,21 +190,8 @@ export function clearSubscriptionCache() {
 }
 
 export async function getCachedSubscriptionAccess(request: NextRequest): Promise<SubscriptionCheckResult> {
-  const cacheKey = request.cookies.get('sb-access-token')?.value || 'anonymous';
-  const cached = subscriptionCache.get(cacheKey);
-  
-  // Reduce cache time for better responsiveness to subscription changes
-  if (cached && cached.expiry > Date.now()) {
-    return cached.result;
-  }
-  
+  // Temporarily disable cache to ensure fresh subscription checks
   const result = await checkSubscriptionAccess(request);
-  
-  subscriptionCache.set(cacheKey, {
-    result,
-    expiry: Date.now() + CACHE_TTL,
-  });
-  
   return result;
 }
 

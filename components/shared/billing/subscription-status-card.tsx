@@ -113,6 +113,10 @@ export function SubscriptionStatusCard({
   const getStatusDisplayName = (status: string) => {
     switch (status) {
       case 'trialing':
+        // Check if trial has ended but status hasn't updated yet
+        if (accessStatus.daysLeft === 0 || (accessStatus.daysLeft === undefined && subscription?.trial_end && new Date(subscription.trial_end) <= new Date())) {
+          return 'Active';
+        }
         return 'Free Trial';
       case 'active':
         return 'Active';
@@ -246,7 +250,7 @@ export function SubscriptionStatusCard({
               
               <div>
                 <span className="text-sm font-medium">
-                  {subscription.status === 'trialing' ? 'Trial Ends' : 'Next Billing'}
+                  {subscription.status === 'trialing' && accessStatus.daysLeft !== 0 && !(accessStatus.daysLeft === undefined && subscription?.trial_end && new Date(subscription.trial_end) <= new Date()) ? 'Trial Ends' : 'Next Billing'}
                 </span>
                 <p className="text-sm text-muted-foreground">
                   {subscription.trial_end 
@@ -258,7 +262,7 @@ export function SubscriptionStatusCard({
             </div>
 
             {/* Trial countdown */}
-            {subscription.status === 'trialing' && accessStatus.daysLeft !== undefined && (
+            {subscription.status === 'trialing' && accessStatus.daysLeft !== undefined && accessStatus.daysLeft > 0 && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950 dark:border-blue-800">
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                   Free Trial: {accessStatus.daysLeft} days remaining

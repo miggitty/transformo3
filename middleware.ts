@@ -61,7 +61,7 @@ export async function middleware(request: NextRequest) {
   try {
     const pathname = request.nextUrl.pathname;
     
-    // Handle image cache control for content pages - helps with cache busting
+    // Handle image/video cache control for content pages - helps with cache busting
     if (pathname.startsWith('/content/') || request.nextUrl.search.includes('v=')) {
       const response = NextResponse.next();
       response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');

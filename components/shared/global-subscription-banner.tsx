@@ -11,6 +11,11 @@ export function GlobalSubscriptionBanner() {
     return null;
   }
 
+  // Don't show banner for active subscriptions - they don't need reminders
+  if (subscription?.status === 'active') {
+    return null;
+  }
+
   // Only show banner if we have a message and should show banner
   if (!accessStatus.showBanner || !accessStatus.message) {
     return null;

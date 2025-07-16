@@ -10,7 +10,7 @@ import { EnhancedContentTable } from '@/components/shared/enhanced-content-table
 import { AccessGate } from '@/components/shared/access-gate';
 import { TrialSuccessBanner } from '@/components/shared/trial-success-banner';
 import { deleteContent } from '../[id]/actions';
-import { Tables } from '@/types/supabase';
+import { determineContentStatus } from '@/lib/content-status';
 import { Suspense } from 'react';
 
 // Force dynamic rendering
@@ -50,25 +50,11 @@ export default async function ScheduledPage() {
     return <div>Error loading content.</div>;
   }
 
-  // Filter for scheduled content using simplified status logic
+  // Filter for scheduled content using centralized status logic
   const scheduledContent = content?.filter(item => {
     const assets = item.content_assets || [];
-    
-    // Skip processing/failed content
-    if (item.status === 'processing' || item.status === 'failed') {
-      return false;
-    }
-    
-    // For draft content, check if it has scheduled assets
-    if (item.status === 'draft') {
-      const scheduledAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_scheduled_at);
-      const sentAssets = assets.filter((asset: Tables<'content_assets'>) => asset.asset_status === 'Sent');
-      
-      // Scheduled: Assets have scheduled dates but none sent yet
-      return scheduledAssets.length > 0 && sentAssets.length === 0;
-    }
-    
-    return false;
+    const status = determineContentStatus(item, assets);
+    return status === 'scheduled';
   }) || [];
   
   return (
@@ -98,7 +84,7 @@ export default async function ScheduledPage() {
         </CardHeader>
         <CardContent>
           <EnhancedContentTable
-            serverContent={scheduledContent.map(item => ({ ...item, content_assets: undefined }))}
+            serverContent={scheduledContent}
             businessId={businessId || ''}
             variant="scheduled"
             showPagination={true}

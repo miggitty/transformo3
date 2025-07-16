@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { createTrialSubscriptionSetup } from '@/app/actions/billing';
-import { calculateYearlySavings } from '@/lib/subscription';
+import { calculateYearlySavings, AccessCheckResult } from '@/lib/subscription';
 import { Tables } from '@/types/supabase';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -13,9 +13,10 @@ import { Loader2, Check, Sparkles, Star } from 'lucide-react';
 interface PlanSelectionCardProps {
   business: Tables<'businesses'>;
   subscription?: Tables<'subscriptions'> | null;
+  accessStatus?: AccessCheckResult;
 }
 
-export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
+export function PlanSelectionCard({ subscription, accessStatus }: PlanSelectionCardProps) {
   const [isLoadingTrial, setIsLoadingTrial] = useState(false);
   const [isLoadingMonthly] = useState(false);
   const [isLoadingYearly] = useState(false);
@@ -100,11 +101,11 @@ export function PlanSelectionCard({ subscription }: PlanSelectionCardProps) {
             <div className="flex items-center justify-center gap-2 mb-2">
               <Check className="h-5 w-5 text-green-600" />
               <span className="font-semibold text-green-900 dark:text-green-100">
-                {subscription?.status === 'trialing' ? 'Free Trial Active' : 'Subscription Active'}
+                {subscription?.status === 'trialing' && accessStatus?.daysLeft && accessStatus.daysLeft > 0 ? 'Free Trial Active' : 'Subscription Active'}
               </span>
             </div>
             <p className="text-sm text-green-700 dark:text-green-300">
-              {subscription?.status === 'trialing' 
+              {subscription?.status === 'trialing' && accessStatus?.daysLeft && accessStatus.daysLeft > 0
                 ? 'Enjoying your free trial? Your subscription will start automatically when the trial ends.'
                 : 'Thank you for subscribing! You have access to all features.'
               }

@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { generateHeygenVideo } from '@/app/actions/settings';
 import { ContentWithBusiness } from '@/types';
 import { createClientSafe } from '@/utils/supabase/client';
 import { Play, Loader2, Video, AlertCircle, RotateCcw } from 'lucide-react';
+import { VideoPlayer } from './video-player';
 
 interface HeygenVideoSectionProps {
   content: ContentWithBusiness;
@@ -109,143 +110,162 @@ export function HeygenVideoSection({ content, onContentUpdate }: HeygenVideoSect
     }
   };
 
-  const getStatusBadge = () => {
-    switch (content.heygen_status) {
-      case 'processing':
-        return <Badge variant="secondary" className="flex items-center gap-1">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          Processing
-        </Badge>;
-      case 'completed':
-        return <Badge variant="default" className="flex items-center gap-1">
-          <Video className="h-3 w-3" />
-          Completed
-        </Badge>;
-      case 'failed':
-        return <Badge variant="destructive" className="flex items-center gap-1">
-          <AlertCircle className="h-3 w-3" />
-          Failed
-        </Badge>;
-      default:
-        return null;
-    }
-  };
-
   const canGenerate = content.video_script && 
                      heygenIntegration?.secret_id && 
                      heygenIntegration?.avatar_id && 
                      heygenIntegration?.voice_id &&
                      content.heygen_status !== 'processing';
 
+  const hasGeneratedVideo = content.heygen_status === 'completed' && (content.heygen_url || content.video_long_url);
+
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Video className="h-5 w-5" />
-              AI Avatar Video
-            </CardTitle>
-            <CardDescription>
-              Generate an AI avatar video from your video script using HeyGen.
-            </CardDescription>
-          </div>
-          {getStatusBadge()}
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <Video className="h-5 w-5" />
+          AI Avatar Video
+        </CardTitle>
       </CardHeader>
-      
       <CardContent className="space-y-4">
-        {/* Configuration Status */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span>HeyGen API Key:</span>
-            <Badge variant={heygenIntegration?.secret_id ? "default" : "secondary"}>
-              {heygenIntegration?.secret_id ? "Configured" : "Not Set"}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span>Avatar ID:</span>
-            <Badge variant={heygenIntegration?.avatar_id ? "default" : "secondary"}>
-              {heygenIntegration?.avatar_id ? "Set" : "Not Set"}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span>Voice ID:</span>
-            <Badge variant={heygenIntegration?.voice_id ? "default" : "secondary"}>
-              {heygenIntegration?.voice_id ? "Set" : "Not Set"}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span>Video Script:</span>
-            <Badge variant={content.video_script ? "default" : "secondary"}>
-              {content.video_script ? "Available" : "Not Generated"}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <div className="flex items-center gap-4">
-          <Button 
-            onClick={handleGenerateVideo}
-            disabled={!canGenerate || isGenerating}
-            className="flex items-center gap-2"
-          >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
-            {content.heygen_status === 'processing' ? 'Processing...' : 'Generate AI Video'}
-          </Button>
-          
-          {/* Reset Button for Development/Testing */}
-          {(content.heygen_status === 'processing' || content.heygen_status === 'failed') && (
-            <Button 
-              onClick={handleResetStatus}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <RotateCcw className="h-3 w-3" />
-              Reset
-            </Button>
-          )}
-          
-          {!canGenerate && content.video_script && (
-            <p className="text-sm text-muted-foreground">
-              Configure HeyGen settings to enable video generation.
-            </p>
-          )}
-          
-          {!content.video_script && (
-            <p className="text-sm text-muted-foreground">
-              Generate a video script first to create an AI avatar video.
-            </p>
-          )}
-        </div>
-
-        {/* Video Player */}
-        {content.heygen_status === 'completed' && (content.heygen_url || content.video_long_url) && (
-          <div className="space-y-2">
-            <h4 className="font-medium">Generated Video:</h4>
-            <div className="aspect-video rounded-lg overflow-hidden bg-black">
-              <video
-                controls
-                className="w-full h-full"
-                src={content.heygen_url || content.video_long_url || undefined}
-                onError={(e) => {
-                  console.error('Video failed to load:', e);
-                  toast.error('Video failed to load. Please check the URL.');
-                }}
-                onLoadStart={() => console.log('Video loading started')}
-                onLoadedData={() => console.log('Video data loaded')}
+        {hasGeneratedVideo ? (
+          <div className="space-y-4">
+            <VideoPlayer src={content.heygen_url || content.video_long_url || ''} />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleGenerateVideo}
+                disabled={!canGenerate || isGenerating}
+                variant="outline"
+                className="flex-1"
               >
-                Your browser does not support the video tag.
-              </video>
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4 mr-2" />
+                )}
+                Generate New Video
+              </Button>
+              {/* Reset Button for Development/Testing */}
+              {(content.heygen_status === 'processing' || content.heygen_status === 'failed') && (
+                <Button 
+                  onClick={handleResetStatus}
+                  variant="outline"
+                  size="icon"
+                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            <div className="text-xs text-muted-foreground">
-              Video URL: {content.heygen_url || content.video_long_url}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Status Display */}
+            {content.heygen_status === 'processing' && (
+              <div className="flex items-center justify-center py-8 space-y-4">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="bg-primary/10 rounded-full p-4">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  </div>
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Generating AI Avatar Video...
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            {content.heygen_status === 'failed' && (
+              <div className="flex items-center justify-center py-8 space-y-4">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="bg-destructive/10 rounded-full p-4">
+                    <AlertCircle className="h-8 w-8 text-destructive" />
+                  </div>
+                  <Badge variant="destructive" className="flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Generation Failed
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            {!content.heygen_status && (
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <Video className="h-12 w-12 text-muted-foreground" />
+                <p className="text-muted-foreground text-center">
+                  No AI avatar video generated yet
+                </p>
+              </div>
+            )}
+
+            {/* Configuration Status */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>HeyGen API Key:</span>
+                <Badge variant={heygenIntegration?.secret_id ? "default" : "secondary"}>
+                  {heygenIntegration?.secret_id ? "Configured" : "Not Set"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Avatar ID:</span>
+                <Badge variant={heygenIntegration?.avatar_id ? "default" : "secondary"}>
+                  {heygenIntegration?.avatar_id ? "Set" : "Not Set"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Voice ID:</span>
+                <Badge variant={heygenIntegration?.voice_id ? "default" : "secondary"}>
+                  {heygenIntegration?.voice_id ? "Set" : "Not Set"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Video Script:</span>
+                <Badge variant={content.video_script ? "default" : "secondary"}>
+                  {content.video_script ? "Available" : "Not Generated"}
+                </Badge>
+              </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={handleGenerateVideo}
+                disabled={!canGenerate || isGenerating}
+                className="flex items-center gap-2"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                Generate AI Video
+              </Button>
+              
+              {/* Reset Button for Development/Testing */}
+              {(content.heygen_status === 'processing' || content.heygen_status === 'failed') && (
+                <Button 
+                  onClick={handleResetStatus}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Reset
+                </Button>
+              )}
+            </div>
+
+            {/* Help Text */}
+            {!canGenerate && content.video_script && (
+              <p className="text-sm text-muted-foreground">
+                Configure HeyGen settings to enable video generation.
+              </p>
+            )}
+            
+            {!content.video_script && (
+              <p className="text-sm text-muted-foreground">
+                Generate a video script first to create an AI avatar video.
+              </p>
+            )}
           </div>
         )}
       </CardContent>

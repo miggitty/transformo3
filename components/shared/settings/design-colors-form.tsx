@@ -12,7 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { ColorPicker } from '@/components/ui/color-picker';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Tables } from '@/types/supabase';
 import { updateBusinessSettings } from '@/app/(app)/settings/business/actions';
@@ -55,7 +55,7 @@ export function DesignColorsForm({ business }: DesignColorsFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <CardContent className="pb-6">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
               name="color_primary"
@@ -63,7 +63,10 @@ export function DesignColorsForm({ business }: DesignColorsFormProps) {
                 <FormItem>
                   <FormLabel>Primary Color</FormLabel>
                   <FormControl>
-                    <Input type="color" {...field} value={field.value ?? ''} />
+                    <ColorPicker
+                      color={field.value ?? '#000000'}
+                      onChange={(color) => field.onChange(color)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -76,7 +79,10 @@ export function DesignColorsForm({ business }: DesignColorsFormProps) {
                 <FormItem>
                   <FormLabel>Secondary Color</FormLabel>
                   <FormControl>
-                    <Input type="color" {...field} value={field.value ?? ''} />
+                    <ColorPicker
+                      color={field.value ?? '#000000'}
+                      onChange={(color) => field.onChange(color)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -89,7 +95,10 @@ export function DesignColorsForm({ business }: DesignColorsFormProps) {
                 <FormItem>
                   <FormLabel>Background Color</FormLabel>
                   <FormControl>
-                    <Input type="color" {...field} value={field.value ?? ''} />
+                    <ColorPicker
+                      color={field.value ?? '#ffffff'}
+                      onChange={(color) => field.onChange(color)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -102,7 +111,10 @@ export function DesignColorsForm({ business }: DesignColorsFormProps) {
                 <FormItem>
                   <FormLabel>Highlight Color</FormLabel>
                   <FormControl>
-                    <Input type="color" {...field} value={field.value ?? ''} />
+                    <ColorPicker
+                      color={field.value ?? '#ff0000'}
+                      onChange={(color) => field.onChange(color)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
