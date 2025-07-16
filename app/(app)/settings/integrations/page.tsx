@@ -107,7 +107,7 @@ export default async function IntegrationsPage() {
         <EmailIntegrationForm business={transformedBusiness} />
       </Card>
 
-      <Card>
+      <Card id="ai-avatar-integration">
         <CardHeader>
           <CardTitle>AI Avatar Video Generation</CardTitle>
           <CardDescription>
