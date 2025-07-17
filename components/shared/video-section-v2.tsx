@@ -152,7 +152,7 @@ export function VideoSectionV2({ content, onVideoUpdate, onNavigateToScript }: V
   };
 
   const handleConfigureIntegration = () => {
-    router.push('/settings/integrations');
+    router.push('/settings/integrations#ai-avatar-integration');
   };
 
   const handleReviewScript = (scriptType: 'main' | 'short') => {

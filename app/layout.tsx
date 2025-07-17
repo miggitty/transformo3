@@ -12,8 +12,13 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: 'Next.js and Supabase Starter Kit',
-  description: 'The fastest way to build apps with Next.js and Supabase',
+  title: 'Transformo',
+  description: 'Content Automation SaaS for marketing content creation and scheduling',
+  icons: {
+    icon: '/transformo_icon.png',
+    shortcut: '/transformo_icon.png',
+    apple: '/transformo_icon.png',
+  },
 };
 
 export default function RootLayout({
