@@ -95,7 +95,7 @@ function validateJWTOptions(options: unknown): Record<string, unknown> {
 
   // Validate platforms array
   if (opts.platforms && Array.isArray(opts.platforms)) {
-    const allowedPlatforms = ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok'];
+    const allowedPlatforms = ['facebook', 'instagram', 'x', 'youtube', 'linkedin', 'tiktok'];
     validatedOptions.platforms = opts.platforms
       .filter((platform: unknown) => typeof platform === 'string' && allowedPlatforms.includes(platform.toLowerCase()))
       .map((platform: unknown) => (platform as string).toLowerCase());

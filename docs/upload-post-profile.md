@@ -19,7 +19,7 @@ This document outlines the implementation of upload-post.com social media integr
 Support for the following platforms with visual status indicators:
 1. Facebook
 2. Instagram  
-3. Twitter
+3. X (Twitter)
 4. YouTube
 5. LinkedIn
 6. TikTok
@@ -179,7 +179,7 @@ Body: {
   redirect_url: "${NEXT_PUBLIC_BASE_URL}/settings/integrations?connected=true",
   logo_image: "${NEXT_PUBLIC_BASE_URL}/transformo-logo.webp",
   redirect_button_text: "Return to Transformo",
-  platforms: ["facebook", "instagram", "twitter", "youtube", "linkedin", "tiktok"]
+  platforms: ["facebook", "instagram", "x", "youtube", "linkedin", "tiktok"]
 }
 Response: {
   success: true,
@@ -255,7 +255,7 @@ interface SocialAccount {
 interface SocialAccounts {
   facebook?: SocialAccount | "";
   instagram?: SocialAccount | "";
-  twitter?: SocialAccount | "";
+  x?: SocialAccount | "";
   youtube?: SocialAccount | "";
   linkedin?: SocialAccount | "";
   tiktok?: SocialAccount | "";
@@ -505,7 +505,7 @@ Based on existing codebase analysis:
 
 - [x] Create `components/shared/settings/social-media-status-icons.tsx`
   - Grid of 6 platform icons using Lucide React:
-    * Facebook (blue), Instagram (pink), Twitter (sky), YouTube (red), LinkedIn (blue), TikTok/Music (black)
+    * Facebook (blue), Instagram (pink), X/Twitter (sky), YouTube (red), LinkedIn (blue), TikTok/Music (black)
   - Grayed out state by default with "Not Connected" badges
   - Connected state with colors, display names, and "Connected" badges
   - Responsive grid (2 cols mobile, 3 cols desktop)
@@ -843,7 +843,7 @@ const getRedirectUrl = () => {
 Using Lucide React icons:
 - Facebook: `Facebook`
 - Instagram: `Instagram` 
-- Twitter: `Twitter`
+- X (Twitter): `x`
 - YouTube: `Youtube`
 - LinkedIn: `Linkedin`
 - TikTok: `Music` (closest available) or custom SVG

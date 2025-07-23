@@ -49,7 +49,7 @@ export const redirectUrlSchema = z
 
 export const platformsSchema = z
   .array(
-    z.enum(['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok'])
+    z.enum(['facebook', 'instagram', 'x', 'youtube', 'linkedin', 'tiktok'])
   )
   .min(1, 'At least one platform must be specified')
   .max(6, 'Maximum 6 platforms allowed');
@@ -64,7 +64,7 @@ export const socialAccountSchema = z.object({
 export const socialAccountsSchema = z.object({
   facebook: socialAccountSchema.optional().or(z.literal('')),
   instagram: socialAccountSchema.optional().or(z.literal('')),
-  twitter: socialAccountSchema.optional().or(z.literal('')),
+  x: socialAccountSchema.optional().or(z.literal('')),
   youtube: socialAccountSchema.optional().or(z.literal('')),
   linkedin: socialAccountSchema.optional().or(z.literal('')),
   tiktok: socialAccountSchema.optional().or(z.literal('')),
