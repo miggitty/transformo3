@@ -141,7 +141,7 @@ password_requirements = "lower_upper_letters_digits"
 # 50 = Good for small-medium apps (~1,200 signups/day max)
 # 100 = Production apps (~2,400 signups/day max)
 # 200+ = High-traffic apps
-email_sent = 50
+email_sent = 200
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
