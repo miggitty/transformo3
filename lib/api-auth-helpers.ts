@@ -18,10 +18,10 @@ function createApiClient(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(_name: string, _value: string, _options: CookieOptions) {
           // API routes can't set cookies, but we need this for the interface
         },
-        remove(name: string, options: CookieOptions) {
+        remove(_name: string, _options: CookieOptions) {
           // API routes can't remove cookies, but we need this for the interface
         },
       },

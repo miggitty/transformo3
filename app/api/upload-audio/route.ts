@@ -30,7 +30,7 @@ function getSupabaseAdmin() {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the request
-    const { user, error: authError } = await authenticateApiRequest();
+    const { user, error: authError } = await authenticateApiRequest(request);
     if (authError) return authError;
     
     // Get the form data

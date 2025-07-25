@@ -16,10 +16,10 @@ export function applySecurityHeaders(response: NextResponse, isDevelopment: bool
   // Control referrer information
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   
-  // Limit browser features
+  // Limit browser features (allow microphone for voice recording functionality)
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), payment=()'
+    'camera=(), microphone=(self), geolocation=(), payment=()'
   );
   
   // XSS Protection (for older browsers)
