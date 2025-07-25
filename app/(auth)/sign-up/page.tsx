@@ -53,10 +53,11 @@ export default function SignUpPage() {
     const emailValid = isValidEmail(email);
     const firstNameValid = validateName(firstName).isValid;
     const lastNameValid = validateName(lastName).isValid;
+    const businessNameValid = validateName(businessName).isValid;
     const passwordValid = passwordValidation.isValid;
     
-    setIsFormValid(emailValid && firstNameValid && lastNameValid && passwordValid);
-  }, [email, firstName, lastName, passwordValidation.isValid]);
+    setIsFormValid(emailValid && firstNameValid && lastNameValid && businessNameValid && passwordValid);
+  }, [email, firstName, lastName, businessName, passwordValidation.isValid]);
 
   // Handle signup success/failure
   useEffect(() => {
@@ -166,9 +167,9 @@ export default function SignUpPage() {
               />
             </div>
 
-            {/* Business Name (Optional) */}
+            {/* Business Name */}
             <div className="grid gap-2">
-              <Label htmlFor="businessName">Business Name (Optional)</Label>
+              <Label htmlFor="businessName">Business Name</Label>
               <Input
                 id="businessName"
                 name="businessName"
@@ -176,7 +177,14 @@ export default function SignUpPage() {
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 placeholder="Your business name"
+                required
+                aria-describedby="businessName-error"
               />
+              {businessName.length > 0 && !validateName(businessName).isValid && (
+                <p id="businessName-error" className="text-sm text-red-600">
+                  {validateName(businessName).error}
+                </p>
+              )}
             </div>
 
             {/* Hidden field to pass password validation to server */}

@@ -51,6 +51,27 @@ export const validateName = (name: string): NameValidationResult => {
 };
 
 /**
+ * Validates business name format - used by signup
+ */
+export const validateBusinessName = (businessName: string): NameValidationResult => {
+  const trimmedName = businessName.trim();
+  
+  if (!trimmedName) {
+    return { isValid: false, error: 'Business name is required' };
+  }
+  
+  if (trimmedName.length < 2) {
+    return { isValid: false, error: 'Business name must be at least 2 characters' };
+  }
+  
+  if (trimmedName.length > 100) {
+    return { isValid: false, error: 'Business name must be less than 100 characters' };
+  }
+  
+  return { isValid: true };
+};
+
+/**
  * Password validation - used by both signup and password reset
  * Matches Supabase configuration: 8+ chars, uppercase, lowercase, digit
  */
