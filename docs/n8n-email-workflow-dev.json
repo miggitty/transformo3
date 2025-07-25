@@ -23,19 +23,19 @@
     },
     {
       "parameters": {
-        "url": "https://mmodhofduvuyifwlsrmh.supabase.co/rest/v1/content_assets?asset_scheduled_at=lt.now()&asset_status=eq.Scheduled&content_type=eq.email&select=*,content(business_id,content_title)",
+        "url": "{{SUPABASE_URL}}/rest/v1/content_assets?asset_scheduled_at=lt.now()&asset_status=eq.Scheduled&content_type=eq.email&select=*,content(business_id,content_title)",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "httpHeaderAuth": {
           "name": "Authorization",
-          "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+          "value": "Bearer {{SUPABASE_ANON_KEY}}"
         },
         "options": {
           "headers": {
             "parameters": [
               {
                 "name": "apikey",
-                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+                "value": "{{SUPABASE_ANON_KEY}}"
               }
             ]
           }
@@ -255,12 +255,12 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "https://mmodhofduvuyifwlsrmh.supabase.co/rest/v1/content_assets?id=eq.{{ $json.id }}",
+        "url": "{{SUPABASE_URL}}/rest/v1/content_assets?id=eq.{{ $json.id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "httpHeaderAuth": {
           "name": "Authorization",
-          "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+          "value": "Bearer {{SUPABASE_ANON_KEY}}"
         },
         "sendBody": true,
         "specifyBody": "json",
@@ -270,7 +270,7 @@
             "parameters": [
               {
                 "name": "apikey",
-                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+                "value": "{{SUPABASE_ANON_KEY}}"
               },
               {
                 "name": "Content-Type",
@@ -292,12 +292,12 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "https://mmodhofduvuyifwlsrmh.supabase.co/rest/v1/content_assets?id=eq.{{ $json.id }}",
+        "url": "{{SUPABASE_URL}}/rest/v1/content_assets?id=eq.{{ $json.id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "httpHeaderAuth": {
           "name": "Authorization",
-          "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+          "value": "Bearer {{SUPABASE_ANON_KEY}}"
         },
         "sendBody": true,
         "specifyBody": "json",
@@ -307,7 +307,7 @@
             "parameters": [
               {
                 "name": "apikey",
-                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tb2Rob2ZkdXZ1eWlmd2xzcm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMzNzU1MzYsImV4cCI6MjA0ODk1MTUzNn0.lOZdNZdNz3vGH8ZdK3YtFgGpL6E1k3aLvGR5E8l3Hq8"
+                "value": "{{SUPABASE_ANON_KEY}}"
               },
               {
                 "name": "Content-Type",

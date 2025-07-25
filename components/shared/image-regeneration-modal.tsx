@@ -69,6 +69,7 @@ export default function ImageRegenerationModal({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           content_asset_id: contentAsset.id,
           image_prompt: imagePrompt.trim(),
@@ -133,6 +134,7 @@ export default function ImageRegenerationModal({
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include',
           body: JSON.stringify({
             use_temporary_image: true,
             image_prompt: imagePrompt.trim(),

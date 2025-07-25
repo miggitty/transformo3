@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { validateFile } from '@/lib/file-validation';
+import { authenticateApiRequest, validateContentAssetAccess } from '@/lib/api-auth-helpers';
 
 // Create a Supabase client with service role key (bypasses RLS)
 // Singleton pattern to avoid recreating client on every request
@@ -27,6 +29,10 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate the request
+    const { user, error: authError } = await authenticateApiRequest();
+    if (authError) return authError;
+    
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const contentAssetId = formData.get('contentAssetId') as string;
@@ -35,15 +41,38 @@ export async function POST(request: NextRequest) {
     if (!file || !contentAssetId || !contentType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+    
+    // Validate user has access to this content asset
+    const { hasAccess } = await validateContentAssetAccess(user!.id, contentAssetId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      );
+    }
 
-    // Step 1: Generate filename following content assets pattern
-    const fileExtension = file.name.split('.').pop() || 'jpg';
-    const filename = `${contentAssetId}_${contentType}.${fileExtension}`;
-
-    // Step 2: Convert file to buffer
+    // Convert file to buffer for validation
     const fileBuffer = await file.arrayBuffer();
+    
+    // Validate the file
+    const validation = await validateFile({
+      buffer: fileBuffer,
+      size: file.size,
+      mimeType: file.type,
+      filename: file.name
+    }, 'image');
+    
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
+    
+    // Generate filename following content assets pattern
+    const filename = `${contentAssetId}_${contentType}.${validation.extension}`;
 
-    // Step 3: Upload to Supabase storage (using service role to bypass RLS)
+    // Upload to Supabase storage (using service role to bypass RLS)
     const { error: uploadError } = await getSupabaseAdmin().storage
       .from('images')
       .upload(filename, fileBuffer, {

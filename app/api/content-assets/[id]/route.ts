@@ -1,26 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
+import { authenticateApiRequest, validateContentAssetAccess } from '@/lib/api-auth-helpers';
+import { createClient as createServerClient } from '@/utils/supabase/server';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Initialize Supabase client with service role key
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing required environment variables for Supabase');
-      return NextResponse.json({ 
-        error: 'Server configuration error' 
-      }, { status: 500 });
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { persistSession: false } }
-    );
-
+    // Authenticate the request
+    const { user, error: authError } = await authenticateApiRequest(request);
+    if (authError) return authError;
+    
     const { id } = await params;
 
     if (!id) {
@@ -28,8 +20,17 @@ export async function GET(
         error: 'Content asset ID is required' 
       }, { status: 400 });
     }
+    
+    // Validate user has access to this content asset
+    const { hasAccess } = await validateContentAssetAccess(user!.id, id, request);
+    if (!hasAccess) {
+      return NextResponse.json({ 
+        error: 'Access denied' 
+      }, { status: 403 });
+    }
 
-    // Get content asset including temporary_image_url
+    // Get content asset using server client
+    const supabase = await createServerClient();
     const { data: contentAsset, error: fetchError } = await supabase
       .from('content_assets')
       .select(`
@@ -69,20 +70,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Initialize Supabase client with service role key
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing required environment variables for Supabase');
-      return NextResponse.json({ 
-        error: 'Server configuration error' 
-      }, { status: 500 });
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { persistSession: false } }
-    );
-
+    // Authenticate the request
+    const { user, error: authError } = await authenticateApiRequest(request);
+    if (authError) return authError;
+    
     const { id } = await params;
     const body = await request.json();
 
@@ -91,6 +82,21 @@ export async function PATCH(
         error: 'Content asset ID is required' 
       }, { status: 400 });
     }
+    
+    // Validate user has access to this content asset
+    const { hasAccess } = await validateContentAssetAccess(user!.id, id, request);
+    if (!hasAccess) {
+      return NextResponse.json({ 
+        error: 'Access denied' 
+      }, { status: 403 });
+    }
+
+    // Initialize service role client only after authorization for storage operations
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    );
 
     // Extract allowed fields for update
     const { image_url, image_prompt, use_temporary_image, cancel_temporary_image } = body;

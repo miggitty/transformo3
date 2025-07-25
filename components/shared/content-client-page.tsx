@@ -16,6 +16,7 @@ import { FieldConfig } from '@/types';
 import { updateContentField, updateContentAsset, toggleAssetApproval } from '@/app/(app)/content/[id]/actions';
 import { toast } from 'sonner';
 import { DocumentGenerator } from '@/lib/document-generator';
+import SafeHtml from './safe-html';
 
 // Simple URL helper - no cache busting needed (handled server-side)
 const getImageUrl = (url: string | null): string => {
@@ -935,9 +936,9 @@ export default function ContentClientPage({
                             {/* Blog Post Content */}
                             {blogAsset.content && (
                               <div className="relative group mb-8">
-                                <div 
+                                <SafeHtml 
+                                  html={blogAsset.content}
                                   className="content-display text-gray-700"
-                                  dangerouslySetInnerHTML={{ __html: blogAsset.content }}
                                 />
                                 <TextActionButtons
                                   fieldConfig={{
@@ -1764,9 +1765,9 @@ export default function ContentClientPage({
                             {/* Email Body */}
                             <div className="px-6 py-6 relative group">
                               {emailAsset.content && (
-                                <div 
+                                <SafeHtml 
+                                  html={emailAsset.content}
                                   className="content-display text-gray-900"
-                                  dangerouslySetInnerHTML={{ __html: emailAsset.content }}
                                 />
                               )}
                               <TextActionButtons

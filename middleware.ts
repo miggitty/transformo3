@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/utils/supabase/middleware';
 import { getCachedSubscriptionAccess } from '@/utils/supabase/subscription';
+import { applySecurityHeaders } from '@/lib/security-headers';
 
 // Routes that require subscription access
 const PROTECTED_ROUTES = [
@@ -60,6 +61,7 @@ function shouldRedirectToAuth(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   try {
     const pathname = request.nextUrl.pathname;
+    const isDevelopment = process.env.NODE_ENV === 'development';
     
     // Handle image/video cache control for content pages - helps with cache busting
     if (pathname.startsWith('/content/') || request.nextUrl.search.includes('v=')) {
@@ -67,7 +69,8 @@ export async function middleware(request: NextRequest) {
       response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
-      return response;
+      // Apply security headers
+      return applySecurityHeaders(response, isDevelopment);
     }
     
     // First, handle auth session
@@ -77,18 +80,18 @@ export async function middleware(request: NextRequest) {
     if (authResponse.status !== 200) {
       const location = authResponse.headers.get('location');
       if (location?.includes('/sign-in') && shouldRedirectToAuth(pathname)) {
-        return authResponse; // Allow auth redirect
+        return applySecurityHeaders(authResponse, isDevelopment); // Allow auth redirect
       }
       if (authResponse.status === 200) {
         // Continue with subscription check if auth was successful
       } else {
-        return authResponse; // Return other redirects as-is
+        return applySecurityHeaders(authResponse, isDevelopment); // Return other redirects as-is
       }
     }
 
     // Check if this route requires subscription verification
     if (!shouldCheckSubscription(pathname)) {
-      return authResponse;
+      return applySecurityHeaders(authResponse, isDevelopment);
     }
 
     // Perform subscription check with caching
@@ -103,7 +106,7 @@ export async function middleware(request: NextRequest) {
         billingUrl.searchParams.set('redirect', pathname);
       }
       
-      return NextResponse.redirect(billingUrl);
+      return applySecurityHeaders(NextResponse.redirect(billingUrl), isDevelopment);
     }
 
     // Add subscription context to headers for use in components
@@ -112,12 +115,13 @@ export async function middleware(request: NextRequest) {
     response.headers.set('x-subscription-status', subscriptionCheck.subscription?.status || 'none');
     response.headers.set('x-access-level', subscriptionCheck.accessLevel);
     
-    return response;
+    return applySecurityHeaders(response, isDevelopment);
     
   } catch (error) {
     console.error('Middleware error:', error);
     // On error, continue with auth response to prevent blocking
-    return await updateSession(request);
+    const errorResponse = await updateSession(request);
+    return applySecurityHeaders(errorResponse, isDevelopment);
   }
 }
 

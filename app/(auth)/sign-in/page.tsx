@@ -1,56 +1,39 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { createClientSafe } from '@/utils/supabase/client';
+import { useState, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Image from 'next/image';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { type Database } from '@/types/supabase';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { signIn } from './actions';
 
 function SignInContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
-  const router = useRouter();
   const searchParams = useSearchParams();
   
   // Get message from URL parameters
   const message = searchParams.get('message');
-  
-  // Create client only after component mounts (not during build)
-  useEffect(() => {
-    setSupabase(createClientSafe());
-  }, []);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!supabase) {
-      toast.error('Authentication service not ready. Please try again.');
-      return;
-    }
-    
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        toast.error(error.message);
+      // Use server action with rate limiting
+      const result = await signIn(email, password);
+      
+      if (result?.error) {
+        toast.error(result.error);
         setLoading(false);
-      } else {
-        router.push('/content'); // Redirect to content page on successful sign-in
       }
+      // If no error, the server action will redirect
     } catch {
       toast.error('Authentication service unavailable. Please try again later.');
       setLoading(false);

@@ -1,16 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { validateWebhookRequest } from '@/lib/webhook-security';
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify the callback secret
-    const callbackSecret = request.headers.get('x-n8n-callback-secret');
-    if (callbackSecret !== process.env.N8N_CALLBACK_SECRET) {
-      console.error('Unauthorized callback attempt');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    // Get the raw body for signature verification
     const body = await request.json();
+    
+    // Use HMAC signature validation if available, fallback to simple secret for compatibility
+    const webhookSignature = request.headers.get('x-webhook-signature');
+    const n8nCallbackSecret = process.env.N8N_CALLBACK_SECRET;
+    
+    if (!n8nCallbackSecret) {
+      console.error('N8N_CALLBACK_SECRET not configured');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+    
+    if (webhookSignature) {
+      // Use HMAC signature validation for enhanced security
+      const validation = await validateWebhookRequest(request, body, n8nCallbackSecret);
+      if (!validation.valid) {
+        console.error('Webhook signature validation failed:', validation.error);
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    } else {
+      // Fallback to simple secret validation for backward compatibility
+      const callbackSecret = request.headers.get('x-n8n-callback-secret');
+      if (callbackSecret !== n8nCallbackSecret) {
+        console.error('Unauthorized callback attempt');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
     console.log('N8N callback received:', body);
 
     const { 

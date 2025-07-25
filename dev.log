@@ -1,0 +1,111 @@
+
+> transformo3@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.3 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://10.0.0.9:3000
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · staleTimes
+
+ ✓ Starting...
+ ✓ Compiled middleware in 118ms
+ ✓ Ready in 1115ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbo
+
+Development CSP: default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://js.stripe.com https://checkout.stripe.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.stripe.com https://www.gstatic.com http://localhost:* http://127.0.0.1:*; connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* https://api.stripe.com https://checkout.stripe.com; media-src 'self' blob: https://*.supabase.co http://localhost:* http://127.0.0.1:*; object-src 'none'; child-src 'self' https://js.stripe.com https://checkout.stripe.com; frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://www.youtube.com https://player.vimeo.com; worker-src 'self' blob:; form-action 'self'; base-uri 'self'; frame-ancestors 'none'
+ ○ Compiling / ...
+ ✓ Compiled / in 1209ms
+--- CLIENT-SIDE ENVIRONMENT CHECK ---
+NEXT_PUBLIC_SUPABASE_URL: Exists
+NEXT_PUBLIC_SUPABASE_ANON_KEY: Exists
+-----------------------------------
+✅ Supabase client created successfully
+ HEAD / 307 in 1365ms
+ ✓ Compiled middleware in 2ms
+ ✓ Compiled in 0ms
+ ✓ Compiled middleware in 3ms
+ ✓ Compiled in 114ms
+ HEAD / 307 in 46ms
+ ○ Compiling /content/[id] ...
+ ✓ Compiled /content/[id] in 1431ms
+--- SERVER-SIDE ENVIRONMENT CHECK ---
+NEXT_PUBLIC_SUPABASE_URL: Exists
+NEXT_PUBLIC_SUPABASE_ANON_KEY: Exists
+--- SERVER-SIDE ENVIRONMENT CHECK ---
+NEXT_PUBLIC_SUPABASE_URL: Exists
+NEXT_PUBLIC_SUPABASE_ANON_KEY: Exists
+ GET /content/34ad686d-3d27-493c-a9cb-14e8109ceea7 200 in 1967ms
+ ○ Compiling /_not-found/page ...
+ ✓ Compiled /_not-found/page in 688ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 723ms
+ ✓ Compiled middleware in 4ms
+ ✓ Compiled in 169ms
+ HEAD / 307 in 45ms
+ ✓ Compiled middleware in 3ms
+ ✓ Compiled in 139ms
+ HEAD / 307 in 44ms
+ ○ Compiling /api/n8n/callback ...
+ ✓ Compiled /api/n8n/callback in 558ms
+N8N callback received: {
+  image_url: 'https://stream.replicate.com/v1/files/bcwr-bcrraegtoy7jnmdzc4n2uv6oqfg6t4x637v65p7lylixffqmptwq',
+  content_asset_id: '25e1f550-8ef2-49af-9723-b74dff323504'
+}
+Processing image regeneration callback for asset 25e1f550-8ef2-49af-9723-b74dff323504
+New image URL: https://stream.replicate.com/v1/files/bcwr-bcrraegtoy7jnmdzc4n2uv6oqfg6t4x637v65p7lylixffqmptwq
+Image regeneration callback processed successfully - stored in temporary_image_url
+ POST /api/n8n/callback 200 in 656ms
+N8N callback received: {
+  image_url: 'https://stream.replicate.com/v1/files/bcwr-5ubswfyxryqb3b6qd6exnoglh5oz3m2fa47zugplpfz4uuhfmkqq',
+  content_asset_id: '25e1f550-8ef2-49af-9723-b74dff323504'
+}
+Processing image regeneration callback for asset 25e1f550-8ef2-49af-9723-b74dff323504
+New image URL: https://stream.replicate.com/v1/files/bcwr-5ubswfyxryqb3b6qd6exnoglh5oz3m2fa47zugplpfz4uuhfmkqq
+Image regeneration callback processed successfully - stored in temporary_image_url
+ POST /api/n8n/callback 200 in 38ms
+ ✓ Compiled middleware in 10ms
+ ✓ Compiled in 214ms
+ HEAD / 307 in 58ms
+N8N callback received: {
+  image_url: 'https://stream.replicate.com/v1/files/bcwr-g72hwunif52ewqeqlu3lsg2skcq4r6utrclrsadphwhwxzz43sfa',
+  content_asset_id: '25e1f550-8ef2-49af-9723-b74dff323504'
+}
+Processing image regeneration callback for asset 25e1f550-8ef2-49af-9723-b74dff323504
+New image URL: https://stream.replicate.com/v1/files/bcwr-g72hwunif52ewqeqlu3lsg2skcq4r6utrclrsadphwhwxzz43sfa
+Image regeneration callback processed successfully - stored in temporary_image_url
+ POST /api/n8n/callback 200 in 47ms
+N8N callback received: {
+  image_url: 'https://stream.replicate.com/v1/files/bcwr-ydtyfbdqh6w525cmczkg6n6mevbh4banbqsypdkcdc2hyubfhkka',
+  content_asset_id: '25e1f550-8ef2-49af-9723-b74dff323504'
+}
+Processing image regeneration callback for asset 25e1f550-8ef2-49af-9723-b74dff323504
+New image URL: https://stream.replicate.com/v1/files/bcwr-ydtyfbdqh6w525cmczkg6n6mevbh4banbqsypdkcdc2hyubfhkka
+Image regeneration callback processed successfully - stored in temporary_image_url
+ POST /api/n8n/callback 200 in 33ms
+ ✓ Compiled /api/content-assets/[id] in 371ms
+--- SERVER-SIDE ENVIRONMENT CHECK ---
+NEXT_PUBLIC_SUPABASE_URL: Exists
+NEXT_PUBLIC_SUPABASE_ANON_KEY: Exists
+ PATCH /api/content-assets/25e1f550-8ef2-49af-9723-b74dff323504 401 in 709ms
+--- SERVER-SIDE ENVIRONMENT CHECK ---
+NEXT_PUBLIC_SUPABASE_URL: Exists
+NEXT_PUBLIC_SUPABASE_ANON_KEY: Exists
+DEBUG: authenticateApiRequest result: { user: undefined, error: 'Auth session missing!' }
+ PATCH /api/content-assets/25e1f550-8ef2-49af-9723-b74dff323504 401 in 123ms
+--- SERVER-SIDE ENVIRONMENT CHECK ---
+NEXT_PUBLIC_SUPABASE_URL: Exists
+NEXT_PUBLIC_SUPABASE_ANON_KEY: Exists
+ PATCH /api/content-assets/25e1f550-8ef2-49af-9723-b74dff323504 401 in 89ms
+ PATCH /api/content-assets/25e1f550-8ef2-49af-9723-b74dff323504 401 in 79ms
+N8N callback received: {
+  image_url: 'https://stream.replicate.com/v1/files/bcwr-qwy233wg43vhs3xls2gwtthvvdm7gf7t3mhr6x66a5kmqgsamgra',
+  content_asset_id: '25e1f550-8ef2-49af-9723-b74dff323504'
+}
+Processing image regeneration callback for asset 25e1f550-8ef2-49af-9723-b74dff323504
+New image URL: https://stream.replicate.com/v1/files/bcwr-qwy233wg43vhs3xls2gwtthvvdm7gf7t3mhr6x66a5kmqgsamgra
+Image regeneration callback processed successfully - stored in temporary_image_url
+ POST /api/n8n/callback 200 in 52ms
+[?25h

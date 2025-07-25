@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { validateFile } from '@/lib/file-validation';
+import { authenticateApiRequest, userHasAccessToBusiness } from '@/lib/api-auth-helpers';
 
 // Create a Supabase client with service role key (bypasses RLS)
 // Singleton pattern to avoid recreating client on every request
@@ -27,6 +29,10 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate the request
+    const { user, error: authError } = await authenticateApiRequest();
+    if (authError) return authError;
+    
     // Get the form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -39,18 +45,42 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // Validate user has access to the business
+    const hasAccess = await userHasAccessToBusiness(user!.id, businessId);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      );
+    }
 
-    // Generate the filename
-    const filename = `${businessId}_${contentId}.webm`;
-
-    // Convert file to buffer
+    // Convert file to buffer for validation
     const fileBuffer = await file.arrayBuffer();
+    
+    // Validate the file
+    const validation = await validateFile({
+      buffer: fileBuffer,
+      size: file.size,
+      mimeType: file.type || 'audio/webm',
+      filename: file.name
+    }, 'audio');
+    
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
+    
+    // Generate the filename with validated extension
+    const filename = `${businessId}_${contentId}.${validation.extension || 'webm'}`;
 
     // Upload to Supabase storage using service role (bypasses RLS)
     const { data, error } = await getSupabaseAdmin().storage
       .from('audio')
       .upload(filename, fileBuffer, {
-        contentType: 'audio/webm',
+        contentType: file.type || 'audio/webm',
         upsert: true
       });
 

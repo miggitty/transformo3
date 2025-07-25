@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { signup } from './actions';
+import { signUp as signup } from './actions';
 import { isValidEmail, validatePassword, validateName } from '@/lib/auth-utils';
 import { PasswordRequirements } from '@/components/auth/password-requirements';
 import type { SignupState, PasswordValidation } from '@/types/auth';

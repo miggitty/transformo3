@@ -82,7 +82,7 @@ export function SocialMediaStatusIcons({ socialAccounts, className }: SocialMedi
     }
     
     const account = socialAccounts[platformKey as keyof SocialAccounts];
-    return !!(account && typeof account === 'object' && account.username);
+    return !!(account && typeof account === 'object' && (account.username || account.display_name));
   };
 
   const getDisplayName = (platformKey: string): string | null => {

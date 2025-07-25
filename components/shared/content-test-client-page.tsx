@@ -8,6 +8,7 @@ import { VideoSectionV2 } from '@/components/shared/video-section-v2';
 import ContentAssetsManager from '@/components/shared/content-assets-manager';
 import { ContentWithBusiness, ContentAsset } from '@/types';
 import { createClient } from '@/utils/supabase/client';
+import SafeHtml from './safe-html';
 
 
 interface ContentClientPageProps {
@@ -350,9 +351,9 @@ export default function ContentClientPage({
           <h2 className="text-2xl font-bold mb-6">Video Script</h2>
           <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm p-6">
             {content.video_script ? (
-              <div 
+              <SafeHtml 
+                html={content.video_script}
                 className="text-gray-900 consistent-text"
-                dangerouslySetInnerHTML={{ __html: content.video_script }}
               />
             ) : (
               <p className="text-gray-500">No video script has been generated yet.</p>
@@ -405,9 +406,9 @@ export default function ContentClientPage({
                 
                 {/* Blog Post Content */}
                 {blogAsset.content && (
-                  <div 
+                  <SafeHtml 
+                    html={blogAsset.content}
                     className="prose prose-lg max-w-none mb-8 text-gray-700 consistent-text"
-                    dangerouslySetInnerHTML={{ __html: blogAsset.content }}
                   />
                 )}
                 
@@ -1007,9 +1008,9 @@ export default function ContentClientPage({
                 {/* Email Body */}
                 <div className="px-6 py-6">
                   {emailAsset.content && (
-                    <div 
+                    <SafeHtml 
+                      html={emailAsset.content}
                       className="text-gray-900 whitespace-pre-wrap consistent-text"
-                      dangerouslySetInnerHTML={{ __html: emailAsset.content }}
                     />
                   )}
                 </div>

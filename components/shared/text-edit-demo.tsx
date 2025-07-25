@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EditButton from './edit-button';
 import ContentEditModal from './content-edit-modal';
 import { FieldConfig } from '@/types';
+import SafeHtml from './safe-html';
 
 // Demo component to test the text editing functionality
 export default function TextEditDemo() {
@@ -100,9 +101,9 @@ export default function TextEditDemo() {
           <div className="relative group">
             <h3 className="text-lg font-semibold mb-2">Rich Content</h3>
             <div className="p-4 border rounded-lg bg-muted/20 relative">
-              <div 
+              <SafeHtml 
+                html={demoData.content}
                 className="prose dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: demoData.content }}
               />
               <EditButton
                 fieldConfig={fieldConfigs.content}

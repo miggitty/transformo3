@@ -3,6 +3,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { isValidEmail } from '@/lib/auth-utils';
 import type { ForgotPasswordState } from '@/types/auth';
+import { authRateLimiter } from '@/lib/rate-limit';
+import { headers } from 'next/headers';
 
 export async function requestPasswordReset(
   prevState: ForgotPasswordState, 
@@ -15,6 +17,20 @@ export async function requestPasswordReset(
       return {
         message: 'Please enter a valid email address',
         errors: { email: ['Invalid email format'] },
+      };
+    }
+    
+    // Check rate limit
+    const headersList = await headers();
+    const mockRequest = {
+      headers: headersList
+    } as unknown as NextRequest;
+    
+    const rateLimitResult = authRateLimiter.passwordReset(mockRequest);
+    
+    if (!rateLimitResult.allowed) {
+      return {
+        message: `Too many password reset attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`,
       };
     }
 

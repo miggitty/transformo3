@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { authenticateAndValidateBusinessAccess } from '@/lib/auth-helpers';
 
 // Define a schema for the updatable fields
 const updatableFields = z.enum(['transcript', 'research', 'video_script', 'short_video_script', 'content_title']);
@@ -513,6 +514,9 @@ export async function getBusinessAssets({
   endDate: string;
   excludeContentId?: string;
 }) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   let query = supabase
@@ -665,15 +669,10 @@ export async function deleteContent({
   contentId: string;
   businessId: string;
 }) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: 'You must be logged in to delete content.' };
-  }
 
   try {
     // Step 1: Delete files from storage buckets

@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { authenticateAndValidateBusinessAccess } from '@/lib/auth-helpers';
 
 const heygenSettingsFormSchema = z.object({
   heygen_api_key: z.string().optional(),
@@ -51,6 +52,9 @@ export async function updateHeygenSettings(
   businessId: string,
   formData: z.infer<typeof heygenSettingsFormSchema>
 ) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   const parsedData = heygenSettingsFormSchema.safeParse(formData);
@@ -106,6 +110,9 @@ export async function updateHeygenSettings(
 
 // Action to remove the API key
 export async function removeHeygenApiKey(businessId: string) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   const { error } = await supabase.rpc('delete_ai_avatar_integration', {
@@ -127,6 +134,9 @@ export async function generateHeygenVideo(
   contentId: string,
   script: string
 ) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   try {
@@ -217,6 +227,9 @@ export async function updateEmailSettings(
   businessId: string,
   formData: z.infer<typeof emailSettingsFormSchema>
 ) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   const parsedData = emailSettingsFormSchema.safeParse(formData);
@@ -275,6 +288,9 @@ export async function updateEmailSettings(
 
 // Action to remove the email API key
 export async function removeEmailApiKey(businessId: string) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   const { error } = await supabase.rpc('delete_email_integration', {
@@ -297,6 +313,9 @@ export async function updateBlogSettings(
   businessId: string,
   formData: z.infer<typeof blogSettingsFormSchema>
 ) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   const parsedData = blogSettingsFormSchema.safeParse(formData);
@@ -361,6 +380,9 @@ export async function updateBlogSettings(
 
 // Action to remove blog credentials
 export async function removeBlogCredentials(businessId: string) {
+  // Authenticate user and validate business access
+  await authenticateAndValidateBusinessAccess(businessId);
+  
   const supabase = await createClient();
 
   const { error } = await supabase.rpc('delete_blog_integration', {

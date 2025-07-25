@@ -17,7 +17,10 @@ const getSupabaseHostname = (url: string) => {
 };
 
 // Get the current Supabase URL and extract hostname
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mmodhofduvuyifwlsrmh.supabase.co';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+if (!supabaseUrl) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required');
+}
 const supabaseHostname = getSupabaseHostname(supabaseUrl);
 
 // Build image patterns based on environment
@@ -53,13 +56,7 @@ const getImagePatterns = () => {
     });
   }
   
-  // Fallback for production remote instance (if different from current)
-  patterns.push({
-    protocol: 'https' as const,
-    hostname: 'mmodhofduvuyifwlsrmh.supabase.co',
-    port: '',
-    pathname: '/storage/v1/object/**',
-  });
+  // Note: Removed hardcoded fallback URL for security
   
   return patterns;
 };

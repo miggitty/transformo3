@@ -90,12 +90,12 @@ export function SocialMediaIntegrationCard({
     let count = 0;
     
          // Check each platform individually
-     if (accounts.facebook && typeof accounts.facebook === 'object' && accounts.facebook.username) count++;
-     if (accounts.instagram && typeof accounts.instagram === 'object' && accounts.instagram.username) count++;
-     if (accounts.x && typeof accounts.x === 'object' && accounts.x.username) count++;
-     if (accounts.youtube && typeof accounts.youtube === 'object' && accounts.youtube.username) count++;
-     if (accounts.linkedin && typeof accounts.linkedin === 'object' && accounts.linkedin.username) count++;
-     if (accounts.tiktok && typeof accounts.tiktok === 'object' && accounts.tiktok.username) count++;
+     if (accounts.facebook && typeof accounts.facebook === 'object' && (accounts.facebook.username || accounts.facebook.display_name)) count++;
+     if (accounts.instagram && typeof accounts.instagram === 'object' && (accounts.instagram.username || accounts.instagram.display_name)) count++;
+     if (accounts.x && typeof accounts.x === 'object' && (accounts.x.username || accounts.x.display_name)) count++;
+     if (accounts.youtube && typeof accounts.youtube === 'object' && (accounts.youtube.username || accounts.youtube.display_name)) count++;
+     if (accounts.linkedin && typeof accounts.linkedin === 'object' && (accounts.linkedin.username || accounts.linkedin.display_name)) count++;
+     if (accounts.tiktok && typeof accounts.tiktok === 'object' && (accounts.tiktok.username || accounts.tiktok.display_name)) count++;
     
     return count;
   };
